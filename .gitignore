@@ -1,0 +1,19 @@
+# Sensitive Data
+.credentials.json
+
+# Local State (machine-specific, not for sharing)
+cache/
+debug/
+file-history/
+history.jsonl
+ide/
+plans/
+projects/
+session-env/
+shell-snapshots/
+stats-cache.json
+telemetry/
+todos/
+plugins/
+memory/
+statsig/
