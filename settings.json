@@ -7,5 +7,6 @@
         "PubMed_search_articles,semantic_scholar_search,EuropePMC_search_articles,search_clinical_trials,Tool_Finder_Keyword"
       ]
     }
-  }
+  },
+  "skipDangerousModePermissionPrompt": true
 }

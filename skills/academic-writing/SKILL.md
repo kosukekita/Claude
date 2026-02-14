@@ -236,6 +236,49 @@ TRIPOD+AI は以下に該当する研究に適用:
 
 ---
 
+## 著者リスト管理
+
+共著者の名前・所属情報は `references/authors.csv` に格納されている。
+論文作成・投稿時にユーザーが著者名（Last Name）を指示したら、CSV から該当著者を抽出して整形出力する。
+
+### 使い方
+
+ユーザーの指示例:
+- 「Kita, Ebina, Etani を著者に入れて」
+- 「全員を著者リストに」
+- 「Kita を first author、Hori を last author にして」
+
+### 出力フォーマット
+
+**タイトルページ用（著者名 + 上付き所属番号）:**
+
+```
+Kosuke Kita¹², Kosuke Ebina¹, Yuki Etani¹
+
+¹ Department of Orthopaedic Surgery, Osaka University Graduate School of Medicine
+² Department of Artificial Intelligence in Diagnostic Radiology, Osaka University Graduate School of Medicine
+```
+
+- 所属番号は出現順に重複排除して自動割り当て
+- 同じ所属の著者は同じ番号を共有
+
+**投稿フォーム用（個別フィールド）:**
+
+```
+Author 1: First Name: Kosuke | Last Name: Kita
+  Affiliation 1: Department of Orthopaedic Surgery, Osaka University Graduate School of Medicine
+  Affiliation 2: Department of Artificial Intelligence in Diagnostic Radiology, Osaka University Graduate School of Medicine
+
+Author 2: First Name: Kosuke | Last Name: Ebina
+  Affiliation: Department of Orthopaedic Surgery, Osaka University Graduate School of Medicine
+```
+
+### 著者リストの更新
+
+新しい共著者を追加する場合は `references/authors.csv` に行を追加する。
+
+---
+
 ## 投稿前チェックリスト
 
 - [ ] IMRAD 構成に従っている
@@ -260,6 +303,7 @@ TRIPOD+AI は以下に該当する研究に適用:
 
 - `references/tenses.md` — セクション別の時制使い分けガイド（IMRaD）
 - `references/humanizer-patterns.md` — 18 パターンの詳細な検出・修正リファレンス
+- `references/authors.csv` — 共著者リスト（名前・所属）
 - [TRIPOD+AI statement (BMJ 2024)](https://pubmed.ncbi.nlm.nih.gov/38626948/) — AI 予測モデル研究の報告ガイドライン（27 項目）
 - [TRIPOD+AI Expanded Checklist & Supplement](https://www.tripod-statement.org/) — 各項目の詳細な説明と記入例
 - [TRIPOD-LLM (Nature Medicine 2024)](https://www.nature.com/articles/s41591-024-03425-5) — LLM を用いた生物医学研究の報告ガイドライン
