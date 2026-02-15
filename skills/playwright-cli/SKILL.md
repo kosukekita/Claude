@@ -1,25 +1,90 @@
-| name | description | allowed-tools |
-|------|-------------|---------------|
-| playwright-cli | Automates browser interactions for web testing, form filling, screenshots, and data extraction. Use when the user needs to navigate websites, interact with web pages, fill forms, take screenshots, test web applications, or extract information from web pages. | Bash(playwright-cli:*) |
+---
+name: playwright-cli
+description: >
+  Playwright MCP を活用したブラウザ自動化・E2Eテスト。
+  Webページのナビゲーション、フォーム入力、スクリーンショット、データ抽出、
+  セッション管理、リクエストモック、トレース、動画録画をカバー。
+  Use when user needs browser automation, web testing, form filling,
+  screenshots, or data extraction from web pages.
+  Trigger phrases: "ブラウザ自動化", "E2Eテスト", "スクリーンショット",
+  "フォーム入力", "Webスクレイピング", "playwright", "ブラウザ操作",
+  "ログインテスト", "画面キャプチャ", "browser automation", "web testing".
+allowed-tools: Bash(playwright-cli:*)
+---
 
 # Browser Automation with playwright-cli
 
-## Quick start
+## Workflow
+
+ブラウザ自動化タスクを受けたら、以下のステップで進める:
+
+### Step 1: タスク分類
+
+| タスク種別 | 内容 | 主要コマンド |
+|-----------|------|-------------|
+| **ページ確認** | スクリーンショット、要素確認 | `open`, `goto`, `snapshot`, `screenshot` |
+| **フォーム操作** | 入力、クリック、送信 | `fill`, `click`, `type`, `select` |
+| **認証テスト** | ログイン状態の保存・復元 | `state-save`, `state-load` |
+| **データ抽出** | ページ内容の取得 | `eval`, `snapshot` |
+| **デバッグ** | コンソール、ネットワーク監視 | `console`, `network`, `tracing-start` |
+
+### Step 2: ブラウザセッション開始
 
 ```shell
-# open new browser
+# 基本的な開始
+playwright-cli open https://example.com
+
+# 特定ブラウザを指定
+playwright-cli open --browser=chrome https://example.com
+
+# 永続プロファイル（Cookie保持）
+playwright-cli open --persistent https://example.com
+```
+
+### Step 3: 操作実行
+
+1. `snapshot` でページ構造を確認（要素の ref を取得）
+2. ref を使って操作（`click e3`, `fill e5 "value"`）
+3. 必要に応じて `screenshot` で結果を確認
+
+### Step 4: 終了処理
+
+```shell
+# 状態を保存する場合
+playwright-cli state-save auth.json
+playwright-cli close
+
+# 単純に終了
+playwright-cli close
+```
+
+---
+
+## Quick Start
+
+```shell
+# ブラウザを開く
 playwright-cli open
-# navigate to a page
+
+# ページに移動
 playwright-cli goto https://playwright.dev
-# interact with the page using refs from the snapshot
+
+# スナップショットで要素を確認（ref番号を取得）
+playwright-cli snapshot
+
+# ref を使って操作
 playwright-cli click e15
 playwright-cli type "page.click"
 playwright-cli press Enter
-# take a screenshot
+
+# スクリーンショット
 playwright-cli screenshot
-# close the browser
+
+# 終了
 playwright-cli close
 ```
+
+---
 
 ## Commands
 
@@ -27,7 +92,6 @@ playwright-cli close
 
 ```shell
 playwright-cli open
-# open and navigate right away
 playwright-cli open https://example.com/
 playwright-cli goto https://playwright.dev
 playwright-cli type "search query"
@@ -102,6 +166,7 @@ playwright-cli tab-select 0
 ### Storage
 
 ```shell
+# 状態の保存・復元
 playwright-cli state-save
 playwright-cli state-save auth.json
 playwright-cli state-load auth.json
@@ -163,47 +228,48 @@ playwright-cli install-browser
 ### Configuration
 
 ```shell
-# Use specific browser when creating session
+# ブラウザ指定
 playwright-cli open --browser=chrome
 playwright-cli open --browser=firefox
 playwright-cli open --browser=webkit
 playwright-cli open --browser=msedge
-# Connect to browser via extension
+
+# 拡張機能経由
 playwright-cli open --extension
 
-# Use persistent profile (by default profile is in-memory)
+# 永続プロファイル
 playwright-cli open --persistent
-# Use persistent profile with custom directory
 playwright-cli open --profile=/path/to/profile
 
-# Start with config file
+# 設定ファイル
 playwright-cli open --config=my-config.json
 
-# Close the browser
+# 終了・データ削除
 playwright-cli close
-# Delete user data for the default session
 playwright-cli delete-data
 ```
 
 ### Browser Sessions
 
 ```shell
-# create new browser session named "mysession" with persistent profile
+# 名前付きセッション
 playwright-cli -s=mysession open example.com --persistent
-# same with manually specified profile directory (use when requested explicitly)
 playwright-cli -s=mysession open example.com --profile=/path/to/profile
 playwright-cli -s=mysession click e6
-playwright-cli -s=mysession close # stop a named browser
-playwright-cli -s=mysession delete-data # delete user data for persistent session
+playwright-cli -s=mysession close
+playwright-cli -s=mysession delete-data
 
+# セッション管理
 playwright-cli list
-# Close all browsers
 playwright-cli close-all
-# Forcefully kill all browser processes
 playwright-cli kill-all
 ```
 
-## Example: Form submission
+---
+
+## Examples
+
+### フォーム送信
 
 ```shell
 playwright-cli open https://example.com/form
@@ -216,7 +282,7 @@ playwright-cli snapshot
 playwright-cli close
 ```
 
-## Example: Multi-tab workflow
+### マルチタブワークフロー
 
 ```shell
 playwright-cli open https://example.com
@@ -227,7 +293,7 @@ playwright-cli snapshot
 playwright-cli close
 ```
 
-## Example: Debugging with DevTools
+### DevTools でデバッグ
 
 ```shell
 playwright-cli open https://example.com
@@ -238,6 +304,8 @@ playwright-cli network
 playwright-cli close
 ```
 
+### トレース記録
+
 ```shell
 playwright-cli open https://example.com
 playwright-cli tracing-start
@@ -247,12 +315,57 @@ playwright-cli tracing-stop
 playwright-cli close
 ```
 
-## Specific tasks
+---
 
-- **Request mocking** references/request-mocking.md
-- **Running Playwright code** references/running-code.md
-- **Browser session management** references/session-management.md
-- **Storage state (cookies, localStorage)** references/storage-state.md
-- **Test generation** references/test-generation.md
-- **Tracing** references/tracing.md
-- **Video recording** references/video-recording.md
+## Troubleshooting
+
+### ブラウザが起動しない
+
+```shell
+# ブラウザをインストール
+playwright-cli install-browser
+
+# 既存プロセスを強制終了
+playwright-cli kill-all
+```
+
+### 要素が見つからない（ref が無効）
+
+1. `snapshot` を再実行して最新の ref を取得
+2. ページの読み込み完了を待つ
+3. 要素が iframe 内にある場合は別途対応
+
+### Cookie が保持されない
+
+```shell
+# 永続プロファイルを使用
+playwright-cli open --persistent https://example.com
+
+# または状態を明示的に保存・復元
+playwright-cli state-save auth.json
+playwright-cli close
+playwright-cli open https://example.com
+playwright-cli state-load auth.json
+```
+
+### ネットワークエラー
+
+```shell
+# ネットワークログを確認
+playwright-cli network
+
+# タイムアウト設定がある場合は長めに設定
+```
+
+---
+
+## References
+
+詳細は以下を参照:
+- `references/request-mocking.md` — リクエストモック
+- `references/running-code.md` — Playwright コード実行
+- `references/session-management.md` — セッション管理
+- `references/storage-state.md` — ストレージ状態（Cookie, localStorage）
+- `references/test-generation.md` — テスト生成
+- `references/tracing.md` — トレース
+- `references/video-recording.md` — 動画録画

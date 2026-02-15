@@ -16,6 +16,51 @@ description: >
 > このルールは科学的データ解析・研究タスクを行う際に適用する。
 > アプリケーション開発（Web/モバイル/デスクトップアプリ等）では使用しない。
 
+## Workflow
+
+研究タスクを受けたら、以下のステップで進める:
+
+### Step 1: タスク分類
+
+ユーザーのリクエストを以下のカテゴリに分類:
+
+| カテゴリ | 主要ツール | 例 |
+|---------|-----------|-----|
+| **文献検索** | PubMed, EuropePMC, Semantic Scholar | 「〇〇に関する論文を探して」 |
+| **創薬・化合物** | ChEMBL, PubChem, ClinicalTrials | 「EGFR阻害剤を検索」 |
+| **ゲノミクス** | UniProt, Ensembl, BLAST | 「P05067の情報を取得」 |
+| **構造生物学** | AlphaFold, RCSB PDB | 「タンパク質構造を予測」 |
+| **臨床・疫学** | ClinVar, DailyMed, WHO GHO | 「臨床試験を検索」 |
+
+### Step 2: ツール選択
+
+`Tool_Finder_LLM` または `Tool_Finder_Keyword` で最適なツールを特定:
+
+```
+「タンパク質構造予測に使えるツールを探して」
+→ Tool_Finder_LLM が AlphaFold, Boltz 等を推薦
+```
+
+### Step 3: データ取得
+
+選択したツールでデータを取得。複数ツールの連携が必要な場合は順序を考慮:
+
+```
+例: 創薬ターゲット探索
+1. OpenTargets_get_associated_targets_by_disease_efoId（疾患→ターゲット）
+2. UniProt_get_protein_info（ターゲットの詳細情報）
+3. ChEMBL_search_similar_molecules（既存薬の検索）
+```
+
+### Step 4: 結果の統合・解釈
+
+取得データを統合し、ユーザーに分かりやすく提示:
+- 主要な発見を要約
+- データソースを明記
+- 次のステップを提案
+
+---
+
 ## 概要
 
 ToolUniverse は Harvard Medical School Zitnik Lab が開発した、600+ の科学ツールを統合した

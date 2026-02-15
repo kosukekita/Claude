@@ -182,6 +182,28 @@ UI/UX タスクを受けたら、以下のステップで進める:
 
 ---
 
+## TROUBLESHOOTING
+
+### デザインが「AIっぽい」と感じる場合
+
+- purple/pink グラデーションを避ける
+- generic なイラスト・アイコンを避ける
+- 実際のコンテンツ/画像を使用する
+
+### レスポンシブが崩れる場合
+
+1. Mobile-first で再設計
+2. `flex-wrap` / `grid` の使用を確認
+3. 固定幅（px）を相対単位（%、rem）に変更
+
+### コントラストが不足している場合
+
+WCAG AA 基準（4.5:1）を満たすツールで確認:
+- WebAIM Contrast Checker
+- Chrome DevTools > Rendering > CSS Overview
+
+---
+
 ## REFERENCES
 
 詳細データは以下を参照:
