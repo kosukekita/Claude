@@ -262,6 +262,50 @@ gog docs create --title "新規ドキュメント"
 
 ---
 
+## Forms
+
+### フォーム作成
+
+```bash
+# フォーム作成（タイトルのみ指定可能）
+gog forms create --title "アンケートフォーム"
+
+# JSON 出力で詳細取得
+gog forms create --title "アンケートフォーム" --json
+```
+
+> **注意**: `--description` オプションはフォーム作成時には使用できません。
+> 説明や質問項目の追加は、作成後に Google Forms API の `batchUpdate` で行う必要があります。
+
+### フォーム取得
+
+```bash
+# フォーム情報を取得
+gog forms get <form-id>
+
+# JSON 出力
+gog forms get <form-id> --json
+```
+
+### 回答操作
+
+```bash
+# 回答一覧
+gog forms responses list <form-id>
+
+# 回答詳細
+gog forms responses get <form-id> <response-id>
+```
+
+### API 有効化
+
+初回使用時は Google Forms API を有効化する必要があります：
+1. Google Cloud Console で対象プロジェクトを開く
+2. `APIs & Services` → `Library` → `Google Forms API` を検索
+3. 「有効にする」をクリック
+
+---
+
 ## Tasks
 
 ```bash
