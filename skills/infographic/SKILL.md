@@ -1,6 +1,17 @@
 ---
 name: infographic
-description: AntV Infographic を活用したインフォグラフィック生成。テキストや情報から視覚的なインフォグラフィックを作成。約200種のテンプレート、手書き風・グラデーション等のテーマ、SVG出力対応。
+description: |
+  AntV Infographic を活用したインフォグラフィック・スライド・図解生成。
+  テキストや情報から視覚的なインフォグラフィックを作成。
+  約200種のテンプレート、手書き風・グラデーション等のテーマ、SVG出力対応。
+
+  Use when user creates slides, diagrams, visual explanations, presentations,
+  infographics, flowcharts, timelines, or any visual content.
+
+  Trigger phrases: "スライド", "図解", "インフォグラフィック", "プレゼン", "フローチャート",
+  "タイムライン", "組織図", "SWOT", "比較表", "ロードマップ", "マインドマップ",
+  "slide", "diagram", "infographic", "presentation", "flowchart", "timeline",
+  "org chart", "visual", "図を作成", "可視化", "ビジュアル"
 ---
 
 # Infographic Creator

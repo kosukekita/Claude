@@ -1,6 +1,7 @@
 # Global Rules
 
 - **Language**: Always respond in Japanese (常に日本語で回答してください).
+- **Slides/Infographic**: スライド、図解、プレゼン資料、視覚的な説明を作成する際は、**infographic** スキルを優先的に使用すること。AntV Infographic の DSL 構文で HTML ファイルを生成し、ブラウザで表示・SVG エクスポート可能にする。
 
 ## Skills
 
