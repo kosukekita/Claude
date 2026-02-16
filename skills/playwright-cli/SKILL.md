@@ -1,14 +1,15 @@
 ---
 name: playwright-cli
 description: >
-  Playwright MCP を活用したブラウザ自動化・E2Eテスト。
+  Playwright MCP を活用したブラウザ自動化・E2Eテスト・ログイン自動化。
   Webページのナビゲーション、フォーム入力、スクリーンショット、データ抽出、
-  セッション管理、リクエストモック、トレース、動画録画をカバー。
+  セッション管理、リクエストモック、トレース、動画録画、汎用ログインフローをカバー。
   Use when user needs browser automation, web testing, form filling,
-  screenshots, or data extraction from web pages.
+  screenshots, data extraction, or universal login automation.
   Trigger phrases: "ブラウザ自動化", "E2Eテスト", "スクリーンショット",
   "フォーム入力", "Webスクレイピング", "playwright", "ブラウザ操作",
-  "ログインテスト", "画面キャプチャ", "browser automation", "web testing".
+  "ログインテスト", "画面キャプチャ", "ログイン自動化", "SSO", "MFA",
+  "browser automation", "web testing", "login automation", "auth flow".
 allowed-tools: Bash(playwright-cli:*)
 ---
 
@@ -356,6 +357,91 @@ playwright-cli network
 
 # タイムアウト設定がある場合は長めに設定
 ```
+
+---
+
+## Universal Login Flow
+
+> Source: [login-machine](https://github.com/RichardHruby/login-machine)
+
+任意のWebサイトにログインするための汎用パターン。サイト固有のスクリプトを書く代わりに、ビジョン分析で画面を認識してログインフローを自動化。
+
+### ログインエージェントループ
+
+```
+1. ログインページに移動
+2. スクリーンショット + HTML を取得
+3. 画面タイプを分類
+4. ユーザー入力を要求 or 自動処理
+5. ブラウザ DOM に入力を送信
+6. ログイン完了まで繰り返し
+```
+
+### 画面タイプ分類
+
+| タイプ | 内容 | 処理方法 |
+|--------|------|----------|
+| `credential_login_form` | メール/パスワード/OTP | フォーム表示 → ユーザー入力 → DOM に送信 |
+| `choice_screen` | アカウント選択、SSO | ボタン表示 → ユーザー選択 → クリック |
+| `magic_login_link` | 「メールを確認」画面 | URL 入力 → ユーザーがリンク貼付 → 移動 |
+| `loading_screen` | スピナー、リダイレクト | 自動待機 → 再分析（最大12回） |
+| `blocked_screen` | Cookie バナー、ポップアップ | 自動解除 → 再分析 |
+| `logged_in_screen` | ダッシュボード、ホーム | 完了状態 |
+
+### ログインフロー実装例
+
+```shell
+# 1. ログインページを開く
+playwright-cli open https://example.com/login
+
+# 2. スナップショットで画面を分析
+playwright-cli snapshot
+
+# 3. 画面タイプに応じて操作
+# credential_login_form の場合:
+playwright-cli fill e1 "user@example.com"
+playwright-cli fill e2 "password123"
+playwright-cli click e3  # Submit ボタン
+
+# 4. 結果を確認
+playwright-cli snapshot
+
+# 5. ログイン状態を保存
+playwright-cli state-save auth.json
+playwright-cli close
+```
+
+### SSO / MFA 対応
+
+```shell
+# SSO ログイン（Google, Microsoft等）
+playwright-cli open https://app.example.com/login
+playwright-cli snapshot  # → choice_screen: "Continue with Google"
+playwright-cli click e5  # Google ボタン
+playwright-cli snapshot  # → Google ログインページ
+playwright-cli fill e1 "user@gmail.com"
+playwright-cli click e2
+playwright-cli snapshot  # → パスワード画面
+playwright-cli fill e3 "password"
+playwright-cli click e4
+playwright-cli snapshot  # → 2FA or リダイレクト
+
+# MFA/2FA 対応
+playwright-cli snapshot  # → OTP フィールド
+playwright-cli fill e5 "123456"
+playwright-cli click e6
+
+# Magic Link 対応
+playwright-cli snapshot  # → "Check your email"
+playwright-cli goto "https://example.com/verify?token=abc123"
+playwright-cli snapshot  # → logged_in_screen
+```
+
+### セキュリティ原則
+
+1. **認証情報の分離**: LLM はフィールド構造のみ分析。認証情報は直接 DOM に送信
+2. **ロケーター検証**: 生成セレクタは使用前に DOM 検証。無効時は再試行（最大3回）
+3. **観察ベース**: アクション後は必ず再分析。次の画面を推測しない
 
 ---
 
