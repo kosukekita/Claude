@@ -29,6 +29,12 @@
 - **career** — 喜多洸介の経歴（学歴・職歴）の管理・参照・出力。CV作成、経歴照会、履歴書フォーマットでの出力に対応。
 - **infographic** — AntV Infographic を活用したインフォグラフィック生成。テキストや情報から視覚的なインフォグラフィックを作成。約200種のテンプレート、手書き風・グラデーション等のテーマ、SVG出力対応。
 - **marp** — Marp CLI を活用した Markdown → PowerPoint/PDF/HTML スライド生成。Infographic で生成した SVG を埋め込み可能。
+- **prompt-engineer** — LLMプロンプト設計・最適化。Chain-of-thought、few-shot learning、構造化出力、評価フレームワーク。
+- **rag-architect** — RAGシステム設計・構築。ベクトルDB、セマンティック検索、ドキュメント検索、コンテキスト拡張。
+- **debugging-wizard** — 体系的デバッグ手法。エラー調査、スタックトレース分析、根本原因特定、トラブルシューティング。
+- **mcp-developer** — MCPサーバー/クライアント開発。JSON-RPC 2.0、TypeScript/Python SDK、リソースプロバイダー、ツール関数。
+- **api-designer** — REST/GraphQL API設計。OpenAPI 3.1仕様、リソースモデリング、バージョニング、ページネーション、エラーハンドリング。
+- **code-reviewer** — コードレビュー手法。PRレビュー、品質監査、セキュリティ脆弱性検出、リファクタリング提案。
 
 ## Workflow Best Practices
 
