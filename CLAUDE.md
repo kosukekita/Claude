@@ -33,6 +33,22 @@
 - **code-reviewer** — コードレビュー手法。PRレビュー、品質監査、セキュリティ脆弱性検出、リファクタリング提案。
 - **zotero** — Zotero ローカル API + REST API 連携。DOI 一括インポート、コレクション管理、アイテム検索・一覧表示、BibTeX インポート。文献登録・文献管理タスクで参照。
 
+### Superpowers（開発ワークフロー）
+- **brainstorming** — 創造的作業前の要件・設計探索。機能追加・コンポーネント作成前に必須。
+- **writing-plans** — 複数ステップタスクの実装計画作成。コードに触れる前に使用。
+- **executing-plans** — 実装計画の実行とレビューチェックポイント管理。
+- **subagent-driven-development** — 独立タスクのサブエージェント駆動開発。
+- **dispatching-parallel-agents** — 2つ以上の独立タスクの並列実行。
+- **test-driven-development** — TDD実践。実装コード記述前に使用。
+- **systematic-debugging** — バグ・テスト失敗・予期せぬ動作の体系的調査。修正提案前に使用。
+- **verification-before-completion** — 完了主張前の検証必須。証拠なき主張禁止。
+- **requesting-code-review** — タスク完了・主要機能実装・マージ前の作業検証。
+- **receiving-code-review** — コードレビューフィードバック受領時の技術的検証。
+- **finishing-a-development-branch** — 実装完了・テストパス後の統合方法選択ガイド。
+- **using-git-worktrees** — 機能作業の分離。実装計画実行前に使用。
+- **writing-skills** — スキル作成・編集・デプロイ前検証。TDDをドキュメントに適用。
+- **using-superpowers** — 会話開始時のスキル発見・活用方法。
+
 ## Skill Security
 
 スキル追加時は必ず `skill-scanner` でセキュリティチェックを実行:
