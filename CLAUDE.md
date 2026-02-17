@@ -36,6 +36,15 @@
 - **api-designer** — REST/GraphQL API設計。OpenAPI 3.1仕様、リソースモデリング、バージョニング、ページネーション、エラーハンドリング。
 - **code-reviewer** — コードレビュー手法。PRレビュー、品質監査、セキュリティ脆弱性検出、リファクタリング提案。
 
+## Skill Security
+
+スキル追加時は必ず `skill-scanner` でセキュリティチェックを実行:
+```bash
+skill-scanner scan /path/to/skill --use-behavioral
+```
+- HIGH/CRITICAL 検出時は内容を精査し、誤検知でなければ追加しない
+- 誤検知（セキュリティドキュメント内の例文等）は許容
+
 ## Workflow Best Practices
 
 ### 開発フロー
