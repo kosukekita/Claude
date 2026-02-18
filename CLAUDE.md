@@ -2,6 +2,13 @@
 
 - **Language**: Always respond in Japanese (常に日本語で回答してください).
 - **Marp 使用禁止**: パワーポイント・スライド作成に Marp は使用しない。python-pptx 等で直接 .pptx を生成すること。
+- **PowerPoint デザイン設定** (python-pptx 使用時):
+  - 背景: `#F9F9F9`（装飾なし無地白）
+  - テキスト: `#1A1A1A`（視認性を確保した黒）
+  - アクセント: `#004BB1`（青）、サブアクセント: `#E3F2FD`（淡青）
+  - フォント: `Arial, 'Yu Gothic', 'YuGothic', sans-serif`（英数字 Arial 優先、日本語 游ゴシック）
+  - フォントサイズ: タイトル 50pt / 見出し 35pt / 本文 25pt
+  - スタイル: モノクローム基調、図解・強調のみ青の濃淡使用、コントラスト抑制＋視認性確保、十分な余白
 
 ## Skills
 
