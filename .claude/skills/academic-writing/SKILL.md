@@ -1,6 +1,6 @@
 ---
 name: academic-writing
-description: "医学・学術論文の執筆支援。構成（IMRAD）、文体、引用形式、AI 生成テキストパターン（18種）の検出・除去を含む。AI 研究時は TRIPOD+AI（27項目）に準拠した報告を支援。Use when user writes, edits, or reviews academic manuscripts, or requests humanization of AI-generated text. Trigger phrases: 論文, 原稿, manuscript, abstract, humanize, AI文体, 学術英語, IMRAD, 投稿, 論文執筆, アカデミックライティング, 論文校正, academic writing, medical writing, TRIPOD, prediction model."
+description: "医学・学術論文の執筆支援。構成（IMRAD）、文体、引用形式、AI 生成テキストパターン（18種）の検出・除去を含む。AI 研究時は TRIPOD+AI（27項目）に準拠した報告を支援。投稿先ジャーナルの推薦（JCR IF ベース）にも対応。Use when user writes, edits, or reviews academic manuscripts, or requests humanization of AI-generated text, or asks for journal recommendation. Trigger phrases: 論文, 原稿, manuscript, abstract, humanize, AI文体, 学術英語, IMRAD, 投稿, 論文執筆, アカデミックライティング, 論文校正, academic writing, medical writing, TRIPOD, prediction model, ジャーナル, journal, IF, インパクトファクター, 投稿先, submission."
 ---
 
 # Academic Writing
@@ -19,6 +19,7 @@ description: "医学・学術論文の執筆支援。構成（IMRAD）、文体�
 | **校正・編集** | 既存原稿の改善 | 文体ルール、引用・参考文献 |
 | **AI文体除去** | AI生成テキストの humanize | AI文体除去（18パターン） |
 | **AI研究報告** | 予測モデル研究の執筆 | TRIPOD+AI チェックリスト |
+| **投稿先選定** | ジャーナル推薦 | 投稿先ジャーナルの推薦 |
 
 ### Step 2: 原稿分析（校正の場合）
 
@@ -270,7 +271,7 @@ TRIPOD+AI は以下に該当する研究に適用:
 
 ## 著者リスト管理
 
-共著者の名前・所属情報は `references/authors.csv` に格納されている。
+共著者の名前・所属情報は `references/authors.md` に格納されている。
 論文作成・投稿時にユーザーが著者名（Last Name）を指示したら、CSV から該当著者を抽出して整形出力する。
 
 ### 使い方
@@ -307,7 +308,21 @@ Author 2: First Name: Kosuke | Last Name: Ebina
 
 ### 著者リストの更新
 
-新しい共著者を追加する場合は `references/authors.csv` に行を追加する。
+新しい共著者を追加する場合は `references/authors.md` に行を追加する。
+
+---
+
+## 投稿先ジャーナルの推薦
+
+ユーザーから投稿先ジャーナルの相談を受けた場合、`references/translational_journals_analysis.md` のジャーナルリスト（Clarivate JCR IF 順）を参照して推薦する。
+
+### 推薦の原則
+
+1. **研究テーマとの適合性**: ジャーナルの Scope・Aims に研究内容が合致するか最優先で判断
+2. **インパクトファクター**: リストの IF を参考に、研究の新規性・エビデンスレベルに見合うジャーナルを提案
+3. **OA 要件**: 助成金や所属機関の OA ポリシーを考慮
+4. **段階的提案**: 第一候補（挑戦的）・第二候補（妥当）・第三候補（確実）の 3 段階で提案する
+5. **リスト外のジャーナル**: 研究分野がリストの対象（Translational Medical AI）と異なる場合は、その旨を伝えた上で分野固有のジャーナルを提案する
 
 ---
 
@@ -335,7 +350,8 @@ Author 2: First Name: Kosuke | Last Name: Ebina
 
 - `references/tenses.md` — セクション別の時制使い分けガイド（IMRaD）
 - `references/humanizer-patterns.md` — 18 パターンの詳細な検出・修正リファレンス
-- `references/authors.csv` — 共著者リスト（名前・所属）
+- `references/authors.md` — 共著者リスト（名前・所属）
+- `references/translational_journals_analysis.md` — Translational Medical AI ジャーナルの JCR IF 順リスト（投稿先推薦用）
 - [TRIPOD+AI statement (BMJ 2024)](https://pubmed.ncbi.nlm.nih.gov/38626948/) — AI 予測モデル研究の報告ガイドライン（27 項目）
 - [TRIPOD+AI Expanded Checklist & Supplement](https://www.tripod-statement.org/) — 各項目の詳細な説明と記入例
 - [TRIPOD-LLM (Nature Medicine 2024)](https://www.nature.com/articles/s41591-024-03425-5) — LLM を用いた生物医学研究の報告ガイドライン
