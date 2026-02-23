@@ -3,11 +3,11 @@
 | Order | First Name | Last Name | Affiliation 1 | Affiliation 2 | ORCID | COI |
 |------:|-----------|-----------|---------------|---------------|-------|-----|
 | 1 | Kosuke | Kita | Department of Orthopaedic Surgery, The University of Osaka Graduate School of Medicine | Department of Artificial Intelligence in Diagnostic Radiology, The University of Osaka Graduate School of Medicine | | |
-| 2 | Kosuke | Ebina | Department of Orthopaedic Surgery, The University of Osaka Graduate School of Medicine | Department of Sports Medical Biomechanics, The University of Osaka Graduate School of Medicine | | |
-| 3 | Yuki | Etani | Department of Sports Medical Biomechanics, The University of Osaka Graduate School of Medicine | | | |
+| 2 | Kosuke | Ebina | Department of Orthopaedic Surgery, The University of Osaka Graduate School of Medicine | Department of Sports Medical Biomechanics, The University of Osaka Graduate School of Medicine | | KE has received research grants from Asahi Kasei and Teijin Pharma, and speaker fees from AbbVie, Amgen, Argenx, Asahi Kasei, Astellas, Ayumi, Bristol-Myers Squibb, Chugai, Daiichi Sankyo, Eisai, Eli Lilly, Janssen, Mitsubishi Tanabe, Ono Pharmaceutical, Pfizer, Sanofi, Taisho, Teijin Pharma, and UCB Japan. |
+| 3 | Yuki | Etani | Department of Sports Medical Biomechanics, The University of Osaka Graduate School of Medicine | | | YE has received a research grant from Eli Lilly. |
 | 4 | Takaaki | Noguchi | Department of Orthopaedic Surgery, The University of Osaka Graduate School of Medicine | | 0000-0001-9938-6780 | |
 | 5 | Atsushi | Sugimoto | Department of Orthopaedic Surgery, The University of Osaka Graduate School of Medicine | | | |
-| 6 | Ken | Nakata | Department of Medicine for Sports and Performing Arts, The University of Osaka Graduate School of Medicine | | | |
+| 6 | Ken | Nakata | Department of Medicine for Sports and Performing Arts, The University of Osaka Graduate School of Medicine | | | KN has received a research grant from Astellas. |
 | 7 | Seiji | Okada | Department of Orthopaedic Surgery, The University of Osaka Graduate School of Medicine | | | |
 | 8 | Yuki | Suzuki | Department of Artificial Intelligence in Diagnostic Radiology, The University of Osaka Graduate School of Medicine | | | |
 | 9 | Masatoshi | Hori | Department of Diagnostic Radiology, The University of Osaka Graduate School of Medicine | | | |
