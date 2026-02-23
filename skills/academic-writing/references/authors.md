@@ -26,5 +26,5 @@
 | 22 | Yonsu | Son | First Department of Internal Medicine, Kansai Medical University | | | |
 | 23 | Hidehiko | Makino | First Department of Internal Medicine, Kansai Medical University | | | |
 | 24 | Yuji | Nozaki | Department of Hematology and Rheumatology, Kindai University School of Medicine | | 0000-0003-2810-1519 | YN has received speaker fees from Astellas Pharma, Asahi Kasei Pharma, Eisai, Eli Lilly, AstraZeneca, and Tanabe Pharma. |
-| 25 | Daisuke | Tomita | Department of Hematology and Rheumatology, Kindai University Faculty of Medicine | | | |
+| 25 | Daisuke | Tomita | Department of Hematology and Rheumatology, Kindai University School of Medicine | | | |
 | 26 | Wataru | Yamamoto | Department of Health Information Management, Kurashiki Sweet Hospital | | | |
