@@ -40,6 +40,7 @@
 - **code-reviewer** — コードレビュー手法。PRレビュー、品質監査、セキュリティ脆弱性検出、リファクタリング提案。
 - **zotero** — Zotero ローカル API + REST API 連携。DOI 一括インポート、コレクション管理、アイテム検索・一覧表示、BibTeX インポート。文献登録・文献管理タスクで参照。
 - **gemini-review** — Gemini CLI でコード・文章をレビュー。「Geminiにも確認」「セカンドオピニオン」で使用。デフォルトモデル: `gemini-3-pro-preview`（要 Preview Features）。
+- **mvp-development** — MVP・個人プロジェクトのWebアプリ開発スタック。Next.js + Supabase + Polar.sh + Vercel構成。新規プロジェクト立ち上げ時に参照。
 
 ### Superpowers（開発ワークフロー）
 - **brainstorming** — 創造的作業前の要件・設計探索。機能追加・コンポーネント作成前に必須。
