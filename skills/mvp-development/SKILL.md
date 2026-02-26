@@ -1,9 +1,6 @@
 ---
 name: mvp-development
-description: >
-  MVP・個人プロジェクトのWebアプリ開発スタック。
-  Next.js + Supabase + Polar.sh + Vercel構成。
-  新規プロジェクト立ち上げ、技術スタック選定、MVP開発時に参照すること。
+description: "MVP・個人プロジェクトのWebアプリ開発スタック。Next.js + Supabase + Polar.sh + Vercel構成。新規プロジェクト立ち上げ、技術スタック選定、MVP開発時に参照。"
 ---
 
 # MVP Development Skill
