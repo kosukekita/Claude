@@ -1,221 +1,75 @@
 ---
 name: mvp-development
-description: "MVP・個人プロジェクトのWebアプリ開発スタック。Next.js + Supabase + Polar.sh + Vercel構成。新規プロジェクト立ち上げ、技術スタック選定、MVP開発時に参照。"
+description: "MVP・個人プロジェクトのWebアプリ開発スタック。Next.js + Supabase + Polar.sh + Vercel構成。新規プロジェクト立ち上げ、技術スタック選定、MVP開発時に参照。Trigger: MVP, 新規プロジェクト, アプリ開発, LP作成, SaaS, Webアプリ, Next.js, Supabase, Vercel, Polar."
 ---
 
-# MVP Development Skill
+# MVP Development
 
-## 技術スタック
+> コード例・テンプレートは `references/code-examples.md` を参照
 
-```
-フレームワーク:  Next.js (App Router)
-UI:             Tailwind CSS + shadcn/ui
-状態管理:        Zustand
-API:            tRPC + Server Actions
-認証:           Supabase Auth
-DB:             Supabase (PostgreSQL)
-課金:           Polar.sh
-デプロイ:        Vercel
-エラー監視:      Sentry
-分析:           PostHog
-```
+## Workflow
 
----
+MVP開発タスクを受けたら、以下のステップで進める:
 
-## 認証: Supabase Auth
+### Step 1: 要件確認
+- サイト種別（SaaS / LP / ダッシュボード / ツール）
+- 認証要否、課金要否
+- 主要機能の特定
 
-自前実装しない。Supabase Authを使う。
+### Step 2: プロジェクト初期化
+- Next.js (App Router) + Tailwind CSS + shadcn/ui
+- Supabase プロジェクト作成・環境変数設定
+- 必要に応じて tRPC, Zustand, Sentry, PostHog 追加
 
-```bash
-npm install @supabase/supabase-js @supabase/ssr
-```
+### Step 3: 実装
+- 以下の技術スタックルールに従って実装
 
-```typescript
-// lib/supabase/client.ts
-import { createBrowserClient } from '@supabase/ssr'
-
-export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-}
-```
-
-```typescript
-// lib/supabase/server.ts
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-
-export async function createClient() {
-  const cookieStore = await cookies()
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll() },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
-}
-```
-
-- OAuthはSupabase Dashboardから有効化
-- Row Level Security (RLS) で認可をDB層に定義
+### Step 4: デプロイ
+- Vercel にデプロイ、環境変数設定
 
 ---
 
-## UI: Tailwind CSS + shadcn/ui
+## 技術スタック（厳守）
 
-```bash
-npx shadcn@latest init
-npx shadcn@latest add button card dialog input label
-```
+| レイヤー | 採用技術 | 禁止事項 |
+|---------|---------|---------|
+| フレームワーク | Next.js (App Router) | Pages Router |
+| UI | Tailwind CSS + shadcn/ui | Raw CSS, CSS Modules |
+| 状態管理 | Zustand | Redux, Recoil |
+| API | tRPC + Server Actions | REST APIをゼロから構築 |
+| 認証 | Supabase Auth | 自前実装, NextAuth |
+| DB | Supabase (PostgreSQL) | ORM (Prisma等) |
+| 課金 | Polar.sh | Stripe直接実装 |
+| デプロイ | Vercel | 他のホスティング |
+| エラー監視 | Sentry | 初日から導入 |
+| 分析 | PostHog | 初日から導入 |
 
-- Raw CSSは書かない。Tailwindのみ
+## 重要ルール
 
----
-
-## 状態管理: Zustand
-
-```typescript
-import { create } from 'zustand'
-
-interface AppState {
-  count: number
-  increment: () => void
-}
-
-export const useAppStore = create<AppState>((set) => ({
-  count: 0,
-  increment: () => set((state) => ({ count: state.count + 1 })),
-}))
-```
-
-- Reduxは使わない
-- サーバー側データ取得はReact Server Componentsで完結
+- **認証**: Supabase Auth のみ。OAuth は Dashboard から有効化。RLS で認可を DB 層に定義
+- **DB**: Supabase Client で操作。スキーマは Dashboard or SQL migrations。`supabase db diff` → `supabase db push`
+- **UI**: shadcn/ui コンポーネント優先。Raw CSS は書かない
+- **サーバーデータ**: React Server Components で取得。クライアント状態のみ Zustand
+- **課金**: Polar.sh でプラン作成 → Checkout URL → Webhook で Supabase に同期
+- **監視**: Sentry + PostHog は初日から入れる（後回しにしない）
+- **環境変数**: Vercel Dashboard で管理。`.env.local` はローカルのみ
 
 ---
 
-## API: tRPC
+## Troubleshooting
 
-- end-to-endの型安全。REST APIをゼロから書かない
-- Server Actionsとの併用可
+### Supabase Auth が動かない
+- `NEXT_PUBLIC_SUPABASE_URL` と `NEXT_PUBLIC_SUPABASE_ANON_KEY` を確認
+- Supabase Dashboard で OAuth プロバイダーの Callback URL を確認
 
----
+### RLS でデータが取得できない
+- RLS ポリシーが有効か確認（`auth.uid()` の条件）
+- Service Role Key はサーバー側のみで使用
 
-## DB: Supabase (PostgreSQL)
+### Polar.sh Webhook が届かない
+- Webhook Secret が一致しているか確認
+- ローカル開発では ngrok 等でトンネリング
 
-Supabase Clientで操作する。ORMは使わない。
-
-```typescript
-// データ取得
-const { data, error } = await supabase
-  .from('posts')
-  .select('*')
-  .eq('user_id', userId)
-
-// データ挿入
-const { data, error } = await supabase
-  .from('posts')
-  .insert({ title: 'Hello', user_id: userId })
-```
-
-- スキーマ管理はSupabase Dashboard or SQL migrations
-- RLSで認証ユーザーに基づくアクセス制御を定義
-- マイグレーションは `supabase db diff` → `supabase db push`
-
----
-
-## 課金: Polar.sh
-
-1. Polar.shでプロダクト・プランを作成
-2. Checkout URLを生成してユーザーに提供
-3. Webhookでサブスクリプション状態をSupabaseに同期
-
-```typescript
-// app/api/polar/webhook/route.ts
-import { Webhooks } from "@polar-sh/nextjs"
-
-export const POST = Webhooks({
-  webhookSecret: process.env.POLAR_WEBHOOK_SECRET!,
-  onPayload: async (payload) => {
-    switch (payload.type) {
-      case "subscription.created":
-      case "subscription.updated":
-        // ユーザーのサブスクリプション状態を更新
-        break
-      case "subscription.canceled":
-        // アクセス権を無効化
-        break
-    }
-  },
-})
-```
-
----
-
-## デプロイ: Vercel
-
-```bash
-vercel deploy --prod
-```
-
-- 環境変数はVercel Dashboardで管理
-
----
-
-## 監視・分析（初日から入れる）
-
-```bash
-npm install @sentry/nextjs && npx @sentry/wizard@latest -i nextjs
-npm install posthog-js
-```
-
----
-
-## 環境変数
-
-```
-NEXT_PUBLIC_SUPABASE_URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY
-SUPABASE_SERVICE_ROLE_KEY
-POLAR_WEBHOOK_SECRET
-POLAR_ACCESS_TOKEN
-SENTRY_DSN
-NEXT_PUBLIC_POSTHOG_KEY
-```
-
----
-
-## CLAUDE.md テンプレート
-
-```markdown
-## Tech Stack
-- Next.js 15 (App Router)
-- Supabase (Auth + PostgreSQL)
-- Tailwind CSS + shadcn/ui
-- tRPC + Zustand
-- Polar.sh for billing
-- Vercel for deployment
-- Sentry + PostHog
-
-## Commands
-- `npm run dev` — 開発サーバー
-- `supabase db push` — マイグレーション適用
-- `vercel deploy --prod` — 本番デプロイ
-
-## Rules
-- 認証はSupabase Auth。自前実装しない
-- DBはSupabase Client。ORMは使わない
-- UIはshadcn/ui。Raw CSS書かない
-- 状態管理はZustand。Redux使わない
-- 課金はPolar.sh
-- Sentry・PostHogは初日から入れる
-```
+### Vercel デプロイ失敗
+- 環境変数が全て設定されているか確認
+- `next build` がローカルで通るか確認
