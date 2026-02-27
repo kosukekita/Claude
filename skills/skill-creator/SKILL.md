@@ -1,13 +1,6 @@
 ---
 name: skill-creator
-description: >
-  Claude用スキルの設計・構築・テスト・改善を支援するワークフロー自動化スキル。
-  ユースケース定義からYAMLフロントマター生成、インストラクション作成、
-  トリガーテスト、イテレーション改善まで一貫してガイド。
-  Use when user wants to create, build, design, or improve Claude skills.
-  Trigger phrases: "スキルを作成", "スキル構築", "skill作成", "新しいスキル",
-  "SKILL.md", "スキルを設計", "スキルを改善", "create skill", "build skill",
-  "design skill", "improve skill", "/skill-creator".
+description: "Claude用スキルの設計・構築・テスト・改善を支援するワークフロー自動化スキル。ユースケース定義からYAMLフロントマター生成、インストラクション作成、トリガーテスト、イテレーション改善まで一貫してガイド。Use when user wants to create, build, design, or improve Claude skills. Trigger phrases: スキルを作成, スキル構築, skill作成, 新しいスキル, SKILL.md, スキルを設計, スキルを改善, create skill, build skill, design skill, improve skill, /skill-creator."
 ---
 
 # Skill Creator

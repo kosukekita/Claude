@@ -1,15 +1,6 @@
 ---
 name: playwright-cli
-description: >
-  Playwright MCP を活用したブラウザ自動化・E2Eテスト・ログイン自動化。
-  Webページのナビゲーション、フォーム入力、スクリーンショット、データ抽出、
-  セッション管理、リクエストモック、トレース、動画録画、汎用ログインフローをカバー。
-  Use when user needs browser automation, web testing, form filling,
-  screenshots, data extraction, or universal login automation.
-  Trigger phrases: "ブラウザ自動化", "E2Eテスト", "スクリーンショット",
-  "フォーム入力", "Webスクレイピング", "playwright", "ブラウザ操作",
-  "ログインテスト", "画面キャプチャ", "ログイン自動化", "SSO", "MFA",
-  "browser automation", "web testing", "login automation", "auth flow".
+description: "Playwright MCP を活用したブラウザ自動化・E2Eテスト・ログイン自動化。Webページのナビゲーション、フォーム入力、スクリーンショット、データ抽出、セッション管理、リクエストモック、トレース、動画録画、汎用ログインフローをカバー。Use when user needs browser automation, web testing, form filling, screenshots, data extraction, or universal login automation. Trigger phrases: ブラウザ自動化, E2Eテスト, スクリーンショット, フォーム入力, Webスクレイピング, playwright, ブラウザ操作, ログインテスト, 画面キャプチャ, ログイン自動化, SSO, MFA, browser automation, web testing, login automation, auth flow."
 allowed-tools: Bash(playwright-cli:*)
 ---
 

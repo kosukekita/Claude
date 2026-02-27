@@ -1,13 +1,6 @@
 ---
 name: google-workspace-cli
-description: >
-  gogcli を活用した Google Workspace CLI 操作。Gmail、Calendar、Drive、Docs、
-  Sheets、Chat、Tasks、Contacts など 15+ サービスをターミナルから操作。
-  Use when user manages Google Workspace services via CLI: email, calendar,
-  documents, spreadsheets, file management, or task automation.
-  Trigger phrases: "Gmail", "Google Calendar", "Google Drive", "Google Docs",
-  "Google Sheets", "メール送信", "予定確認", "ドライブ", "スプレッドシート",
-  "gogcli", "Google Workspace", "gog", "カレンダー予定", "メール検索".
+description: "gogcli を活用した Google Workspace CLI 操作。Gmail、Calendar、Drive、Docs、Sheets、Chat、Tasks、Contacts など 15+ サービスをターミナルから操作。Use when user manages Google Workspace services via CLI: email, calendar, documents, spreadsheets, file management, or task automation. Trigger phrases: Gmail, Google Calendar, Google Drive, Google Docs, Google Sheets, メール送信, 予定確認, ドライブ, スプレッドシート, gogcli, Google Workspace, gog, カレンダー予定, メール検索."
 ---
 
 # Google Workspace CLI (gogcli)

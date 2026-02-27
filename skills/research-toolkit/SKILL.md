@@ -1,14 +1,6 @@
 ---
 name: research-toolkit
-description: >
-  ToolUniverse MCP を活用した科学的データ解析・医学研究ワークフロー。
-  600+ の研究ツール（文献検索・創薬・ゲノミクス・構造生物学等）を統合。
-  Use when user performs literature search, drug discovery, genomics analysis,
-  protein structure prediction, clinical trial search, or biomedical research.
-  Trigger phrases: "論文検索", "PubMed", "文献", "タンパク質", "創薬",
-  "ゲノム", "臨床試験", "UniProt", "ChEMBL", "AlphaFold",
-  "ToolUniverse", "MCP", "研究ツール".
-  NOT for application development (web/mobile/desktop apps).
+description: "ToolUniverse MCP を活用した科学的データ解析・医学研究ワークフロー。600+ の研究ツール（文献検索・創薬・ゲノミクス・構造生物学等）を統合。Use when user performs literature search, drug discovery, genomics analysis, protein structure prediction, clinical trial search, or biomedical research. Trigger phrases: 論文検索, PubMed, 文献, タンパク質, 創薬, ゲノム, 臨床試験, UniProt, ChEMBL, AlphaFold, ToolUniverse, MCP, 研究ツール. NOT for application development (web/mobile/desktop apps)."
 ---
 
 # ToolUniverse Connector

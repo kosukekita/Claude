@@ -1,12 +1,6 @@
 ---
 name: achievement
-description: >
-  喜多洸介（Kosuke Kita）の学術業績（論文・書籍・学会発表・受賞歴・助成金）を
-  管理・参照・出力するスキル。CV作成、業績リスト生成、研究実績の要約に対応。
-  Use when user asks about publications, academic achievements, CV, grants, awards,
-  or research output. Trigger phrases: "業績", "CV", "論文一覧", "発表履歴",
-  "受賞歴", "助成金", "publications", "achievements", "research output",
-  "curriculum vitae", "業績リスト", "学会発表", "研究費".
+description: "喜多洸介（Kosuke Kita）の学術業績（論文・書籍・学会発表・受賞歴・助成金）を管理・参照・出力するスキル。CV作成、業績リスト生成、研究実績の要約に対応。Use when user asks about publications, academic achievements, CV, grants, awards, or research output. Trigger phrases: 業績, CV, 論文一覧, 発表履歴, 受賞歴, 助成金, publications, achievements, research output, curriculum vitae, 業績リスト, 学会発表, 研究費."
 ---
 
 # Achievement

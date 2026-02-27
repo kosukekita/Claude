@@ -1,14 +1,6 @@
 ---
 name: python-rules
-description: >
-  Python コードの記述・実行に関するルールとベストプラクティス。
-  uv による環境管理、PEP 723 インラインスクリプト、PEP 8、
-  PyTorch CUDA選択、エラーハンドリングをガイド。
-  Use when user writes Python code, creates scripts, debugs Python,
-  or runs data analysis with pandas/numpy/scikit-learn/PyTorch.
-  Trigger phrases: "Pythonで", "スクリプト作成", "コード書いて",
-  "uv run", "uv add", "uv", "pandas", "データ処理", "機械学習モデル",
-  "pyproject.toml", ".py", "Python エラー", "デバッグ".
+description: "Python コードの記述・実行に関するルールとベストプラクティス。uv による環境管理、PEP 723 インラインスクリプト、PEP 8、PyTorch CUDA選択、エラーハンドリングをガイド。Use when user writes Python code, creates scripts, debugs Python, or runs data analysis with pandas/numpy/scikit-learn/PyTorch. Trigger phrases: Pythonで, スクリプト作成, コード書いて, uv run, uv add, uv, pandas, データ処理, 機械学習モデル, pyproject.toml, .py, Python エラー, デバッグ."
 ---
 
 # Python Development Rules

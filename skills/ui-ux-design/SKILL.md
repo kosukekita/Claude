@@ -1,15 +1,6 @@
 ---
 name: ui-ux-design
-description: >
-  UI/UXデザインインテリジェンス。67スタイル、96カラーパレット、
-  57フォントペアリング、13テックスタック対応。
-  Use when user requests UI/UX work: design, build, create,
-  implement, review, fix, improve web/mobile interfaces.
-  Trigger phrases: "ランディングページ", "ダッシュボード",
-  "UI設計", "フロントエンド", "React", "Tailwind",
-  "デザインシステム", "カラーパレット", "レスポンシブ",
-  "website", "landing page", "portfolio", "SaaS", "e-commerce".
-  File types: .html, .tsx, .jsx, .vue, .svelte.
+description: "UI/UXデザインインテリジェンス。67スタイル、96カラーパレット、57フォントペアリング、13テックスタック対応。Use when user requests UI/UX work: design, build, create, implement, review, fix, improve web/mobile interfaces. Trigger phrases: ランディングページ, ダッシュボード, UI設計, フロントエンド, React, Tailwind, デザインシステム, カラーパレット, レスポンシブ, website, landing page, portfolio, SaaS, e-commerce. File types: .html, .tsx, .jsx, .vue, .svelte."
 ---
 
 # UI/UX Design Intelligence

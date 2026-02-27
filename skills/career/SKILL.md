@@ -1,13 +1,6 @@
 ---
 name: career
-description: >
-  喜多洸介（Kosuke Kita）の経歴（学歴・職歴）を管理・参照・出力するスキル。
-  CV作成、経歴照会、履歴書フォーマットでの出力に対応。
-  Use when user asks about career history, education, work experience,
-  or curriculum vitae background.
-  Trigger phrases: "経歴", "学歴", "職歴", "履歴", "略歴", "プロフィール",
-  "career", "education", "work experience", "background", "履歴書",
-  "所属", "勤務先", "出身大学".
+description: "喜多洸介（Kosuke Kita）の経歴（学歴・職歴）を管理・参照・出力するスキル。CV作成、経歴照会、履歴書フォーマットでの出力に対応。Use when user asks about career history, education, work experience, or curriculum vitae background. Trigger phrases: 経歴, 学歴, 職歴, 履歴, 略歴, プロフィール, career, education, work experience, background, 履歴書, 所属, 勤務先, 出身大学."
 ---
 
 # Career
