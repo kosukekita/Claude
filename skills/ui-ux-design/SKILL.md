@@ -1,6 +1,6 @@
 ---
 name: ui-ux-design
-description: "UI/UXデザインインテリジェンス。67スタイル、96カラーパレット、57フォントペアリング、13テックスタック対応。Use when user requests UI/UX work: design, build, create, implement, review, fix, improve web/mobile interfaces. Trigger phrases: ランディングページ, ダッシュボード, UI設計, フロントエンド, React, Tailwind, デザインシステム, カラーパレット, レスポンシブ, website, landing page, portfolio, SaaS, e-commerce. File types: .html, .tsx, .jsx, .vue, .svelte."
+description: "UI/UXデザインインテリジェンス。67スタイル、96カラーパレット、57フォントペアリング、13テックスタック、60コンポーネントパターン、95+デザインシステム参照対応。Use when user requests UI/UX work: design, build, create, implement, review, fix, improve web/mobile interfaces or UI components. Trigger phrases: ランディングページ, ダッシュボード, UI設計, フロントエンド, React, Tailwind, デザインシステム, カラーパレット, レスポンシブ, website, landing page, portfolio, SaaS, e-commerce, コンポーネント, accordion, modal, datepicker, drawer, button, tabs, dialog, form, tooltip, card, table, widget. File types: .html, .tsx, .jsx, .vue, .svelte."
 ---
 
 # UI/UX Design Intelligence
@@ -113,6 +113,7 @@ UI/UX タスクを受けたら、以下のステップで進める:
 - コンポーネント単位で分離
 - shadcn/ui を推奨（アクセシビリティ内蔵）
 - `use client` / `use server` の適切な使い分け（Next.js App Router）
+- コンポーネント実装時は `references/design-systems.md` のヘッドレスライブラリを参照
 
 ### Vue / Nuxt
 - Composition API + `<script setup>`
@@ -128,6 +129,29 @@ UI/UX タスクを受けたら、以下のステップで進める:
 ### Flutter
 - Material 3 / Cupertino widgets
 - Theme data で一元管理
+
+---
+
+## COMPONENT IMPLEMENTATION WORKFLOW
+
+UIコンポーネントの実装リクエストを受けたら、以下のステップで進める:
+
+### Step 1: コンポーネント特定
+- `references/components.md` でコンポーネントパターンを特定（エイリアスで表記揺れを吸収）
+- セマンティック HTML 要素と必要な ARIA 属性を確認
+
+### Step 2: リファレンス参照
+- `references/design-systems.md` でユーザーのスタックに最適なデザインシステムを選択
+- 複雑なコンポーネント（Dialog, Data Table, Date Picker 等）は 2-3 の実装を比較
+- 必要に応じて `component.gallery/components/{slug}/` で横断検索
+
+### Step 3: 実装チェックリスト
+- [ ] **セマンティック HTML** — 正しい要素を使用
+- [ ] **ARIA 属性** — roles, states, labels
+- [ ] **キーボードナビゲーション** — Tab, Enter, Escape, Arrow keys
+- [ ] **フォーカス管理** — 可視フォーカスインジケータ、モーダルのフォーカストラップ
+- [ ] **状態** — Default, hover, focus, active, disabled, loading, error
+- [ ] **命名** — 確立されたコンポーネント名を使用（エイリアスは components.md で確認）
 
 ---
 
@@ -242,3 +266,5 @@ WCAG AA 基準（4.5:1）を満たすツールで確認:
 詳細データは以下を参照:
 - `references/styles-catalog.md` — 67スタイル完全一覧 + ダッシュボードスタイル
 - `references/color-typography.md` — カラーパレット + フォントペアリング20選 + チャート推奨
+- `references/components.md` — 60コンポーネントパターン（セマンティックHTML、ARIA、キーボードナビ、複雑度）
+- `references/design-systems.md` — 95+プロダクションデザインシステム（スタック別索引、Best-in-Class一覧）
