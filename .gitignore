@@ -1,7 +1,11 @@
 # Sensitive Data
 .credentials.json
+client_secret_*.json
+mcp-needs-auth-cache.json
 
 # Local State (machine-specific, not for sharing)
+.playwright-cli/
+backups/
 cache/
 debug/
 file-history/
