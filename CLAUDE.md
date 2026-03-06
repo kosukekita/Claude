@@ -34,6 +34,7 @@
 - **zotero** — Zotero ローカル API + REST API 連携。DOI 一括インポート、コレクション管理、アイテム検索・一覧表示、BibTeX インポート。文献登録・文献管理タスクで参照。
 - **gemini-review** — Gemini CLI でコード・文章をレビュー。「Geminiにも確認」「セカンドオピニオン」で使用。デフォルトモデル: `gemini-3-pro-preview`（要 Preview Features）。
 - **mvp-development** — MVP・個人プロジェクトのWebアプリ開発スタック。Next.js + Supabase + Polar.sh + Vercel構成。新規プロジェクト立ち上げ時に参照。
+- **ai-prediction-model** — AI予測モデル開発の全工程ガイド。欠損値補完（FAMD・MICE・MissForest等の比較検証）、特徴量選択、モデル構築（XGBoost/LightGBM/ロジスティック回帰）、評価（AUROC・Calibration・DCA）、解釈性（SHAP）。TRIPOD+AI準拠の報告と連携。
 
 ### Superpowers（開発ワークフロー）
 - **brainstorming** — 創造的作業前の要件・設計探索。機能追加・コンポーネント作成前に必須。
