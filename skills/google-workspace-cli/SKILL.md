@@ -1,11 +1,12 @@
 ---
 name: google-workspace-cli
-description: "gogcli を活用した Google Workspace CLI 操作。Gmail、Calendar、Drive、Docs、Sheets、Chat、Tasks、Contacts など 15+ サービスをターミナルから操作。Use when user manages Google Workspace services via CLI: email, calendar, documents, spreadsheets, file management, or task automation. Trigger phrases: Gmail, Google Calendar, Google Drive, Google Docs, Google Sheets, メール送信, 予定確認, ドライブ, スプレッドシート, gogcli, Google Workspace, gog, カレンダー予定, メール検索."
+description: "Google Workspace 公式 CLI (gws) を活用した Google Workspace 操作。Gmail、Calendar、Drive、Docs、Sheets、Chat、Tasks など全 Google Workspace API をターミナルから操作。MCP サーバー対応、AIエージェントスキル内蔵。Use when user manages Google Workspace services via CLI: email, calendar, documents, spreadsheets, file management, or task automation. Trigger phrases: Gmail, Google Calendar, Google Drive, Google Docs, Google Sheets, メール送信, 予定確認, ドライブ, スプレッドシート, gws, Google Workspace, カレンダー予定, メール検索."
 ---
 
-# Google Workspace CLI (gogcli)
+# Google Workspace CLI (gws)
 
-> Google Workspace サービスをターミナルから操作する CLI ツール。
+> One CLI for all of Google Workspace — built for humans and AI agents.
+> 公式リポジトリ: https://github.com/googleworkspace/cli
 
 ## Workflow
 
@@ -13,211 +14,219 @@ Google Workspace 操作タスクを受けたら、以下のステップで進め
 
 ### Step 1: タスク分類
 
-| タスク種別 | サービス | 主要コマンド |
-|-----------|----------|-------------|
-| **メール** | Gmail | `gog gmail` |
-| **予定管理** | Calendar | `gog calendar` |
-| **ファイル** | Drive | `gog drive` |
-| **文書** | Docs | `gog docs` |
-| **表計算** | Sheets | `gog sheets` |
-| **チャット** | Chat | `gog chat` |
-| **タスク** | Tasks | `gog tasks` |
-| **連絡先** | Contacts/People | `gog contacts`, `gog people` |
-| **フォーム** | Forms | `gog forms` |
-| **グループ** | Groups | `gog groups` |
-| **メモ** | Keep | `gog keep` |
+| タスク種別 | サービス | コマンド例 |
+|-----------|----------|-----------|
+| **メール** | Gmail | `gws gmail users messages list` |
+| **予定管理** | Calendar | `gws calendar events list` |
+| **ファイル** | Drive | `gws drive files list` |
+| **文書** | Docs | `gws docs documents get` |
+| **表計算** | Sheets | `gws sheets spreadsheets values get` |
+| **チャット** | Chat | `gws chat spaces messages create` |
+| **タスク** | Tasks | `gws tasks tasks list` |
+| **連絡先** | People | `gws people people connections list` |
+| **グループ** | Groups | `gws cloudidentity groups list` |
+| **管理** | Admin | `gws admin directory users list` |
 
 ### Step 2: アカウント確認
 
 ```bash
 # 設定済みアカウント一覧
-gog auth list
+gws auth list
 
-# 使用するアカウントを指定
-export GOG_ACCOUNT=you@gmail.com
+# デフォルトアカウント設定
+gws auth default work@corp.com
+
+# コマンドごとに指定
+gws --account personal@gmail.com drive files list
 ```
 
 ### Step 3: コマンド実行
 
-JSON 出力でスクリプティング向け:
+すべての出力は構造化 JSON。`--dry-run` で実行前プレビュー可能:
 ```bash
-gog gmail messages list --json
+gws drive files list --params '{"pageSize": 5}'
+gws drive files list --params '{"pageSize": 5}' --dry-run
 ```
 
 ### Step 4: 結果処理
 
-JSON 出力を `jq` で加工、または `--plain` でタブ区切り出力。
+JSON 出力を `jq` で加工:
+```bash
+gws drive files list --params '{"pageSize": 100}' --page-all | jq -r '.files[].name'
+```
 
 ---
 
 ## インストール
 
 ```bash
-# Homebrew (macOS/Linux)
-brew install steipete/tap/gogcli
+# npm（推奨 — プリビルドバイナリ含む）
+npm install -g @googleworkspace/cli
 
-# Arch Linux
-yay -S gogcli
+# ソースからビルド（Rust ツールチェーン必要）
+cargo install --git https://github.com/googleworkspace/cli --locked
 
-# ソースからビルド
-git clone https://github.com/steipete/gogcli.git
-cd gogcli && make
+# Nix
+nix run github:googleworkspace/cli
 ```
 
 ---
 
 ## 認証セットアップ
 
-### Step 1: OAuth クライアント作成
-
-1. [Google Cloud Console](https://console.cloud.google.com/) にアクセス
-2. `APIs & Services` → `Credentials` → `+ CREATE CREDENTIALS`
-3. `OAuth client ID` → Application type: **Desktop app**
-4. JSON ファイルをダウンロード
-
-### Step 2: 認証情報を登録
+### インタラクティブ OAuth（推奨）
 
 ```bash
-# 認証情報を保存
-gog auth credentials ~/Downloads/client_secret_*.json
+# ガイド付きセットアップ（Cloud プロジェクト設定）
+gws auth setup
 
-# アカウント追加（ブラウザ認証）
-gog auth add you@gmail.com
+# ログイン（全スコープ）
+gws auth login
 
-# ヘッドレス環境の場合
-gog auth add you@gmail.com --manual
+# 特定サービスのみ（テスト用アプリはスコープ上限25）
+gws auth login -s drive,gmail,sheets
 ```
 
-### Step 3: 確認
+### Manual OAuth 設定
+
+1. [Google Cloud Console](https://console.cloud.google.com/) → OAuth consent screen 設定（External / Testing）
+2. **テストユーザーとして自分のアカウントを追加**（必須）
+3. OAuth client ID 作成（Desktop app タイプ）
+4. JSON ダウンロード → `~/.config/gws/client_secret.json` に保存
+
+### マルチアカウント
 
 ```bash
-# アカウント一覧
-gog auth list
-
-# テスト
-export GOG_ACCOUNT=you@gmail.com
-gog gmail labels list
+gws auth login --account work@corp.com
+gws auth login --account personal@gmail.com
+gws auth list
+gws auth default work@corp.com
 ```
+
+### ヘッドレス / CI 環境
+
+```bash
+# ブラウザ環境でエクスポート
+gws auth export --unmasked > credentials.json
+
+# ヘッドレス環境で設定
+export GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE=/path/to/credentials.json
+gws drive files list
+```
+
+### 環境変数
+
+| 変数 | 説明 |
+|------|------|
+| `GOOGLE_WORKSPACE_CLI_TOKEN` | 事前取得の OAuth2 トークン |
+| `GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE` | OAuth / サービスアカウント JSON |
+| `GOOGLE_WORKSPACE_CLI_ACCOUNT` | デフォルトアカウントメール |
+| `GOOGLE_WORKSPACE_CLI_IMPERSONATED_USER` | Domain-Wide 委任用メール |
+| `GOOGLE_WORKSPACE_CLI_CLIENT_ID` | OAuth クライアント ID |
+| `GOOGLE_WORKSPACE_CLI_CLIENT_SECRET` | OAuth クライアントシークレット |
+| `GOOGLE_WORKSPACE_CLI_CONFIG_DIR` | 設定ディレクトリ（デフォルト: `~/.config/gws`） |
+
+---
+
+## コマンド体系
+
+gws は Discovery Service から動的にコマンドを構築する。基本構文:
+
+```
+gws <service> <resource> <method> [--params JSON] [--json JSON] [flags]
+```
+
+スキーマ確認:
+```bash
+gws schema drive.files.list
+```
+
+### 共通フラグ
+
+| フラグ | 説明 |
+|--------|------|
+| `--dry-run` | リクエストをプレビュー（実行しない） |
+| `--page-all` | 全ページ取得（NDJSON） |
+| `--page-limit <N>` | 最大ページ数（デフォルト: 10） |
+| `--page-delay <MS>` | ページ間遅延（デフォルト: 100ms） |
+| `--account <email>` | 使用アカウント指定 |
 
 ---
 
 ## Gmail
 
-### メッセージ操作
-
 ```bash
-# 受信トレイのメッセージ一覧
-gog gmail messages list
+# メッセージ一覧
+gws gmail users messages list --params '{"userId": "me", "maxResults": 10}'
 
 # 未読メッセージ
-gog gmail messages list --query "is:unread"
+gws gmail users messages list --params '{"userId": "me", "q": "is:unread"}'
 
-# 特定の送信者から
-gog gmail messages list --query "from:example@gmail.com"
+# 特定送信者
+gws gmail users messages list --params '{"userId": "me", "q": "from:example@gmail.com"}'
 
-# メッセージ詳細
-gog gmail messages get <message-id>
+# メッセージ取得
+gws gmail users messages get --params '{"userId": "me", "id": "<message-id>"}'
 
-# メール送信
-gog gmail messages send --to recipient@example.com --subject "件名" --body "本文"
+# メール送信（RFC 2822 base64url エンコード）
+gws gmail users messages send --params '{"userId": "me"}' \
+  --json '{"raw": "<base64url-encoded-message>"}'
 
-# 添付ファイル付き
-gog gmail messages send --to recipient@example.com --subject "件名" --body "本文" --attach file.pdf
-```
-
-### ラベル操作
-
-```bash
 # ラベル一覧
-gog gmail labels list
+gws gmail users labels list --params '{"userId": "me"}'
 
-# ラベル作成
-gog gmail labels create "重要/プロジェクトA"
-
-# メッセージにラベル追加
-gog gmail messages modify <message-id> --add-labels "重要"
-```
-
-### 下書き
-
-```bash
 # 下書き一覧
-gog gmail drafts list
-
-# 下書き作成
-gog gmail drafts create --to recipient@example.com --subject "件名" --body "本文"
+gws gmail users drafts list --params '{"userId": "me"}'
 ```
 
 ---
 
 ## Calendar
 
-### 予定操作
-
 ```bash
-# 今日の予定
-gog calendar events list
-
-# 特定期間の予定
-gog calendar events list --from "2025-01-01" --to "2025-01-31"
+# 予定一覧
+gws calendar events list --params '{"calendarId": "primary", "maxResults": 10, "timeMin": "2026-03-06T00:00:00Z"}'
 
 # 予定作成
-gog calendar events create --title "会議" --start "2025-01-15 14:00" --end "2025-01-15 15:00"
+gws calendar events insert --params '{"calendarId": "primary"}' \
+  --json '{"summary": "会議", "start": {"dateTime": "2026-03-07T14:00:00+09:00"}, "end": {"dateTime": "2026-03-07T15:00:00+09:00"}}'
 
 # 終日イベント
-gog calendar events create --title "休暇" --start "2025-01-20" --all-day
+gws calendar events insert --params '{"calendarId": "primary"}' \
+  --json '{"summary": "休暇", "start": {"date": "2026-03-20"}, "end": {"date": "2026-03-21"}}'
 
 # 予定削除
-gog calendar events delete <event-id>
-```
+gws calendar events delete --params '{"calendarId": "primary", "eventId": "<event-id>"}'
 
-### カレンダー管理
-
-```bash
 # カレンダー一覧
-gog calendar calendars list
-
-# 特定カレンダーの予定
-gog calendar events list --calendar "work@group.calendar.google.com"
+gws calendar calendarList list
 ```
 
 ---
 
 ## Drive
 
-### ファイル操作
-
 ```bash
-# ファイル一覧（ルート）
-gog drive files list
+# ファイル一覧
+gws drive files list --params '{"pageSize": 10}'
 
 # フォルダ内のファイル
-gog drive files list --parent <folder-id>
+gws drive files list --params '{"q": "\"<folder-id>\" in parents", "pageSize": 20}'
 
 # ファイル検索
-gog drive files list --query "name contains 'レポート'"
+gws drive files list --params '{"q": "name contains \"レポート\""}'
 
-# ファイルアップロード
-gog drive files upload local-file.pdf
+# ファイルアップロード（マルチパート）
+gws drive files create --json '{"name": "report.pdf"}' --upload ./report.pdf
 
-# 特定フォルダにアップロード
-gog drive files upload local-file.pdf --parent <folder-id>
-
-# ファイルダウンロード
-gog drive files download <file-id> --output local-file.pdf
+# フォルダ作成
+gws drive files create --json '{"name": "新規フォルダ", "mimeType": "application/vnd.google-apps.folder"}'
 
 # ファイル削除
-gog drive files delete <file-id>
-```
+gws drive files delete --params '{"fileId": "<file-id>"}'
 
-### フォルダ操作
-
-```bash
-# フォルダ作成
-gog drive files create --name "新規フォルダ" --type folder
-
-# ファイル移動
-gog drive files move <file-id> --parent <new-folder-id>
+# 全ページ取得
+gws drive files list --params '{"pageSize": 100}' --page-all | jq -r '.files[].name'
 ```
 
 ---
@@ -225,94 +234,36 @@ gog drive files move <file-id> --parent <new-folder-id>
 ## Sheets
 
 ```bash
-# スプレッドシート一覧
-gog sheets list
+# スプレッドシート作成
+gws sheets spreadsheets create --json '{"properties": {"title": "Q1 Budget"}}'
 
-# シートのデータ読み取り
-gog sheets get <spreadsheet-id> --range "Sheet1!A1:D10"
+# セル読み取り（!はシングルクォートで囲む）
+gws sheets spreadsheets values get \
+  --params '{"spreadsheetId": "<id>", "range": "Sheet1!A1:C10"}'
 
 # データ書き込み
-gog sheets update <spreadsheet-id> --range "Sheet1!A1" --values '[["A1", "B1"], ["A2", "B2"]]'
+gws sheets spreadsheets values update \
+  --params '{"spreadsheetId": "<id>", "range": "Sheet1!A1", "valueInputOption": "USER_ENTERED"}' \
+  --json '{"values": [["Name", "Score"], ["Alice", 95]]}'
 
 # 行追加
-gog sheets append <spreadsheet-id> --range "Sheet1" --values '[["新しい行"]]'
+gws sheets spreadsheets values append \
+  --params '{"spreadsheetId": "<id>", "range": "Sheet1!A1", "valueInputOption": "USER_ENTERED"}' \
+  --json '{"values": [["Name", "Score"], ["Alice", 95]]}'
 ```
+
+> **注意**: Sheets 範囲の `!` は bash の履歴展開と競合するため、**単一引用符で囲む**こと。
 
 ---
 
 ## Docs
 
 ```bash
-# ドキュメント一覧
-gog docs list
-
-# ドキュメント内容取得
-gog docs get <document-id>
+# ドキュメント取得
+gws docs documents get --params '{"documentId": "<doc-id>"}'
 
 # ドキュメント作成
-gog docs create --title "新規ドキュメント"
-```
-
----
-
-## Forms
-
-### フォーム作成
-
-```bash
-# フォーム作成（タイトルのみ指定可能）
-gog forms create --title "アンケートフォーム"
-
-# JSON 出力で詳細取得
-gog forms create --title "アンケートフォーム" --json
-```
-
-> **注意**: `--description` オプションはフォーム作成時には使用できません。
-> 説明や質問項目の追加は、作成後に Google Forms API の `batchUpdate` で行う必要があります。
-
-### フォーム取得
-
-```bash
-# フォーム情報を取得
-gog forms get <form-id>
-
-# JSON 出力
-gog forms get <form-id> --json
-```
-
-### 回答操作
-
-```bash
-# 回答一覧
-gog forms responses list <form-id>
-
-# 回答詳細
-gog forms responses get <form-id> <response-id>
-```
-
-### API 有効化
-
-初回使用時は Google Forms API を有効化する必要があります：
-1. Google Cloud Console で対象プロジェクトを開く
-2. `APIs & Services` → `Library` → `Google Forms API` を検索
-3. 「有効にする」をクリック
-
----
-
-## Tasks
-
-```bash
-# タスクリスト一覧
-gog tasks lists list
-
-# タスク一覧
-gog tasks list --list <list-id>
-
-# タスク作成
-gog tasks create --list <list-id> --title "タスク名" --due "2025-01-15"
-
-# タスク完了
-gog tasks complete --list <list-id> --task <task-id>
+gws docs documents create --json '{"title": "新規ドキュメント"}'
 ```
 
 ---
@@ -321,132 +272,113 @@ gog tasks complete --list <list-id> --task <task-id>
 
 ```bash
 # スペース一覧
-gog chat spaces list
+gws chat spaces list
 
 # メッセージ送信
-gog chat messages send --space <space-id> --text "メッセージ"
+gws chat spaces messages create \
+  --params '{"parent": "spaces/<space-id>"}' \
+  --json '{"text": "メッセージ内容"}'
+
+# ドライラン
+gws chat spaces messages create \
+  --params '{"parent": "spaces/<space-id>"}' \
+  --json '{"text": "Deploy complete."}' \
+  --dry-run
 ```
 
 ---
 
-## 出力フォーマット
+## Tasks
 
 ```bash
-# デフォルト: 人間向けテーブル
-gog gmail messages list
+# タスクリスト一覧
+gws tasks tasklists list
 
-# JSON: スクリプティング向け
-gog gmail messages list --json
+# タスク一覧
+gws tasks tasks list --params '{"tasklist": "<tasklist-id>"}'
 
-# プレーン: タブ区切り（パイプ処理向け）
-gog gmail messages list --plain
+# タスク作成
+gws tasks tasks insert --params '{"tasklist": "<tasklist-id>"}' \
+  --json '{"title": "タスク名", "due": "2026-03-15T00:00:00Z"}'
 ```
 
 ---
 
-## 複数アカウント管理
+## MCP サーバー
+
+gws は MCP (Model Context Protocol) サーバーとしても動作する:
 
 ```bash
-# アカウント追加
-gog auth add personal@gmail.com
-gog auth add work@company.com
+# 特定サービスのツールを公開
+gws mcp -s drive,gmail,calendar
 
-# エイリアス設定
-gog auth alias personal personal@gmail.com
-gog auth alias work work@company.com
-
-# アカウント切り替え
-export GOG_ACCOUNT=work
-gog gmail messages list
-
-# コマンドごとに指定
-gog --account personal gmail messages list
+# 全サービス（ツール数が多いので注意）
+gws mcp -s all
 ```
+
+### Claude Desktop 設定例
+
+```json
+{
+  "mcpServers": {
+    "gws": {
+      "command": "gws",
+      "args": ["mcp", "-s", "drive,gmail,calendar"]
+    }
+  }
+}
+```
+
+> 各サービスは約10～80ツールを追加。クライアントのツール上限（通常50～100）を考慮して選択。
 
 ---
 
-## 自動化例
+## Model Armor（セキュリティ）
 
-### 未読メールを JSON で取得して処理
-
-```bash
-gog gmail messages list --query "is:unread" --json | jq '.[] | {id, subject: .payload.headers[] | select(.name=="Subject") | .value}'
-```
-
-### 今日の予定を Slack に投稿
+Google Cloud Model Armor 統合でプロンプトインジェクション検査:
 
 ```bash
-TODAY=$(gog calendar events list --json | jq -r '.[].summary' | tr '\n' ', ')
-curl -X POST -H 'Content-type: application/json' \
-  --data "{\"text\":\"今日の予定: $TODAY\"}" \
-  https://hooks.slack.com/services/xxx
+gws gmail users messages get --params '...' \
+  --sanitize "projects/P/locations/L/templates/T"
 ```
 
-### Drive のファイルを定期バックアップ
-
-```bash
-# バックアップスクリプト
-gog drive files list --query "modifiedTime > '$(date -d '1 day ago' +%Y-%m-%dT%H:%M:%S)'" --json | \
-  jq -r '.[].id' | \
-  xargs -I {} gog drive files download {} --output backup/{}
-```
+環境変数:
+- `GOOGLE_WORKSPACE_CLI_SANITIZE_TEMPLATE`: デフォルトテンプレート
+- `GOOGLE_WORKSPACE_CLI_SANITIZE_MODE`: `warn`（デフォルト）または `block`
 
 ---
 
 ## Troubleshooting
 
-### 認証エラー
+### "Access blocked" または 403 エラー
 
-**症状**: `token expired` または `invalid_grant`
+OAuth アプリがテストモードで、アカウントがテストユーザーリストに未登録。
 
-**対応**:
+**対処**: Google Cloud Console → OAuth consent screen → Test users → アカウント追加。
+
+### "Google hasn't verified this app"
+
+テストモードの標準警告。"Continue" をクリックして続行。
+
+### スコープ不足
+
+**症状**: `insufficient permission`
+
+**対処**: 必要なサービスを指定して再ログイン:
 ```bash
-# トークンをリフレッシュ
-gog auth refresh you@gmail.com
-
-# 再認証
-gog auth add you@gmail.com --force
+gws auth login -s drive,gmail,sheets,calendar
 ```
 
 ### API quota exceeded
 
 **症状**: `429 Too Many Requests`
 
-**対応**:
-- リクエスト間隔を空ける
-- バッチ処理を検討
-- Google Cloud Console で quota を確認
-
-### アカウントが見つからない
-
-**症状**: `account not found`
-
-**対応**:
-```bash
-# 環境変数を確認
-echo $GOG_ACCOUNT
-
-# アカウント一覧を確認
-gog auth list
-
-# 正しいアカウントを設定
-export GOG_ACCOUNT=you@gmail.com
-```
-
-### スコープ不足
-
-**症状**: `insufficient permission`
-
-**対応**:
-```bash
-# 必要なスコープで再認証
-gog auth add you@gmail.com --scopes "gmail.modify,calendar.events"
-```
+**対処**: リクエスト間隔を空ける / `--page-delay` を増やす / Cloud Console で quota 確認。
 
 ---
 
 ## References
 
-- [gogcli GitHub](https://github.com/steipete/gogcli) — ソースコード・ドキュメント
+- [Google Workspace CLI (gws)](https://github.com/googleworkspace/cli) — 公式リポジトリ
 - [Google Workspace APIs](https://developers.google.com/workspace) — API リファレンス
 - [OAuth 2.0 for Desktop Apps](https://developers.google.com/identity/protocols/oauth2/native-app) — 認証ガイド
