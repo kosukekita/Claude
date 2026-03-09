@@ -345,6 +345,13 @@ Author 2: First Name: Kosuke | Last Name: Ebina
 
 ---
 
+## Figure 作成ルール
+
+- **フォントサイズ**: Figure 内の全てのテキスト（軸ラベル、凡例、注釈等）は **20pt 以上** とする
+- **略語**: Figure 内で使用した略語は、全て **Figure Legend（図の説明文）に定義を記載** する
+
+---
+
 ## 投稿前チェックリスト
 
 - [ ] IMRAD 構成に従っている
@@ -359,6 +366,8 @@ Author 2: First Name: Kosuke | Last Name: Ebina
 - [ ] ストレート引用符を使用している
 - [ ] 能動態/受動態がセクションに応じて適切に使用されている
 - [ ] フィラー表現・過度なヘッジングが除去されている
+- [ ] Figure 内のフォントサイズが 20pt 以上である
+- [ ] Figure 内の略語が全て Figure Legend に定義されている
 - [ ] Target journal の投稿規定（word count、reference style 等）に準拠
 - [ ] **AI 研究の場合**: TRIPOD+AI 27 項目チェックリストに準拠している
 - [ ] **AI 研究の場合**: Abstract が TRIPOD+AI for Abstracts 13 項目に準拠している
