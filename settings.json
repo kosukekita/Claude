@@ -6,7 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/auto-pull.ps1\""
+            "command": "powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/auto-pull.ps1\"",
+            "timeout": 30
           }
         ]
       }
@@ -17,10 +18,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/auto-push.ps1\""
+            "command": "powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/auto-push.ps1\"",
+            "timeout": 30
           }
         ]
       }
     ]
-  }
+  },
+  "autoUpdatesChannel": "latest"
 }

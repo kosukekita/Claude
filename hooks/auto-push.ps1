@@ -18,7 +18,7 @@ try {
 
     # 変更されたファイルをステージング（.claude/ 配下のみ）
     # git add は新規ファイル（untracked）も含めてステージする
-    git add CLAUDE.md skills/ hooks/ 2>$null
+    git add CLAUDE.md settings.json skills/ hooks/ 2>$null
 
     # ステージされた変更があるか確認
     $staged = git diff --cached --name-only
