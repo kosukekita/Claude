@@ -38,6 +38,8 @@
 
 16. Kosuke Kita, Takashi Kaito. "Artificial intelligence in spine research: A multimodal perspective beyond imaging". Spine Research. 2025; 1(1): 7-12. https://doi.org/10.1097/br9.0000000000000002
 
+17. Kosuke Kita, Yuki Suzuki, Takashi Fujimoto, Keisuke Uemura, Yoshito Otake, Masayuki Furuya, Yuya Kanie, Tomohiro Wataya, Daiki Nishigaki, Junya Sato, Miyuki Tomiyama, Noriyuki Tomiyama, Seiji Okada, Masatoshi Hori, Takahito Fujimori. "Transformer-based multimodal model for estimation of appendicular lean mass using incomplete chest radiographs and electronic health record". Journal of Translational Medicine. In press.
+
 ---
 
 ## 書籍
