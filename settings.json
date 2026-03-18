@@ -1,5 +1,4 @@
 {
-  "model": "opus",
   "hooks": {
     "SessionStart": [
       {
@@ -26,5 +25,6 @@
       }
     ]
   },
-  "autoUpdatesChannel": "latest"
+  "autoUpdatesChannel": "latest",
+  "effortLevel": "high"
 }
