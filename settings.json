@@ -32,7 +32,9 @@
     "defaultMode": "dontAsk",
     "allow": [
       "WebFetch",
-      "Edit"
+      "Edit",
+      "Bash",
+      "Write"
     ]
   },
   "skipDangerousModePermissionPrompt": true
