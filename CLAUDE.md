@@ -35,6 +35,7 @@
 - **gemini-review** — Gemini CLI でコード・文章をレビュー。「Geminiにも確認」「セカンドオピニオン」で使用。デフォルトモデル: `gemini-3-pro-preview`（要 Preview Features）。
 - **mvp-development** — MVP・個人プロジェクトのWebアプリ開発スタック。Next.js + Supabase + Polar.sh + Vercel構成。新規プロジェクト立ち上げ時に参照。
 - **ai-prediction-model** — AI予測モデル開発の全工程ガイド。欠損値補完（FAMD・MICE・MissForest等の比較検証）、特徴量選択、モデル構築（XGBoost/LightGBM/ロジスティック回帰）、評価（AUROC・Calibration・DCA）、解釈性（SHAP）。TRIPOD+AI準拠の報告と連携。
+- **alphaxiv** — alphaXiv MCPサーバー経由でarXiv論文を検索・取得・Q&A。意味的類似度検索・フルテキスト検索・論文全文取得・PDF Q&A・論文GitHubコード取得に対応。arXiv検索・文献調査・先行研究調査（ML/CS分野）で参照。
 - **make-poster** — 学術論文からカンファレンスポスターを自動生成（HTML/PDF）。Overleafソース＋プロジェクトWebサイトからコンテンツ抽出、React製インタラクティブエディタ、Playwright自動レイアウト最適化。`/make-poster` で起動。
 
 ### Superpowers（開発ワークフロー）
