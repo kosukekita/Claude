@@ -25,6 +25,7 @@
       }
     ]
   },
+  "model": "opusplan",
   "autoUpdatesChannel": "latest",
   "effortLevel": "high"
 }
