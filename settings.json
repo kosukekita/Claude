@@ -27,5 +27,22 @@
   },
   "model": "opusplan",
   "autoUpdatesChannel": "latest",
-  "effortLevel": "high"
+  "effortLevel": "high",
+  "permissions": {
+    "allow": [
+      "Bash",
+      "Read",
+      "Edit",
+      "Write",
+      "WebFetch",
+      "WebSearch",
+      "mcp__tooluniverse-osteo"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(sudo *)",
+      "Bash(del /s *)",
+      "Bash(format *)"
+    ]
+  }
 }
