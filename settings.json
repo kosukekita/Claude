@@ -29,7 +29,11 @@
   "autoUpdatesChannel": "latest",
   "effortLevel": "high",
   "permissions": {
-    "defaultMode": "dontAsk"
+    "defaultMode": "dontAsk",
+    "allow": [
+      "WebFetch",
+      "Edit"
+    ]
   },
   "skipDangerousModePermissionPrompt": true
 }
