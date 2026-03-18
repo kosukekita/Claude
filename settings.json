@@ -29,7 +29,7 @@
   "autoUpdatesChannel": "latest",
   "effortLevel": "high",
   "permissions": {
-    "defaultMode": "bypassPermissions"
+    "defaultMode": "dontAsk"
   },
   "skipDangerousModePermissionPrompt": true
 }
