@@ -19,7 +19,7 @@
 - **ui-ux-design** — UI/UX デザイン・フロントエンド実装（ランディングページ、ダッシュボード、Webアプリ等）で参照。67スタイル・カラーパレット・フォントペアリングの知識を含む。
 - **academic-writing** — 医学・学術論文の執筆支援（構成・文体・引用形式・AI文体除去18パターン・投稿先ジャーナル推薦）。論文執筆・原稿改善・投稿先選定タスクで参照。
 - **skill-creator** — Claude用スキルの設計・構築・テスト・改善を支援。**スキルの新規作成・編集時は必ずこのスキルを呼び出すこと。**
-- **playwright-cli** — Playwright MCP を活用したブラウザ自動化・E2Eテスト。セッション管理、ストレージ状態、リクエストモック、トレース、動画録画をカバー。
+- **browser-automation** — ブラウザ自動化の統合スキル。Playwright モード（新規ブラウザ起動でE2Eテスト・スクレイピング・フォーム操作・ログイン自動化）と Chrome CDP モード（ライブChromeセッション接続でデバッグ・既存ログイン活用・ページ検査）を提供。
 - **SEO/GEO 関連** — `seo`（監査・テクニカル・オンページ・E-E-A-T）、`seo-plan`（戦略・ロードマップ）、`seo-geo`（AI検索最適化・AI Overviews・Perplexity）、`seo-competitor-pages`（X vs Y・代替製品ページ）、`seo-hreflang`（多言語・多地域）、`seo-images`（画像最適化）、`seo-programmatic`（大規模データ駆動ページ）、`gsc-analytics`（Search Console分析・インデックス管理）
 - **google-workspace-cli** — Google Workspace 公式 CLI (gws) を活用した全 Google Workspace API 操作。Gmail、Calendar、Drive、Docs、Sheets、Chat、Tasks 等をターミナルから操作。MCP サーバー対応。
 - **achievement** — 喜多洸介の学術業績（論文・書籍・学会発表・受賞歴・助成金）の管理・参照・出力。CV作成、業績リスト生成、科研費様式など各種フォーマットでの出力に対応。
