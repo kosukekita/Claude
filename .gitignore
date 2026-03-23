@@ -3,6 +3,9 @@
 client_secret_*.json
 mcp-needs-auth-cache.json
 
+# Nested .claude (prevent .claude/.claude)
+.claude/
+
 # Local State (machine-specific, not for sharing)
 .playwright-cli/
 backups/
