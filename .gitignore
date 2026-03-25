@@ -24,3 +24,6 @@ todos/
 plugins/
 memory/
 statsig/
+nul
+sessions/
+downloads/*.exe
