@@ -152,6 +152,7 @@ from reportlab.graphics import renderPM
 from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
+from pptx.oxml.ns import qn
 
 # カラー定数
 COLOR_BG         = RGBColor(0xF9, 0xF9, 0xF9)
@@ -191,7 +192,11 @@ def apply_font(run, size_pt: int, bold=False, color=COLOR_TEXT):
     run.font.size  = Pt(size_pt)
     run.font.bold  = bold
     run.font.color.rgb = color
-    # 日本語: PowerPoint が Meiryo にフォールバック
+    # 日本語フォントを明示設定
+    rPr = run._r.get_or_add_rPr()
+    ea = rPr.makeelement(qn("a:ea"), {})
+    ea.set("typeface", "Meiryo")
+    rPr.append(ea)
 ```
 
 ### アイコン挿入（theSVG）
