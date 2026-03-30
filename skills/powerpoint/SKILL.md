@@ -104,6 +104,36 @@ description: >
 - 1スライドに図表は原則1つ（比較時は最大2つ）
 - 強調したいデータポイントにはアクセント色（`#FEDA16`）を使用
 
+## アイコン（theSVG）
+
+スライドにアイコンを挿入する場合は [theSVG](https://github.com/glincker/thesvg)（5,600+ SVG アイコン）を使用する。
+
+### CDN URL パターン
+
+```
+https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/{slug}/{variant}.svg
+```
+
+### バリアント選択ルール
+
+全アイコンに共通で存在するバリアントは `default`（ブランドカラー）と `mono`（単色）。`dark`/`light` は一部アイコンのみ。
+
+| 背景色 | 推奨バリアント | フォールバック |
+|--------|--------------|--------------|
+| `#F9F9F9`（通常スライド） | `default` | `mono` |
+| `#00337D`（セクション区切り） | `light`（あれば） | `default` |
+| ブランド表現が必要 | `default` | — |
+
+### 基本的な使い方
+
+1. CDN から SVG を取得
+2. svglib + reportlab で PNG に変換（python-pptx は SVG 非対応）
+3. `slide.shapes.add_picture()` で挿入
+
+ヘルパー関数 `add_icon()` / `add_icon_safe()` は下記「python-pptx 実装ガイド」を参照。
+
+アイコン検索 API、カテゴリ一覧、よく使うアイコン → `references/thesvg-icons.md`
+
 ## python-pptx 実装ガイド
 
 ### 基本セットアップ（PEP 723 インラインスクリプト）
@@ -111,8 +141,14 @@ description: >
 ```python
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["python-pptx"]
+# dependencies = ["python-pptx", "svglib", "reportlab", "requests"]
 # ///
+import io
+import os
+import tempfile
+import requests
+from svglib.svglib import svg2rlg
+from reportlab.graphics import renderPM
 from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
@@ -125,6 +161,9 @@ COLOR_MAIN       = RGBColor(0x00, 0x4B, 0xB1)
 COLOR_MAIN_LIGHT = RGBColor(0xE3, 0xF2, 0xFD)
 COLOR_ACCENT     = RGBColor(0xFE, 0xDA, 0x16)
 COLOR_NOTE       = RGBColor(0x66, 0x66, 0x66)
+
+# theSVG CDN
+THESVG_CDN = "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons"
 ```
 
 ### スライドサイズ（16:9）
@@ -155,6 +194,47 @@ def apply_font(run, size_pt: int, bold=False, color=COLOR_TEXT):
     # 日本語: PowerPoint が Meiryo にフォールバック
 ```
 
+### アイコン挿入（theSVG）
+
+```python
+def add_icon(slide, slug: str, left, top, width, *,
+             variant: str = "default", height=None):
+    """theSVG アイコンを PNG 変換してスライドに挿入する。
+
+    Args:
+        slug: アイコン名（例: "python", "aws", "docker"）
+        variant: "default" | "mono" | "dark" | "light" | "wordmark"
+                 全アイコン共通: default, mono。dark/light は一部のみ。
+    """
+    url = f"{THESVG_CDN}/{slug}/{variant}.svg"
+    resp = requests.get(url, timeout=10)
+    resp.raise_for_status()
+    with tempfile.NamedTemporaryFile(suffix=".svg", delete=False, mode="wb") as f:
+        f.write(resp.content)
+        svg_path = f.name
+    try:
+        drawing = svg2rlg(svg_path)
+        if drawing is None:
+            raise ValueError(f"SVG parse failed: {slug}/{variant}")
+        png_data = renderPM.drawToString(drawing, fmt="PNG", dpi=150)
+        slide.shapes.add_picture(io.BytesIO(png_data), left, top, width, height)
+    finally:
+        os.unlink(svg_path)
+
+
+def add_icon_safe(slide, slug, left, top, width, *,
+                  variant="default", height=None, fallback_text=None):
+    """エラー時にフォールバックテキストを挿入するラッパー。"""
+    try:
+        add_icon(slide, slug, left, top, width,
+                 variant=variant, height=height)
+    except Exception as e:
+        print(f"[WARN] アイコン挿入失敗 ({slug}/{variant}): {e}")
+        if fallback_text:
+            txBox = slide.shapes.add_textbox(left, top, width, width)
+            txBox.text_frame.paragraphs[0].text = fallback_text
+```
+
 ## 完了チェックリスト
 
 ### デザイン
@@ -173,6 +253,11 @@ def apply_font(run, size_pt: int, bold=False, color=COLOR_TEXT):
 - [ ] 図表の軸ラベル・凡例が18pt以上
 - [ ] 専門用語に適切な説明がある
 - [ ] スライド枚数が発表時間に対して適切
+
+### アイコン（使用時のみ）
+- [ ] バリアント選択が背景色と一致している（明背景→dark、暗背景→light）
+- [ ] アイコンサイズが同一スライド内で統一されている
+- [ ] ネットワークエラー時のフォールバック（`add_icon_safe`）がある
 
 ### 技術
 - [ ] Marp を使っていない（python-pptx で生成）
