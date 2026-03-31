@@ -39,7 +39,7 @@ https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/{slug}/{variant}.s
 | カテゴリ | 内容 | 代表的なアイコン |
 |---------|------|----------------|
 | AI | AI/ML ツール | openai, huggingface, pytorch, tensorflow |
-| Cloud | クラウドプラットフォーム | aws, gcp, azure |
+| Cloud | クラウドプラットフォーム | aws, google-cloud, microsoft-azure |
 | Database | データベース | postgresql, mongodb, redis, mysql |
 | Language | プログラミング言語 | python, javascript, rust, go, r |
 | Framework | フレームワーク | react, nextjs, django, flask |
@@ -70,8 +70,8 @@ https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/{slug}/{variant}.s
 | `docker` | Docker | 再現性環境の説明 |
 | `github` | GitHub | コード共有・バージョン管理 |
 | `aws` | AWS | クラウドインフラ |
-| `gcp` | Google Cloud | クラウドインフラ |
-| `azure` | Azure | クラウドインフラ |
+| `google-cloud` | Google Cloud | クラウドインフラ |
+| `microsoft-azure` | Microsoft Azure | クラウドインフラ |
 | `linux` | Linux | サーバー環境 |
 
 ### 研究関連
@@ -119,58 +119,51 @@ for i, (slug, label) in enumerate(items):
     apply_font(p.runs[0], 18)
 ```
 
-## SVG→PNG 変換ライブラリ
+## SVG→PNG 変換
 
-### メイン: svglib + reportlab（推奨）
+### メイン: svglib + reportlab + Pillow（推奨）
 
 Windows でネイティブに動作する。SKILL.md のヘルパー関数で使用。
 
 ```python
-# dependencies = ["python-pptx", "svglib", "reportlab", "requests"]
+# dependencies = ["python-pptx", "svglib", "reportlab", "requests", "Pillow", "lxml"]
 ```
 
-### 代替: cairosvg（高品質だが Windows でセットアップが必要）
+**変換パイプライン（SKILL.md に完全実装あり）:**
+1. `_preprocess_svg`: lxml で SVG を前処理（viewBox→width/height、グラデーション→固定色、currentColor→#000000）
+2. `svg2rlg` + `renderPM`: PNG レンダリング（Drawing サイズ正規化付き）
+3. Pillow 後処理: 白色ピクセル (R>245,G>245,B>245) を透過に変換
 
-cairosvg は内部で cairo ライブラリを使用する。Windows では追加セットアップが必要:
+### 代替: cairosvg（Windows でセットアップが必要）
 
-1. **GTK3 Runtime** をインストール（最も簡単）
-2. **conda 経由**: `conda install -c conda-forge cairosvg`
-3. **MSYS2 経由**: `pacman -S mingw-w64-x86_64-cairo`
-
-cairosvg 版のヘルパー:
-```python
-# dependencies = ["python-pptx", "cairosvg", "requests"]
-import cairosvg
-
-def add_icon_cairo(slide, slug, left, top, width, *,
-                   variant="default", height=None):
-    url = f"{THESVG_CDN}/{slug}/{variant}.svg"
-    resp = requests.get(url, timeout=10)
-    resp.raise_for_status()
-    png_bytes = cairosvg.svg2png(bytestring=resp.content, output_width=512)
-    slide.shapes.add_picture(io.BytesIO(png_bytes), left, top, width, height)
-```
+cairo DLL が必要。GTK3 Runtime / conda / MSYS2 でインストール。グラデーション・透過を正しく処理できるが、環境構築が煩雑。
 
 ## トラブルシューティング
 
 ### アイコンが見つからない (404)
 
 - slug のスペルを確認（ハイフン区切り、小文字）
-- API で検索して正しい slug を特定: `https://thesvg.org/api/icons?q={keyword}`
-- バリアントが存在しない場合は `default` を試す
+- **よくある間違い**: `azure` → 正しくは `microsoft-azure`、`gcp` → 正しくは `google-cloud`
+- API で検索: `https://thesvg.org/api/icons?q={keyword}`
+- バリアントが存在しない場合は `default` を試す（`default` と `mono` のみ全アイコン共通）
 
-### PNG 変換後の品質が低い
+### アイコンの白背景が残る
 
-- `output_width` を 1024 に上げる: `cairosvg.svg2png(bytestring=svg, output_width=1024)`
-- アイコンサイズが大きい場合（2インチ以上）は `output_width=1024` 推奨
+**原因**: renderPM は常に RGB モードで出力する（`_renderPM_backendFmt = "ARGB32"` は無視される）
+**対策**: Pillow で白→透過変換が必須。SKILL.md の `add_icon()` に実装済み
+
+### アイコンが途切れる・クロッピングされる
+
+**原因**: SVG に width/height 属性がなく viewBox のみ。svg2rlg がサイズを誤解釈
+**対策**: `_preprocess_svg` で viewBox から width/height を自動補完
+
+### グラデーションが欠落する（色が表示されない）
+
+**原因**: svglib は `fill="url(#id)"` を処理できない
+**対策**: `_preprocess_svg` で linearGradient/radialGradient の先頭 stop-color を抽出し、固定色に置換
 
 ### ネットワークエラー
 
 - CDN URL の到達性を確認
 - プロキシ環境では `requests.get(url, proxies={"https": "..."})` を設定
 - `add_icon_safe()` でフォールバックテキストを設定しておく
-
-### cairosvg インストールエラー（Windows）
-
-- `pip install cairosvg` で cairocffi がインストールされるが cairo DLL が見つからない場合がある
-- 上記「Windows での cairosvg セットアップ」を参照

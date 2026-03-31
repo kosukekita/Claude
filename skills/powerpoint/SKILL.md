@@ -15,6 +15,9 @@ description: >
 - **Marp 使用禁止**: スライド作成に Marp は使用しない。python-pptx で直接 .pptx を生成すること。
 - **python-rules スキルを参照**: Python 実行環境は uv + PEP 723 インラインスクリプトで管理。
 - **1スライド1メッセージ**: 各スライドに伝えたいメッセージは1つに絞る。
+- **フォントサイズ厳守**: タイトル50pt / 見出し35pt / 本文25pt / 注釈18pt。情報量が多くても18pt未満にしない。情報を減らすか複数スライドに分割する。
+- **日本語フォント明示必須**: `apply_font` で `a:ea` 要素による Meiryo 設定を必ず行う。`run.font.name` だけでは日本語に適用されない。
+- **アイコンは `add_icon_safe` を使う**: ネットワークエラー・SVG 解析失敗に備え、必ず `add_icon_safe`（フォールバック付き）を使用する。
 
 ## デザイン設定
 
@@ -124,13 +127,26 @@ https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/{slug}/{variant}.s
 | `#00337D`（セクション区切り） | `light`（あれば） | `default` |
 | ブランド表現が必要 | `default` | — |
 
-### 基本的な使い方
+### SVG→PNG 変換パイプライン
+
+python-pptx は SVG 非対応のため、以下のパイプラインで変換する:
 
 1. CDN から SVG を取得
-2. svglib + reportlab で PNG に変換（python-pptx は SVG 非対応）
-3. `slide.shapes.add_picture()` で挿入
+2. **SVG 前処理** (`_preprocess_svg`): viewBox→width/height 補完、グラデーション→固定色変換、currentColor 置換
+3. **svglib→reportlab** で PNG レンダリング（サイズ正規化付き）
+4. **Pillow 後処理**: 白色ピクセルを透過 (alpha=0) に変換
+5. `slide.shapes.add_picture()` で挿入
 
-ヘルパー関数 `add_icon()` / `add_icon_safe()` は下記「python-pptx 実装ガイド」を参照。
+ヘルパー関数 `_preprocess_svg()` / `add_icon()` / `add_icon_safe()` は下記「python-pptx 実装ガイド」を参照。
+
+### SVG 変換の既知制限
+
+| 問題 | 原因 | 対策（`_preprocess_svg` で自動処理） |
+|------|------|------|
+| 白背景が残る | renderPM が RGB モードで出力 | Pillow で白→透過変換 |
+| アイコンが途切れる | SVG に width/height 属性がない | viewBox から自動補完 |
+| グラデーションが欠落 | svglib が `url(#id)` 非対応 | 先頭 stop-color で固定色置換 |
+| currentColor が黒一色 | svglib が CSS 変数未対応 | `#000000` に置換 |
 
 アイコン検索 API、カテゴリ一覧、よく使うアイコン → `references/thesvg-icons.md`
 
@@ -327,9 +343,14 @@ def add_icon_safe(slide, slug, left, top, width, *,
 - [ ] スライド枚数が発表時間に対して適切
 
 ### アイコン（使用時のみ）
-- [ ] バリアント選択が背景色と一致している（明背景→dark、暗背景→light）
+- [ ] `add_icon_safe` を使用している（`add_icon` 直接呼び出しは禁止）
+- [ ] `_preprocess_svg` で SVG 前処理している（グラデーション・viewBox 対策）
+- [ ] Pillow で白→透過変換している（renderPM は RGB 出力のため必須）
+- [ ] バリアント選択が背景色と一致している（通常→default、暗背景→light）
 - [ ] アイコンサイズが同一スライド内で統一されている
-- [ ] ネットワークエラー時のフォールバック（`add_icon_safe`）がある
+- [ ] フォールバックテキストが設定されている
 
 ### 技術
 - [ ] Marp を使っていない（python-pptx で生成）
+- [ ] `apply_font` で `a:ea` 要素を設定している（日本語フォント）
+- [ ] フォントサイズが 18pt 未満になっていない
