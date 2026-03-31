@@ -209,14 +209,38 @@ def _preprocess_svg(svg_bytes: bytes) -> bytes:
 
     - viewBox から width/height を補完（欠損時）
     - currentColor を #000000 に置換
+    - linearGradient の fill="url(#id)" を先頭 stop-color に置換
     """
+    SVG_NS = "http://www.w3.org/2000/svg"
     root = etree.fromstring(svg_bytes)
+    # viewBox → width/height 補完
     vb = root.get("viewBox")
     if vb and not root.get("width"):
         parts = vb.split()
         if len(parts) == 4:
             root.set("width", parts[2])
             root.set("height", parts[3])
+    # gradient id → 先頭 stop-color マッピング構築
+    grad_colors = {}
+    for grad in root.iter(f"{{{SVG_NS}}}linearGradient",
+                          f"{{{SVG_NS}}}radialGradient"):
+        gid = grad.get("id")
+        if not gid:
+            continue
+        for stop in grad.iter(f"{{{SVG_NS}}}stop"):
+            sc = stop.get("stop-color")
+            if sc:
+                grad_colors[gid] = sc
+                break
+        else:
+            grad_colors[gid] = "none"  # opacity-only gradient -> transparent
+    # fill="url(#id)" → 固定色に置換
+    for elem in root.iter():
+        fill = elem.get("fill", "")
+        if fill.startswith("url(#") and fill.endswith(")"):
+            ref = fill[5:-1]
+            if ref in grad_colors:
+                elem.set("fill", grad_colors[ref])
     svg_str = etree.tostring(root, encoding="unicode")
     svg_str = svg_str.replace("currentColor", "#000000")
     return svg_str.encode("utf-8")
