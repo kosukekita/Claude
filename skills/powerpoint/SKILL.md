@@ -141,15 +141,16 @@ https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/{slug}/{variant}.s
 ```python
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["python-pptx", "svglib", "reportlab", "requests"]
+# dependencies = ["python-pptx", "svglib", "reportlab", "requests", "Pillow", "lxml"]
 # ///
 import io
 import os
 import tempfile
 import requests
+from lxml import etree
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
-from reportlab.lib.colors import toColor
+from PIL import Image
 from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
@@ -200,12 +201,35 @@ def apply_font(run, size_pt: int, bold=False, color=COLOR_TEXT):
     rPr.append(ea)
 ```
 
+### SVG 前処理
+
+```python
+def _preprocess_svg(svg_bytes: bytes) -> bytes:
+    """SVG を svg2rlg 向けに整形する。
+
+    - viewBox から width/height を補完（欠損時）
+    - currentColor を #000000 に置換
+    """
+    root = etree.fromstring(svg_bytes)
+    vb = root.get("viewBox")
+    if vb and not root.get("width"):
+        parts = vb.split()
+        if len(parts) == 4:
+            root.set("width", parts[2])
+            root.set("height", parts[3])
+    svg_str = etree.tostring(root, encoding="unicode")
+    svg_str = svg_str.replace("currentColor", "#000000")
+    return svg_str.encode("utf-8")
+```
+
 ### アイコン挿入（theSVG）
 
 ```python
 def add_icon(slide, slug: str, left, top, width, *,
              variant: str = "default", height=None):
     """theSVG アイコンを透過 PNG に変換してスライドに挿入する。
+
+    パイプライン: SVG前処理 → svg2rlg → サイズ正規化 → PNG生成 → 白→透過変換 → 挿入
 
     Args:
         slug: アイコン名（例: "python", "aws", "docker"）
@@ -215,24 +239,33 @@ def add_icon(slide, slug: str, left, top, width, *,
     url = f"{THESVG_CDN}/{slug}/{variant}.svg"
     resp = requests.get(url, timeout=10)
     resp.raise_for_status()
+    # SVG 前処理（viewBox→width/height 補完、currentColor 置換）
+    processed = _preprocess_svg(resp.content)
     with tempfile.NamedTemporaryFile(suffix=".svg", delete=False, mode="wb") as f:
-        f.write(resp.content)
+        f.write(processed)
         svg_path = f.name
     try:
         drawing = svg2rlg(svg_path)
         if drawing is None:
             raise ValueError(f"SVG parse failed: {slug}/{variant}")
-        # Drawing サイズを正規化（viewBox のみの SVG 対策）
+        # Drawing サイズを正規化（高解像度化）
         if drawing.width and drawing.height:
             scale = 200 / max(drawing.width, drawing.height)
             drawing.width *= scale
             drawing.height *= scale
             drawing.scale(scale, scale)
-        # 透過背景で PNG 生成（ReportLab 4.2.0+）
-        drawing._renderPM_backendFmt = "ARGB32"
-        drawing._renderPM_bg = toColor("white").clone(alpha=0)
+        # PNG 生成 → Pillow で白背景を透過に変換
         png_data = renderPM.drawToString(drawing, fmt="PNG", dpi=150)
-        slide.shapes.add_picture(io.BytesIO(png_data), left, top, width, height)
+        img = Image.open(io.BytesIO(png_data)).convert("RGBA")
+        pixels = img.load()
+        for y in range(img.height):
+            for x in range(img.width):
+                r, g, b, a = pixels[x, y]
+                if r > 245 and g > 245 and b > 245:
+                    pixels[x, y] = (r, g, b, 0)
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        slide.shapes.add_picture(io.BytesIO(buf.getvalue()), left, top, width, height)
     finally:
         os.unlink(svg_path)
 
