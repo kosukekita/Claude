@@ -149,6 +149,7 @@ import tempfile
 import requests
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
+from reportlab.lib.colors import toColor
 from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
@@ -204,7 +205,7 @@ def apply_font(run, size_pt: int, bold=False, color=COLOR_TEXT):
 ```python
 def add_icon(slide, slug: str, left, top, width, *,
              variant: str = "default", height=None):
-    """theSVG アイコンを PNG 変換してスライドに挿入する。
+    """theSVG アイコンを透過 PNG に変換してスライドに挿入する。
 
     Args:
         slug: アイコン名（例: "python", "aws", "docker"）
@@ -221,6 +222,15 @@ def add_icon(slide, slug: str, left, top, width, *,
         drawing = svg2rlg(svg_path)
         if drawing is None:
             raise ValueError(f"SVG parse failed: {slug}/{variant}")
+        # Drawing サイズを正規化（viewBox のみの SVG 対策）
+        if drawing.width and drawing.height:
+            scale = 200 / max(drawing.width, drawing.height)
+            drawing.width *= scale
+            drawing.height *= scale
+            drawing.scale(scale, scale)
+        # 透過背景で PNG 生成（ReportLab 4.2.0+）
+        drawing._renderPM_backendFmt = "ARGB32"
+        drawing._renderPM_bg = toColor("white").clone(alpha=0)
         png_data = renderPM.drawToString(drawing, fmt="PNG", dpi=150)
         slide.shapes.add_picture(io.BytesIO(png_data), left, top, width, height)
     finally:
