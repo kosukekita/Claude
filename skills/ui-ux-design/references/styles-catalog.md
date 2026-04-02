@@ -1,10 +1,10 @@
 # UI Styles Catalog
 
-> 67 の UI スタイル + 8 ランディングページスタイル + 10 BI/ダッシュボードスタイル
+> 68 の UI スタイル + 8 ランディングページスタイル + 10 BI/ダッシュボードスタイル
 
 ---
 
-## General Styles (49)
+## General Styles (50)
 
 | # | Style | Best For |
 |---|-------|---------|
@@ -57,6 +57,11 @@
 | 47 | Editorial Grid / Magazine | News sites, blogs, magazines |
 | 48 | Chromatic Aberration / RGB Split | Music platforms, gaming, tech |
 | 49 | Vintage Analog / Retro Film | Photography, music/vinyl brands |
+| 50 | Nothing / Monochrome Industrial | Developer tools, dashboards, technical products, hardware apps |
+
+> **#50 Nothing / Monochrome Industrial**: Swiss-influenced monochrome system. Subtract-first philosophy.
+> Type-driven hierarchy (Doto display / Space Grotesk body / Space Mono data). No gradients, no shadows, no blur.
+> Red (#D71921) as sole accent — signal, not decoration. Full spec: `references/nothing-design.md`
 
 ---
 

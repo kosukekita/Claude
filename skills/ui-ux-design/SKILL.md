@@ -1,6 +1,6 @@
 ---
 name: ui-ux-design
-description: "UI/UXデザインインテリジェンス。67スタイル、96カラーパレット、57フォントペアリング、13テックスタック、60コンポーネントパターン、95+デザインシステム参照対応。Use when user requests UI/UX work: design, build, create, implement, review, fix, improve web/mobile interfaces or UI components. Trigger phrases: ランディングページ, ダッシュボード, UI設計, フロントエンド, React, Tailwind, デザインシステム, カラーパレット, レスポンシブ, website, landing page, portfolio, SaaS, e-commerce, コンポーネント, accordion, modal, datepicker, drawer, button, tabs, dialog, form, tooltip, card, table, widget. File types: .html, .tsx, .jsx, .vue, .svelte."
+description: "UI/UXデザインインテリジェンス。68スタイル、96カラーパレット、59フォントペアリング、13テックスタック、60コンポーネントパターン、95+デザインシステム参照対応。Use when user requests UI/UX work: design, build, create, implement, review, fix, improve web/mobile interfaces or UI components. Trigger phrases: ランディングページ, ダッシュボード, UI設計, フロントエンド, React, Tailwind, デザインシステム, カラーパレット, レスポンシブ, website, landing page, portfolio, SaaS, e-commerce, コンポーネント, accordion, modal, datepicker, drawer, button, tabs, dialog, form, tooltip, card, table, widget, Nothing style, Nothing design, monochrome industrial, モノクロ. File types: .html, .tsx, .jsx, .vue, .svelte."
 ---
 
 # UI/UX Design Intelligence
@@ -25,6 +25,12 @@ UI/UX タスクを受けたら、以下のステップで進める:
 3. **Colors** — カラーパレット（詳細は `references/color-typography.md`）
 4. **Typography** — フォントペアリング（詳細は `references/color-typography.md`）
 5. **Key Effects** — アニメーション・インタラクション
+
+> **Nothing Style 選択時**: Style に "Nothing / Monochrome Industrial" を選択した場合、
+> `references/nothing-design.md` の完全なトークン・コンポーネント仕様に従う。
+> カラーは Nothing トークン（dark/light）、フォントは Doto / Space Grotesk / Space Mono、
+> コンポーネントは Nothing 専用パターンを使用。通常の Colors/Typography 選択をスキップし、
+> Nothing のトークンシステムをそのまま適用する。
 
 ### Step 3: コード実装
 デザインシステムに基づいてコードを生成。
@@ -99,6 +105,13 @@ UI/UX タスクを受けたら、以下のステップで進める:
 - **Color Mood**: Neon, dark backgrounds, vivid accents
 - **Typography**: Rajdhani / Orbitron — futuristic
 - **Anti-patterns**: 退屈なレイアウト、ミニマルすぎ
+
+### Developer Tools / Technical Dashboards / Hardware
+- **Pattern**: Data Dashboard + Minimal & Direct
+- **Style Priority**: Nothing / Monochrome Industrial
+- **Color Mood**: Monochrome grayscale, red accent (#D71921) as signal only
+- **Typography**: Doto (display) / Space Grotesk (body) / Space Mono (data/labels)
+- **Anti-patterns**: Gradients, shadows, blur, skeleton loaders, toasts, spring animations
 
 ---
 
@@ -268,3 +281,4 @@ WCAG AA 基準（4.5:1）を満たすツールで確認:
 - `references/color-typography.md` — カラーパレット + フォントペアリング20選 + チャート推奨
 - `references/components.md` — 60コンポーネントパターン（セマンティックHTML、ARIA、キーボードナビ、複雑度）
 - `references/design-systems.md` — 95+プロダクションデザインシステム（スタック別索引、Best-in-Class一覧）
+- `references/nothing-design.md` — Nothing Design System 完全仕様（哲学、トークン、コンポーネント、プラットフォーム対応）

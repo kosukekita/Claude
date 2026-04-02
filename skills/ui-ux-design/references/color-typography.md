@@ -19,10 +19,11 @@
 - **Wellness**: `#E8B4B8`(Soft Pink) / `#A8D5BA`(Sage) / `#D4AF37`(Gold)
 - **Education**: `#F59E0B`(Warm Yellow) / `#8B5CF6`(Purple) / Bright, friendly
 - **Gaming**: `#00F0FF`(Cyan) / `#FF00FF`(Magenta) / Dark backgrounds
+- **Nothing / Technical**: Monochrome grayscale (`#000`→`#111`→`#1A1A1A`→`#222`→`#333`→`#666`→`#999`→`#E8E8E8`→`#FFF`), `#D71921`(accent red), `#4A9E5C`(success), `#D4A843`(warning)
 
 ---
 
-## TYPOGRAPHY PAIRINGS (Top 20)
+## TYPOGRAPHY PAIRINGS (Top 22)
 
 | Heading | Body | Mood | Best For |
 |---------|------|------|----------|
@@ -46,6 +47,8 @@
 | Quicksand | Nunito | Soft, rounded | Education, kids, wellness |
 | JetBrains Mono | Inter | Technical, precise | Developer tools, code |
 | Bebas Neue | Open Sans | Impact, display | Landing pages, headlines |
+| Doto | Space Grotesk | Monochrome, industrial, mechanical | Developer tools, hardware apps, Nothing style |
+| Space Grotesk | Space Mono | Technical, precise, Swiss | Data-heavy UIs, technical products, Nothing style |
 
 ---
 

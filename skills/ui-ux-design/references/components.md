@@ -126,3 +126,23 @@ Form fields, Card groups, General page navigation
 | **Simple** | Button, Badge, Avatar, Icon, Divider, Link, Input, Alert | 単一要素、状態管理最小 |
 | **Medium** | Card, Tabs, Accordion, Switch, Select, Tooltip, Popover, Toast | 状態管理あり、ARIA必須 |
 | **Complex** | Dialog, Drawer, Data Table, Carousel, Date Picker, Autocomplete, Tree View, Stepper | Focus trap、複雑なキーボードナビ、状態管理多数 |
+
+---
+
+## Nothing Style Component Overrides
+
+Nothing / Monochrome Industrial スタイル選択時、以下のコンポーネント仕様が通常のスタイリングに **優先** する。
+完全なトークン値とコンポーネント仕様は `references/nothing-design.md` を参照。
+
+| Component | Nothing Override |
+|-----------|----------------|
+| **Button** | Pill (999px radius), Space Mono ALL CAPS 13px, 0.06em spacing. Primary=inverted, Secondary=outline, Ghost=no border |
+| **Card** | `--surface` bg, 12-16px radius, 1px border, NO shadows. Flat surfaces only |
+| **Input** | Underline-preferred (bottom border only). Space Mono for data entry text |
+| **Table** | Space Mono for numbers, right-aligned. No zebra striping. Active row: left 2px accent bar |
+| **Progress** | Segmented discrete blocks (signature pattern). Square-ended, 2px gaps, status-colored |
+| **Navigation** | Space Mono ALL CAPS labels. Bracket `[ HOME ]` or pipe `HOME | INFO` style |
+| **Tags/Chips** | Pill or 4px radius, 1px border, Space Mono ALL CAPS caption size |
+| **Toast/Snackbar** | **BANNED**. Use inline `[SAVED]` / `[ERROR: ...]` text instead |
+| **Skeleton** | **BANNED**. Use `[LOADING...]` text or segmented spinner |
+| **Dialog** | No shadows. `rgba(0,0,0,0.8)` backdrop, `--surface` + border, max 480px |
