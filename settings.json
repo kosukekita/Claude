@@ -84,8 +84,6 @@
       "Bash(gemini -p \"Say OK\" -m gemini-3-pro-preview)",
       "Bash(gemini -p \"Say OK\" -m gemini-3-flash-preview)",
       "Edit(~/.claude/skills/ui-ux-design/**)",
-      "Skill(codex-review)",
-      "Skill(codex-review:*)",
       "Bash(codex --version)",
       "Bash(codex exec:*)",
       "WebFetch(domain:status.openai.com)",
@@ -95,7 +93,6 @@
       "Bash(rsync -avz --delete --exclude=.htaccess --exclude=.user.ini -e 'ssh -i ~/.ssh/xs575794.key -p 10022' p:/Code/HP/北摂人工関節/dist/ xs575794@xs575794.xsrv.jp:hokusetsu-jinkokansetsu.jp/public_html/)",
       "Bash(scp -i ~/.ssh/xs575794.key -P 10022 -r \"p:/Code/HP/北摂人工関節/dist/\"* xs575794@xs575794.xsrv.jp:hokusetsu-jinkokansetsu.jp/public_html/)",
       "Bash(ssh -i ~/.ssh/xs575794.key -p 10022 xs575794@xs575794.xsrv.jp \"ls -la hokusetsu-jinkokansetsu.jp/public_html/\")",
-      "Bash(export CLAUDE_CODE_GIT_BASH_PATH=\"C:\\\\\\\\Users\\\\\\\\u8792\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Programs\\\\\\\\Git\\\\\\\\usr\\\\\\\\bin\\\\\\\\bash.exe\")",
       "Bash(/c/Users/u8792/.antigravity/extensions/anthropic.claude-code-2.1.92-win32-x64/resources/native-binary/claude.exe plugin:*)",
       "Edit(~/.claude/skills/codex-review/**)"
     ],
