@@ -154,10 +154,103 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/u8792/Downloads/wmux-0.6.4-win-x64/resources/cli/wmux-hook.js\" Bash 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/u8792/Downloads/wmux-0.6.4-win-x64/resources/cli/wmux-hook.js\" Read 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/u8792/Downloads/wmux-0.6.4-win-x64/resources/cli/wmux-hook.js\" Write 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/u8792/Downloads/wmux-0.6.4-win-x64/resources/cli/wmux-hook.js\" Edit 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "matcher": "Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/u8792/Downloads/wmux-0.6.4-win-x64/resources/cli/wmux-hook.js\" Grep 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "matcher": "Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/u8792/Downloads/wmux-0.6.4-win-x64/resources/cli/wmux-hook.js\" Glob 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/u8792/Downloads/wmux-0.6.4-win-x64/resources/cli/wmux-hook.js\" Agent 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "matcher": "WebSearch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/u8792/Downloads/wmux-0.6.4-win-x64/resources/cli/wmux-hook.js\" WebSearch 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "matcher": "WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/u8792/Downloads/wmux-0.6.4-win-x64/resources/cli/wmux-hook.js\" WebFetch 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/u8792/Downloads/wmux-0.6.4-win-x64/resources/cli/wmux-hook.js\" Skill 2>/dev/null || true"
+          }
+        ]
+      }
     ]
   },
   "enabledPlugins": {
-    "codex@openai-codex": true
+    "codex@openai-codex": true,
+    "chrome-devtools-mcp@claude-plugins-official": false
   },
   "extraKnownMarketplaces": {
     "openai-codex": {
@@ -168,5 +261,15 @@
     }
   },
   "effortLevel": "high",
-  "autoUpdatesChannel": "latest"
+  "autoUpdatesChannel": "latest",
+  "mcpServers": {
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest",
+        "--browserUrl=http://127.0.0.1:9222"
+      ]
+    }
+  }
 }
