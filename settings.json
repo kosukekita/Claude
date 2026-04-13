@@ -260,6 +260,8 @@
       }
     }
   },
+  "skipAutoPermissionPrompt": true,
+  "skipDangerousModePermissionPrompt": true,
   "effortLevel": "high",
   "autoUpdatesChannel": "latest",
   "mcpServers": {
