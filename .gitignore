@@ -6,7 +6,7 @@ mcp-needs-auth-cache.json
 # Nested .claude (prevent .claude/.claude)
 .claude/
 
-# Command History
+# Hook Logs
 command-log.txt
 
 # Local State (machine-specific, not for sharing)

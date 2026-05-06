@@ -6,6 +6,8 @@ description: >
   (2) Chrome CDP モード — ライブChromeセッションに接続してデバッグ・既存ログイン活用。
   Use when user needs browser automation, web testing, form filling, screenshots,
   data extraction, login automation, live Chrome debugging, or page inspection.
+  wmux 環境では手動ブラウジング（URL閲覧・ページ確認）に `wmux browser` を優先、
+  E2E テスト・スクレイピング・自動化フローは Playwright/CDP モードを使う。
   Trigger phrases: ブラウザ自動化, E2Eテスト, スクリーンショット, フォーム入力,
   Webスクレイピング, playwright, ブラウザ操作, ログインテスト, 画面キャプチャ,
   ログイン自動化, SSO, MFA, browser automation, web testing, login automation,

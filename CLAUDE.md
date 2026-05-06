@@ -2,60 +2,19 @@
 
 - **Language**: Always respond in Japanese (常に日本語で回答してください).
 
-## Skills
-
-以下のスキルが `~/.claude/skills/` に格納されている。タスクに応じて適切なスキルを参照すること:
-
-- **python-rules** — Python コードの記述・実行時に参照。uv による環境管理、PEP 723 インラインスクリプト、PEP 8、PyTorch CUDA 選択などのルール。**Python コードを書く・実行する場合は必ずこのスキルを参照すること。**
-- **research-toolkit** — 科学的データ解析・医学研究タスク（文献検索、創薬、ゲノミクス）で参照。ToolUniverse CLI (`tu`) 経由で 2000+ ツールを操作。アプリケーション開発には使用しない。
-- **ui-ux-design** — UI/UX デザイン・フロントエンド実装（ランディングページ、ダッシュボード、Webアプリ等）で参照。67スタイル・カラーパレット・フォントペアリングの知識を含む。
-- **academic-writing** — 医学・学術論文の執筆支援（構成・文体・引用形式・AI文体除去18パターン・投稿先ジャーナル推薦）。論文執筆・原稿改善・投稿先選定タスクで参照。
-- **skill-creator** — Claude用スキルの設計・構築・テスト・改善を支援。**スキルの新規作成・編集時は必ずこのスキルを呼び出すこと。**
-- **browser-automation** — ブラウザ自動化の統合スキル。Playwright モード（新規ブラウザ起動でE2Eテスト・スクレイピング・フォーム操作・ログイン自動化）と Chrome CDP モード（ライブChromeセッション接続でデバッグ・既存ログイン活用・ページ検査）を提供。
-- **SEO/GEO 関連** — `seo`（監査・テクニカル・オンページ・E-E-A-T）、`seo-plan`（戦略・ロードマップ）、`seo-geo`（AI検索最適化・AI Overviews・Perplexity）、`seo-competitor-pages`（X vs Y・代替製品ページ）、`seo-hreflang`（多言語・多地域）、`seo-images`（画像最適化）、`seo-programmatic`（大規模データ駆動ページ）、`gsc-analytics`（Search Console分析・インデックス管理）
-- **google-workspace-cli** — Google Workspace 公式 CLI (gws) を活用した全 Google Workspace API 操作。Gmail、Calendar、Drive、Docs、Sheets、Chat、Tasks 等をターミナルから操作。MCP サーバー対応。
-- **achievement** — 喜多洸介の学術業績（論文・書籍・学会発表・受賞歴・助成金）の管理・参照・出力。CV作成、業績リスト生成、科研費様式など各種フォーマットでの出力に対応。
-- **career** — 喜多洸介の経歴（学歴・職歴）の管理・参照・出力。CV作成、経歴照会、履歴書フォーマットでの出力に対応。
-- **infographic** — AntV Infographic を活用したインフォグラフィック生成。テキストや情報から視覚的なインフォグラフィックを作成。約200種のテンプレート、手書き風・グラデーション等のテーマ、SVG出力対応。
-- **powerpoint** — PowerPoint (.pptx) 作成。python-pptx を使用。Marp 禁止、デザイン設定（色・フォント・サイズ）を管理。パワーポイント・スライド・プレゼン作成タスクで参照。
-- **prompt-engineer** — LLMプロンプト設計・最適化。Chain-of-thought、few-shot learning、構造化出力、評価フレームワーク。
-- **rag-architect** — RAGシステム設計・構築。ベクトルDB、セマンティック検索、ドキュメント検索、コンテキスト拡張。
-- **debugging-wizard** — 体系的デバッグ手法。エラー調査、スタックトレース分析、根本原因特定、トラブルシューティング。
-- **mcp-developer** — MCPサーバー/クライアント開発。JSON-RPC 2.0、TypeScript/Python SDK、リソースプロバイダー、ツール関数。
-- **api-designer** — REST/GraphQL API設計。OpenAPI 3.1仕様、リソースモデリング、バージョニング、ページネーション、エラーハンドリング。
-- **code-reviewer** — コードレビュー手法。PRレビュー、品質監査、セキュリティ脆弱性検出、リファクタリング提案。
-- **zotero** — Zotero ローカル API + REST API 連携。DOI 一括インポート、コレクション管理、アイテム検索・一覧表示、BibTeX インポート。文献登録・文献管理タスクで参照。
-- **gemini-review** — Gemini CLI でコード・文章をレビュー。「Geminiにも確認」「セカンドオピニオン」で使用。デフォルトモデル: `gemini-3-pro-preview`（要 Preview Features）。
-- **codex-plugin-cc** — OpenAI 公式プラグイン。`/codex:review`（コードレビュー）、`/codex:adversarial-review`（敵対的レビュー）、`/codex:rescue`（タスク委譲）等の `/codex:*` コマンドで使用。日本語プロンプトテンプレートは `~/.claude/skills/codex-review/prompt-templates.md` を参照。モデルは `~/.codex/config.toml` で管理（現在: `gpt-5.4`）。
-- **mvp-development** — MVP・個人プロジェクトのWebアプリ開発スタック。Next.js + Supabase + Polar.sh + Vercel構成。新規プロジェクト立ち上げ時に参照。
-- **ai-prediction-model** — AI予測モデル開発の全工程ガイド。欠損値補完（FAMD・MICE・MissForest等の比較検証）、特徴量選択、モデル構築（XGBoost/LightGBM/ロジスティック回帰）、評価（AUROC・Calibration・DCA）、解釈性（SHAP）。TRIPOD+AI準拠の報告と連携。
-- **alphaxiv** — alphaXiv MCPサーバー経由でarXiv論文を検索・取得・Q&A。意味的類似度検索・フルテキスト検索・論文全文取得・PDF Q&A・論文GitHubコード取得に対応。arXiv検索・文献調査・先行研究調査（ML/CS分野）で参照。
-- **make-poster** — 学術論文からカンファレンスポスターを自動生成（HTML/PDF）。Overleafソース＋プロジェクトWebサイトからコンテンツ抽出、React製インタラクティブエディタ、Playwright自動レイアウト最適化。`/make-poster` で起動。
-
-### Superpowers（開発ワークフロー）
-- **brainstorming** — 創造的作業前の要件・設計探索。機能追加・コンポーネント作成前に必須。
-- **writing-plans** — 複数ステップタスクの実装計画作成。コードに触れる前に使用。
-- **executing-plans** — 実装計画の実行とレビューチェックポイント管理。
-- **subagent-driven-development** — 独立タスクのサブエージェント駆動開発。
-- **dispatching-parallel-agents** — 2つ以上の独立タスクの並列実行。
-- **test-driven-development** — TDD実践。実装コード記述前に使用。
-- **systematic-debugging** — バグ・テスト失敗・予期せぬ動作の体系的調査。修正提案前に使用。
-- **verification-before-completion** — 完了主張前の検証必須。証拠なき主張禁止。
-- **requesting-code-review** — タスク完了・主要機能実装・マージ前の作業検証。
-- **receiving-code-review** — コードレビューフィードバック受領時の技術的検証。
-- **finishing-a-development-branch** — 実装完了・テストパス後の統合方法選択ガイド。
-- **using-git-worktrees** — 機能作業の分離。実装計画実行前に使用。
-- **writing-skills** — スキル作成・編集・デプロイ前検証。TDDをドキュメントに適用。
-- **using-superpowers** — 会話開始時のスキル発見・活用方法。
-
 ## Skill Security
 
-スキル追加時は必ず `skill-scanner` でセキュリティチェックを実行:
-```bash
-skill-scanner scan /path/to/skill --use-behavioral
-```
-- HIGH/CRITICAL 検出時は内容を精査し、誤検知でなければ追加しない
-- 誤検知（セキュリティドキュメント内の例文等）は許容
+スキル追加時は `skill-scanner scan <path> --use-behavioral` を実行し、HIGH/CRITICAL は精査の上で却下（誤検知は許容）。
+
+## 実装前の理解度確認（必須）
+
+アプリ/AI モデルの**本実装コードに着手する直前**に、以下を必ず実行する:
+
+1. 設計方針・アーキテクチャ・主要なトレードオフについて**理解度を試すクイズ問題を出題**する
+2. ユーザーが正しく答えられるまで実装を開始しない
+3. 理解が不十分な場合は図解・例示・類比で説明し、再度クイズで確認する
+
+discovery/plan/brainstorming フェーズはブロックしない。クイズは Plan Mode 中なら AskUserQuestion、それ以外はテキストで出題する。
 
 ## Workflow Best Practices
 
@@ -63,11 +22,6 @@ skill-scanner scan /path/to/skill --use-behavioral
 - **Plan Mode 優先**: 複雑なタスクは Plan Mode でアーキテクチャを固めてから実装
 - **1機能 = 1会話**: 大規模開発では機能単位で会話を分割（個人開発規模なら1スレッドでも可）
 - **セッション間共有**: `SCRATCHPAD.md` や `plan.md` に進捗・計画を書き出し、次のセッションで参照
-
-### CLAUDE.md の原則
-- **簡潔さが命**: Claude が従える指示は約150-200個。システムプロンプトで約50消費されるため、残り100-150が上限
-- **理由を書く**: 「何を」だけでなく「なぜ」を伝えることで判断力が向上
-- **随時更新**: 作業中・作業後に Claude 自身に編集させてアップデート
 
 ### トラブル対応
 - **ループ時の対処**: 指示を重ねるのではなく、会話をクリアするかアプローチを根本から変える
