@@ -1,137 +1,3034 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=1920">
-  <title>{{SLIDE_TITLE}}</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
-  <style>
-    /* ===== Design Tokens ===== */
-    :root {
-      --base-color:    #F9F9F9;
-      --text-color:    #1A1A1A;
-      --main-color:    #0071BC;
-      --accent-color:  #FF5050;
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>スライドテンプレート集 / Slide Template Gallery</title>
 
-      --font-size-title:   50pt;
-      --font-size-heading: 35pt;
-      --font-size-body:    25pt;
+<!-- ============================================================
+  スライドテンプレート集
+  Claude Code のスライド作成スキル用テンプレートギャラリー
+  ============================================================
+  【テンプレートの追加方法】
+  1. <main class="gallery"> 内に <section class="template-card"> を追加
+  2. .slide-frame > .slide.t-XX の構造を踏襲する
+  3. CSS は .t-XX の名前空間で記述する（他テンプレートに干渉しない）
+  4. スライドは 1280×720 (16:9) を基準サイズとする
+  ============================================================ -->
 
-      --margin-edge: 48px; /* 0.5in @ 96dpi */
-      --slide-w: 1920px;
-      --slide-h: 1080px;
-    }
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Noto+Serif+JP:wght@500;700&display=swap" rel="stylesheet">
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<style>
+/* ============================================================
+   1. 共通カラー / フォント変数
+   ============================================================ */
+:root {
+  --color-main:    #0071BC;   /* メインカラー */
+  --color-accent:  #FF5050;   /* アクセントカラー */
+  --color-main-tint:   rgba(0, 113, 188, 0.12);  /* メインの薄塗り（範囲強調などに使用） */
+  --color-accent-tint: rgba(255, 80, 80, 0.12);  /* アクセントの薄塗り */
+  --color-text:    #222222;
+  --color-sub:     #6b6b6b;
+  --color-muted:   #b8b8b8;   /* 非強調の棒グラフなど */
+  --color-grid:    #e5e5e5;
+  --color-bg:      #ffffff;
 
-    html, body {
-      width: var(--slide-w);
-      height: var(--slide-h);
-      overflow: hidden;
-      background: var(--base-color);
-      color: var(--text-color);
-      font-family: 'Noto Sans JP', 'Inter', 'Meiryo', 'Yu Gothic UI', sans-serif;
-      font-size: var(--font-size-body);
-      line-height: 1.5;
-    }
+  --font-jp: "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+             "Yu Gothic", Meiryo, sans-serif;
+  --font-jp-serif: "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", serif;
+}
 
-    .slide {
-      width: var(--slide-w);
-      height: var(--slide-h);
-      padding: var(--margin-edge);
-      display: flex;
-      flex-direction: column;
-      background: var(--base-color);
-      position: relative;
-    }
+/* ============================================================
+   2. ページ全体（ギャラリー部分）の見た目
+   ============================================================ */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--font-jp);
+  color: var(--color-text);
+  background: #f4f5f7;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
 
-    .slide-title   { font-size: var(--font-size-title);   font-weight: 700; line-height: 1.2; margin-bottom: 0.4em; }
-    .slide-heading { font-size: var(--font-size-heading); font-weight: 700; line-height: 1.3; margin-bottom: 0.3em; }
-    .slide-body    { font-size: var(--font-size-body);    font-weight: 400; line-height: 1.6; }
+.page-header {
+  padding: 48px 32px 24px;
+  max-width: 1320px;
+  margin: 0 auto;
+}
+.page-header h1 {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  margin: 0 0 8px;
+}
+.page-header p {
+  margin: 0;
+  color: var(--color-sub);
+  font-size: 14px;
+}
+.color-chips {
+  display: flex;
+  gap: 16px;
+  margin-top: 20px;
+  font-size: 12px;
+  color: var(--color-sub);
+}
+.color-chips span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.color-chips i {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border-radius: 3px;
+  vertical-align: middle;
+}
 
-    /* ===== Emphasis Hierarchy (use in priority order) ===== */
-    .emp-u    { text-decoration: underline; text-decoration-thickness: 0.08em; text-underline-offset: 0.15em; }
-    .emp-inv  { background: var(--text-color); color: var(--base-color); padding: 0 0.2em; border-radius: 2px; }
-    .emp-main { color: var(--main-color); font-weight: 700; }
-    .emp-accent { color: var(--accent-color); font-weight: 700; }
+.gallery {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 16px 32px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 56px;
+}
 
-    /* ===== Table — horizontal lines ONLY, no vertical lines ===== */
-    table { border-collapse: collapse; width: 100%; font-size: var(--font-size-body); }
-    th, td { border: none; border-bottom: 1px solid var(--text-color); padding: 0.4em 0.6em; text-align: left; }
-    thead th { border-bottom-width: 2px; font-weight: 700; }
-    table tr:last-child td { border-bottom: 2px solid var(--text-color); }
+.template-card {
+  background: var(--color-bg);
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+.template-meta {
+  padding: 20px 28px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.template-meta .id {
+  font-family: "Noto Sans JP", monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--color-main);
+  padding: 4px 10px;
+  border-radius: 4px;
+  letter-spacing: 0.06em;
+}
+.template-meta h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+.template-meta .desc {
+  margin: 0;
+  color: var(--color-sub);
+  font-size: 13px;
+  flex-basis: 100%;
+}
 
-    /* ===== Icons ===== */
-    .icon     { width: 80px;  height: 80px;  display: inline-block; vertical-align: middle; }
-    .icon-lg  { width: 120px; height: 120px; }
-    .icon-sm  { width: 48px;  height: 48px; }
-    .icon-theme  { filter: invert(27%) sepia(90%) saturate(1200%) hue-rotate(186deg) brightness(95%) contrast(95%); }
-    .icon-accent { filter: invert(41%) sepia(90%) saturate(2000%) hue-rotate(330deg) brightness(105%) contrast(95%); }
-    .icon-brand  { /* no filter — preserve original brand colors */ }
+/* スライドフレーム：16:9 を保ちつつ画面幅にフィット */
+.slide-frame {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.slide {
+  /* 1280×720 を基準に作成し、CSS変数 --scale で縮小 */
+  width: 1280px;
+  height: 720px;
+  position: absolute;
+  top: 0; left: 0;
+  transform-origin: top left;
+  /* JS無しで親幅にフィット：CSS containerクエリ的に scale する */
+  transform: scale(var(--slide-scale, 1));
+}
+/* 親の実幅を測ってスケールするための小さな仕掛け（resize対応） */
+@media (max-width: 1380px) {
+  .slide-frame { --w: 100vw; }
+}
 
-    hr.slide-divider { border: none; border-top: 2px solid var(--text-color); margin: 0.6em 0; }
+/* ============================================================
+   3. テンプレート 01 :「グラフ強調（吹き出し付き棒グラフ）」
+   - 棒グラフの最大値バーをメインカラーで強調
+   - 吹き出しでラベル付け
+   - 右側に結論メッセージを大きく配置
+   ============================================================ */
 
-    /* ===== Layout Helpers ===== */
-    .row    { display: flex; flex-direction: row; gap: 40px; align-items: flex-start; }
-    .col    { display: flex; flex-direction: column; flex: 1; }
-    .center { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; flex: 1; }
-    .spacer { flex: 1; }
+.t-01 {
+  padding: 56px 72px 56px 72px;
+  background: #ffffff;
+  font-family: var(--font-jp);
+}
+.t-01 .slide-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 24px;
+  letter-spacing: 0.02em;
+}
+.t-01 .body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: center;
+}
 
-    .slide-number {
-      position: absolute;
-      bottom: var(--margin-edge);
-      right: var(--margin-edge);
-      font-size: 18pt;
-      color: var(--text-color);
-      opacity: 0.4;
-    }
+/* --- 左カラム：チャート --- */
+.t-01 .chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.t-01 .chart .grid-line {
+  stroke: var(--color-grid);
+  stroke-width: 1;
+}
+.t-01 .chart .axis-label {
+  fill: var(--color-sub);
+  font-size: 16px;
+  font-family: var(--font-jp);
+}
+.t-01 .chart .x-label {
+  fill: var(--color-text);
+  font-size: 18px;
+  font-weight: 500;
+  text-anchor: middle;
+  font-family: var(--font-jp);
+}
+.t-01 .chart .value-label {
+  fill: var(--color-text);
+  font-size: 16px;
+  font-weight: 500;
+  text-anchor: middle;
+  font-family: var(--font-jp);
+}
+.t-01 .chart .bar {
+  fill: var(--color-muted);
+}
+.t-01 .chart .bar-highlight {
+  fill: var(--color-main);
+}
 
-    @media print {
-      @page { size: 1920px 1080px; margin: 0; }
-      html, body { overflow: visible; transform: none !important; }
-      .slide { page-break-after: always; }
-    }
+/* 吹き出し */
+.t-01 .callout-bg {
+  fill: var(--color-main);
+}
+.t-01 .callout-text {
+  fill: #ffffff;
+  font-size: 22px;
+  font-weight: 700;
+  text-anchor: middle;
+  font-family: var(--font-jp);
+}
 
-    @media screen and (max-width: 1920px) {
-      body { transform-origin: top left; transform: scale(calc(100vw / 1920)); }
-    }
-  </style>
+/* --- 右カラム：メッセージ --- */
+.t-01 .message {
+  padding-right: 8px;
+}
+.t-01 .lead {
+  font-size: 32px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--color-text);
+  margin: 0 0 12px;
+}
+.t-01 .headline {
+  font-size: 46px;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  line-height: 1.35;
+  margin: 0 0 28px;
+  color: var(--color-text);
+}
+.t-01 .headline .emph {
+  /* アクセントカラーで下線強調 */
+  background-image: linear-gradient(transparent 78%, var(--color-accent) 78%, var(--color-accent) 92%, transparent 92%);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  padding: 0 4px;
+}
+.t-01 .headline .num {
+  font-size: 60px;
+  font-weight: 900;
+  margin: 0 2px;
+}
+.t-01 .desc {
+  font-size: 16px;
+  line-height: 2;
+  color: var(--color-sub);
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+/* ============================================================
+   4. テンプレート 02 :「範囲強調（連続するデータ群を帯で強調）」
+   - 連続する複数のデータをひとつのまとまりとして強調
+   - 帯状の背景（メインの薄塗り）+ メインカラーの棒
+   - 横長レイアウトでチャートを大きく見せる
+   ============================================================ */
+
+.t-02 {
+  padding: 56px 72px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-jp);
+}
+.t-02 .slide-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 24px;
+  letter-spacing: 0.02em;
+}
+.t-02 .chart-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.t-02 .chart {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.t-02 .chart .grid-line {
+  stroke: var(--color-grid);
+  stroke-width: 1;
+}
+.t-02 .chart .axis-label {
+  fill: var(--color-sub);
+  font-size: 22px;
+  font-family: var(--font-jp);
+}
+.t-02 .chart .num-label {
+  fill: var(--color-text);
+  font-size: 32px;
+  font-family: var(--font-jp);
+  text-anchor: middle;
+}
+.t-02 .chart .bar {
+  fill: var(--color-muted);
+}
+.t-02 .chart .bar-highlight {
+  fill: var(--color-main);
+}
+.t-02 .chart .highlight-band {
+  fill: var(--color-main-tint);
+}
+
+/* ============================================================
+   5. テンプレート 03 :「ステップ表現（4ステップカード）」
+   - 手順・プロセスを横並びの4枚カードで表現
+   - 各カード: 上部アクセントバー / アイコン / STEPラベル / 見出し / 説明
+   - カード間に「◯付き矢印」を配置して流れを誘導
+   ============================================================ */
+
+.t-03 {
+  padding: 48px 48px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-jp);
+}
+.t-03 .slide-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 28px;
+  letter-spacing: 0.02em;
+}
+.t-03 .steps {
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
+  gap: 6px;
+}
+.t-03 .step-card {
+  flex: 1 1 0;
+  min-width: 0;
+  background: #ffffff;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.07);
+  overflow: hidden;
+}
+.t-03 .step-top {
+  height: 12px;
+  background: linear-gradient(90deg, var(--color-main) 0%, rgba(0, 113, 188, 0.45) 100%);
+  flex-shrink: 0;
+}
+.t-03 .step-body {
+  padding: 32px 22px 28px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.t-03 .step-icon-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 22px;
+  color: var(--color-main);
+}
+.t-03 .step-icon {
+  width: 64px;
+  height: 64px;
+}
+.t-03 .step-num {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--color-accent);
+  text-align: center;
+  margin-bottom: 8px;
+}
+.t-03 .step-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-text);
+  text-align: center;
+  margin: 0 0 18px;
+  letter-spacing: 0.05em;
+}
+.t-03 .step-desc {
+  font-size: 12.5px;
+  line-height: 1.9;
+  color: var(--color-sub);
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+/* ステップ間の矢印 */
+.t-03 .step-arrow {
+  flex: 0 0 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+}
+.t-03 .step-arrow svg {
+  width: 30px;
+  height: 30px;
+  display: block;
+}
+.t-03 .step-arrow .arrow-bg {
+  fill: var(--color-main-tint);
+}
+.t-03 .step-arrow .arrow-line {
+  fill: none;
+  stroke: var(--color-main);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ステップを「現在の段階」として強調したい場合は .current を付与 */
+.t-03 .step-card.current .step-top {
+  background: var(--color-accent);
+}
+.t-03 .step-card.current .step-icon-wrap {
+  color: var(--color-accent);
+}
+
+/* ============================================================
+   6. テンプレート 04 :「研究結果テーブル（アイコン+項目+数値+解釈文）」
+   - 上部ヘッダーバーに研究結論の一文（マーカー強調）
+   - 4行のテーブル: 円アイコン / 項目名 / 数値±CI / 解釈文（強調語）
+   - 右下に出典表記
+   ============================================================ */
+
+.t-04 {
+  padding: 0;
+  background: #ffffff;
+  display: flex;
+  font-family: var(--font-jp);
+  height: 100%;
+}
+
+/* --- メインコンテンツ --- */
+.t-04 .content {
+  flex: 1;
+  min-width: 0;
+  padding: 40px 56px 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- 上部ヘッダーバー --- */
+.t-04 .head-bar {
+  background: var(--color-main);
+  color: #ffffff;
+  padding: 12px 22px;
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  border-radius: 2px;
+  margin-bottom: 22px;
+}
+.t-04 .head-bar mark {
+  background: linear-gradient(transparent 55%, var(--color-accent) 55%, var(--color-accent) 92%, transparent 92%);
+  color: #ffffff;
+  padding: 0 3px;
+}
+
+/* --- テーブル本体 --- */
+.t-04 .result-table {
+  width: 100%;
+  border-collapse: collapse;
+  flex: 1;
+}
+.t-04 .result-table thead th {
+  padding: 0 14px 14px;
+  text-align: left;
+  font-family: 'Trebuchet MS', 'Helvetica Neue', 'Yu Gothic', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #8a9fb6;
+  letter-spacing: 0.02em;
+  border-bottom: 1.5px solid #d8d8d8;
+}
+.t-04 .result-table .th-icon { width: 78px; padding: 0; }
+.t-04 .result-table .th-or   { text-align: center; }
+.t-04 .result-table .th-msg  { width: 33%; }
+
+.t-04 .result-table tbody td {
+  padding: 14px 14px;
+  border-bottom: 1px solid #e8e8e8;
+  vertical-align: middle;
+}
+
+/* セル: アイコン */
+.t-04 .result-table .icon-cell {
+  width: 78px;
+  text-align: center;
+  padding-left: 0;
+}
+.t-04 .result-table .circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--color-main);
+}
+.t-04 .result-table .circle svg {
+  width: 30px;
+  height: 30px;
+  display: block;
+}
+
+/* セル: 項目名 */
+.t-04 .result-table .name-cell {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text);
+  width: 22%;
+  letter-spacing: 0.04em;
+}
+
+/* セル: 数値 + CI */
+.t-04 .result-table .value-cell {
+  font-size: 38px;
+  font-weight: 900;
+  color: var(--color-text);
+  text-align: center;
+  width: 25%;
+  letter-spacing: -0.01em;
+  font-family: 'Helvetica Neue', Arial, var(--font-jp);
+}
+.t-04 .result-table .value-cell .ci {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-sub);
+  margin-left: 2px;
+  letter-spacing: 0;
+}
+
+/* セル: 解釈文 */
+.t-04 .result-table .msg-cell {
+  font-size: 14px;
+  color: var(--color-sub);
+  line-height: 1.55;
+  letter-spacing: 0.02em;
+}
+.t-04 .result-table .msg-emph {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+/* --- 出典 --- */
+.t-04 .citation {
+  font-size: 11px;
+  color: var(--color-accent);
+  margin: 10px 0 0;
+  text-align: right;
+  letter-spacing: 0.02em;
+}
+.t-04 .citation::before {
+  content: '▲ ';
+}
+
+/* ============================================================
+   7. テンプレート 05 :「要素分解（階層ブラケットで構造を可視化）」
+   - 親 → 中間カテゴリ → 末端要素 + 数値、の3段階分解
+   - CSS Grid でブロックを配置、Connector部分のみ SVG を縦長に流し込む
+   - 末端の数値だけメインカラー、+演算子だけアクセントカラー
+   ============================================================ */
+
+.t-05 {
+  padding: 36px 56px 18px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-jp);
+}
+
+/* --- スライドタイトル（左バー＋下線） --- */
+.t-05 .title-area {
+  border-bottom: 1px solid #d8d8d8;
+  padding-bottom: 14px;
+  margin-bottom: 28px;
+}
+.t-05 .slide-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--color-text);
+  border-left: 6px solid var(--color-main);
+  padding: 2px 0 2px 14px;
+  margin: 0;
+  display: inline-block;
+  letter-spacing: 0.05em;
+}
+
+/* --- ダイアグラム（中央配置） --- */
+.t-05 .diagram-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.t-05 .diagram {
+  display: grid;
+  /* root | conn | mid | conn | leaf | value */
+  grid-template-columns: 120px 32px 160px 32px 100px 280px;
+  /* row1 | row2 | + gap | row4 */
+  grid-template-rows: 75px 75px 40px 75px;
+}
+
+/* --- ルート（縦書き） --- */
+.t-05 .root {
+  grid-column: 1;
+  grid-row: 1 / 5;
+  background: #6f7884;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  border-radius: 4px;
+}
+
+/* --- コネクタ（SVG）--- */
+.t-05 .conn-1 { grid-column: 2; grid-row: 1 / 5; }
+.t-05 .conn-2 { grid-column: 4; grid-row: 1 / 5; }
+.t-05 .conn svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* --- 中間ブロック --- */
+.t-05 .mid {
+  background: #92a0ab;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  border-radius: 4px;
+  text-align: center;
+  line-height: 1.35;
+}
+.t-05 .mid-1 { grid-column: 3; grid-row: 1 / 3; }
+.t-05 .mid-2 { grid-column: 3; grid-row: 4; }
+
+/* --- + 演算子（アクセントカラー） --- */
+.t-05 .plus {
+  grid-column: 3;
+  grid-row: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  font-weight: 400;
+  color: var(--color-accent);
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* --- リーフラベル --- */
+.t-05 .leaf {
+  background: #92a0ab;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  border-radius: 4px;
+}
+.t-05 .leaf-1 { grid-column: 5; grid-row: 1; }
+.t-05 .leaf-2 { grid-column: 5; grid-row: 2; }
+.t-05 .leaf-3 { grid-column: 5; grid-row: 4; }
+
+/* --- 数値パネル --- */
+.t-05 .value {
+  background: #edf0f3;
+  display: flex;
+  align-items: center;
+  padding: 0 16px 0 24px;
+  border-radius: 4px;
+}
+.t-05 .value-1 { grid-column: 6; grid-row: 1; }
+.t-05 .value-2 { grid-column: 6; grid-row: 2; }
+.t-05 .value-3 { grid-column: 6; grid-row: 4; }
+.t-05 .value .num {
+  font-size: 40px;
+  font-weight: 700;
+  color: var(--color-main);
+  letter-spacing: -0.02em;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+.t-05 .value .unit {
+  font-size: 14px;
+  color: #8a96a3;
+  margin-left: 8px;
+  font-family: var(--font-jp);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+/* --- 著作権フッター --- */
+.t-05 .copyright {
+  font-size: 11px;
+  color: #b0b8c0;
+  margin: 12px 0 0;
+  letter-spacing: 0.04em;
+}
+
+/* ============================================================
+   8. テンプレート 06 :「強みテーブル（ラベル+アイコン+チェック箇条書き）」
+   - 自社/自製品の強みを「カテゴリ名 + ピクトグラム + チェック付き詳細」で4項目並べる
+   - 左ラベル列はメインカラー（白抜き文字）、右パネルは淡灰、チェックはアクセント
+   - ヘッダー行はメインカラーの帯、ラベルセル間は border-spacing でわずかに余白
+   ============================================================ */
+
+.t-06 {
+  padding: 36px 56px 18px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-jp);
+}
+
+/* --- スライドタイトル（左バー＋下線、t-05 と統一） --- */
+.t-06 .title-area {
+  border-bottom: 1px solid #d8d8d8;
+  padding-bottom: 14px;
+  margin-bottom: 24px;
+}
+.t-06 .slide-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--color-text);
+  border-left: 6px solid var(--color-main);
+  padding: 2px 0 2px 14px;
+  margin: 0;
+  display: inline-block;
+  letter-spacing: 0.05em;
+}
+
+/* --- テーブル本体 --- */
+.t-06 .strength-table {
+  width: 100%;
+  flex: 1;
+  border-collapse: separate;
+  border-spacing: 6px 6px;
+  table-layout: fixed;
+}
+
+/* 列幅 */
+.t-06 .strength-table .col-label  { width: 22%; }
+.t-06 .strength-table .col-detail { width: 78%; }
+
+/* --- ヘッダー行 --- */
+.t-06 .strength-table thead th {
+  background: var(--color-main);
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  padding: 10px 18px;
+  height: 44px;
+}
+.t-06 .strength-table thead .th-label {
+  text-align: left;
+}
+.t-06 .strength-table thead .th-label .thumb {
+  width: 22px;
+  height: 22px;
+  margin-right: 12px;
+  vertical-align: middle;
+  display: inline-block;
+}
+.t-06 .strength-table thead .th-detail {
+  text-align: center;
+}
+
+/* --- ボディ：ラベル列 --- */
+.t-06 .strength-table .label-cell {
+  background: var(--color-main);
+  color: #ffffff;
+  font-size: 19px;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.06em;
+  vertical-align: middle;
+  line-height: 1.35;
+  padding: 8px 6px;
+}
+
+/* --- ボディ：詳細列（アイコン + 箇条書きを横並び） --- */
+.t-06 .strength-table .detail-cell {
+  background: #f1f3f5;
+  vertical-align: middle;
+  padding: 14px 22px;
+}
+.t-06 .strength-table .detail-cell .detail-inner {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+.t-06 .strength-table .detail-cell .icon-wrap {
+  flex: 0 0 88px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.t-06 .strength-table .detail-cell .icon-wrap svg {
+  width: 64px;
+  height: 64px;
+  display: block;
+}
+
+/* チェック箇条書き */
+.t-06 .strength-table .detail-cell ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  font-size: 17px;
+  color: var(--color-text);
+  letter-spacing: 0.02em;
+  line-height: 1.85;
+}
+.t-06 .strength-table .detail-cell li {
+  position: relative;
+  padding-left: 28px;
+}
+.t-06 .strength-table .detail-cell li + li {
+  margin-top: 4px;
+}
+.t-06 .strength-table .detail-cell li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--color-accent);
+  font-weight: 900;
+  font-size: 18px;
+  line-height: 1.85;
+}
+
+/* --- 著作権フッター --- */
+.t-06 .copyright {
+  font-size: 11px;
+  color: #b0b8c0;
+  margin: 12px 0 0;
+  letter-spacing: 0.04em;
+}
+
+/* ============================================================
+   9. テンプレート 07 :「対比比較（縦軸4観点 × 横軸2項目）」
+   - 縦軸に観点（4行）、横軸に比較対象（2列）の格子状比較
+   - 推したい側の列をアクセントカラーの枠で囲んで主張を可視化
+   - ○△−のSVG評価マーク + 箇条書きで「定性 + 詳細」を両立
+   - 行ラベルは中性ダークグレーで保ち、ヘッダー帯のみメインカラーを使う
+   ============================================================ */
+
+.t-07 {
+  padding: 36px 56px 18px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-jp);
+}
+
+/* --- スライドタイトル（左バー＋下線、t-05 / t-06 と統一） --- */
+.t-07 .title-area {
+  border-bottom: 1px solid #d8d8d8;
+  padding-bottom: 14px;
+  margin-bottom: 28px;
+}
+.t-07 .slide-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--color-text);
+  border-left: 6px solid var(--color-main);
+  padding: 2px 0 2px 14px;
+  margin: 0;
+  display: inline-block;
+  letter-spacing: 0.05em;
+}
+
+/* --- 比較グリッド本体 --- */
+.t-07 .compare-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 130px 1fr 1fr;
+  grid-template-rows: 56px repeat(4, 1fr);
+  gap: 12px 18px;
+  position: relative;
+  align-items: stretch;
+}
+
+/* 行ラベル（体制 / 費用 / 負担 / その他） */
+.t-07 .row-label {
+  background: #6f7884;
+  color: #ffffff;
+  border-radius: 6px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* 列ヘッダー（日本 / 近隣諸国） */
+.t-07 .col-header {
+  background: var(--color-main);
+  color: #ffffff;
+  border-radius: 6px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* データセル（評価マーク + 箇条書き） */
+.t-07 .data-cell {
+  background: #f1f3f5;
+  border-radius: 6px;
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+/* 評価マーク（SVG） */
+.t-07 .data-cell .mark {
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.t-07 .data-cell .mark svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.t-07 .data-cell .mark-good { color: var(--color-accent); }
+.t-07 .data-cell .mark-mid  { color: #9aa1a8; }
+.t-07 .data-cell .mark-bad  { color: #9aa1a8; }
+
+/* 箇条書き */
+.t-07 .data-cell ul {
+  list-style: disc;
+  margin: 0;
+  padding-left: 16px;
+  font-size: 15px;
+  color: var(--color-text);
+  line-height: 1.7;
+  letter-spacing: 0.02em;
+  flex: 1;
+}
+.t-07 .data-cell li::marker {
+  color: var(--color-sub);
+}
+
+/* --- 強調枠（推し側列をアクセントカラーで囲む） ---
+   grid アイテムにすると CSS Grid の明示配置が先に処理されて他セルが column 2 を
+   避けてしまうため、grid とは独立した absolute オーバーレイで実装する。
+   compare-grid 側に position: relative を付けてあるので位置基準は compare-grid。
+   列幅は grid-template-columns: 130px 1fr 1fr / column-gap 18px と一致させる。
+*/
+.t-07 .emphasis-frame {
+  position: absolute;
+  top: -8px;
+  bottom: -8px;
+  /* column 2 left edge = 130px + 18px(gap) = 148px。10px 外側にはみ出す */
+  left: calc(130px + 18px - 10px);
+  /* column 2 width = (100% - 130px - 18px*2) / 2。両側合計 20px ぶん広げる */
+  width: calc((100% - 130px - 36px) / 2 + 20px);
+  border: 2.5px solid var(--color-accent);
+  border-radius: 10px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* --- 著作権フッター --- */
+.t-07 .copyright {
+  font-size: 11px;
+  color: #b0b8c0;
+  margin: 12px 0 0;
+  letter-spacing: 0.04em;
+}
+
+/* ============================================================
+   10. テンプレート 08 :「因果（"Aだから、Bである" 構文の2パネル因果図）」
+   - 左に原因 / 中央に▶因果矢印 / 右に結果 の3カラム構成
+   - 原因側はニュートラルグレー（現状）、矢印はアクセント（"だから" の強調）、
+     結果側はメインカラー（結論）の3色で因果を可視化
+   - 各パネルは「サブタイトル（下線付き） + 棒グラフ風イラスト」の2段構造
+   ============================================================ */
+
+.t-08 {
+  padding: 36px 56px 18px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-jp);
+}
+
+/* --- スライドタイトル（左バー＋下線、t-05〜t-07 と統一） --- */
+.t-08 .title-area {
+  border-bottom: 1px solid #d8d8d8;
+  padding-bottom: 14px;
+  margin-bottom: 32px;
+}
+.t-08 .slide-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--color-text);
+  border-left: 6px solid var(--color-main);
+  padding: 2px 0 2px 14px;
+  margin: 0;
+  display: inline-block;
+  letter-spacing: 0.05em;
+}
+
+/* --- 因果パネル並び（原因 ▶ 結果） --- */
+.t-08 .causal {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 110px 1fr;
+  align-items: center;
+  padding: 0 16px;
+}
+
+/* 各パネル */
+.t-08 .panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  width: 100%;
+}
+.t-08 .panel .sub-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text);
+  text-align: center;
+  letter-spacing: 0.06em;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #c8ccd0;
+  width: 80%;
+  margin: 0;
+}
+.t-08 .panel .illust {
+  width: 100%;
+  max-width: 340px;
+  height: auto;
+  display: block;
+}
+
+/* 原因側 / 結果側で軸・棒の色を切替 */
+.t-08 .panel.cause  .illust { color: #4a4a4a;        } /* ニュートラル */
+.t-08 .panel.effect .illust { color: var(--color-main); } /* メインカラー */
+.t-08 .panel .illust .axis { stroke: currentColor; }
+.t-08 .panel .illust .bar  { fill:   currentColor; }
+.t-08 .panel .illust .trend{ stroke: currentColor; fill: none; }
+.t-08 .panel .illust .trend-head { fill: currentColor; }
+
+/* --- 因果矢印（▶、アクセントカラー） --- */
+.t-08 .arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.t-08 .arrow svg {
+  width: 80px;
+  height: 80px;
+  display: block;
+}
+
+/* --- 著作権フッター --- */
+.t-08 .copyright {
+  font-size: 11px;
+  color: #b0b8c0;
+  margin: 12px 0 0;
+  letter-spacing: 0.04em;
+}
+
+/* ============================================================
+   11/12. テンプレート 09・10 :「仕様比較表（行強調 / 列強調）」
+   - 5製品 × 6属性のスペック比較表を Grid で組む
+   - T-09: 観点（行）を強調 — "どの軸で勝つか" を示すパターン（価格行を着色）
+   - T-10: 製品（列）を強調 — "どれを推すか" を示すパターン（推し列を枠 + 着色）
+   - 両者は HTML/CSS の骨格を共有し、装飾レイヤーだけが異なる
+   ============================================================ */
+
+.t-09, .t-10 {
+  padding: 32px 56px 18px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-jp);
+}
+
+/* --- スライドタイトル --- */
+.t-09 .title-area, .t-10 .title-area {
+  border-bottom: 1px solid #d8d8d8;
+  padding-bottom: 14px;
+  margin-bottom: 22px;
+}
+.t-09 .slide-title, .t-10 .slide-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text);
+  border-left: 6px solid var(--color-main);
+  padding: 2px 0 2px 14px;
+  margin: 0;
+  display: inline-block;
+  letter-spacing: 0.05em;
+}
+
+/* --- 比較表本体（Grid: 130px + 5 × 1fr / auto + 6 × 1fr） --- */
+.t-09 .spec-grid, .t-10 .spec-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 130px repeat(5, 1fr);
+  grid-template-rows: auto repeat(6, 1fr);
+  column-gap: 0;
+  row-gap: 6px;
+  align-items: stretch;
+  position: relative;
+}
+
+/* --- 行ラベル（左列、グレーピル） --- */
+.t-09 .row-label, .t-10 .row-label {
+  background: #6f7884;
+  color: #ffffff;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 14px;
+}
+
+/* --- 値セル（共通） --- */
+.t-09 .value, .t-10 .value {
+  text-align: center;
+  font-size: 17px;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Helvetica Neue', Arial, var(--font-jp);
+  letter-spacing: 0.02em;
+  border-bottom: 1px solid #e6e8eb;
+}
+
+/* --- ヘッダーセル（共通：列名 + アイコン） --- */
+.t-09 .header-cell, .t-10 .header-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-bottom: 14px;
+}
+.t-09 .product-name, .t-10 .product-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: 0.04em;
+}
+
+/* ============================================================
+   T-09 専用：行強調
+   - 列ヘッダーは「メインカラーの円アイコン + 製品名（黒）」
+   - .row-emph の付いた値セルだけ太字・大文字・メインカラー
+   ============================================================ */
+
+/* アイコン（青い円に白いシルエット） */
+.t-09 .product-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+}
+.t-09 .product-icon svg {
+  width: 32px;
+  height: 32px;
+}
+/* 価格行の値だけ強調 */
+.t-09 .row-emph {
+  color: var(--color-main);
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: -0.01em;
+}
+
+/* ============================================================
+   T-10 専用：列強調
+   - アイコンは円なし・グレー
+   - 推し列（製品E）の値はメインカラー + 太字、列ヘッダーの製品名もメインカラー
+   - 列全体を囲む枠は absolute 配置のオーバーレイで一筆描き（T-07 と同方式）
+   ============================================================ */
+
+/* アイコン（フラットなグレー） */
+.t-10 .product-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6a7178;
+}
+.t-10 .product-icon svg {
+  width: 40px;
+  height: 40px;
+}
+
+/* 推し列のセル（値 + ヘッダー製品名） */
+.t-10 .col-emph {
+  color: var(--color-main);
+  font-weight: 700;
+  font-size: 18px;
+}
+.t-10 .header-cell.col-emph .product-name {
+  color: var(--color-main);
+}
+
+/* 推し列を囲む枠（absolute オーバーレイ：last column の位置に重ねる） */
+.t-10 .emphasis-frame {
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  /* 列幅: (100% - 130px) / 5、最後の列の左端: 130px + 4 × 列幅 */
+  left:  calc(130px + 4 * ((100% - 130px) / 5) - 6px);
+  width: calc((100% - 130px) / 5 + 12px);
+  border: 3px solid var(--color-main);
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* --- 著作権フッター（共通） --- */
+.t-09 .copyright, .t-10 .copyright {
+  font-size: 11px;
+  color: #b0b8c0;
+  margin: 12px 0 0;
+  letter-spacing: 0.04em;
+}
+
+/* ============================================================
+   13. テンプレート 11 :「ロードマップ（4フェーズ水平タイムライン）」
+   - 横1本のタイムライン上に4つのフェーズ円を等間隔配置
+   - 各フェーズに「タイトル + 説明文 + サブ箇条書き」の3段構造
+   - タイムライン本体とタイトルはメインカラー、フェーズ円はアクセントカラー
+   - フェーズ円は box-shadow の白いリングでタイムライン上に「打点」される
+   ============================================================ */
+
+.t-11 {
+  padding: 36px 56px 18px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-jp);
+}
+
+/* --- スライドタイトル --- */
+.t-11 .title-area {
+  border-bottom: 1px solid #d8d8d8;
+  padding-bottom: 14px;
+  margin-bottom: 36px;
+}
+.t-11 .slide-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--color-text);
+  border-left: 6px solid var(--color-main);
+  padding: 2px 0 2px 14px;
+  margin: 0;
+  display: inline-block;
+  letter-spacing: 0.05em;
+}
+
+/* --- ロードマップ本体（4列グリッド） --- */
+.t-11 .roadmap {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px;
+  position: relative;
+  padding-top: 30px;
+}
+
+/* --- タイムラインの横線（4列の中心点〜中心点を結ぶ） ---
+   gap=32px、4列1fr の場合、列の中心は左右ともに「12.5% - 12px」内側
+*/
+.t-11 .timeline-line {
+  position: absolute;
+  top: 14px;
+  left:  calc(12.5% - 12px);
+  right: calc(12.5% - 12px);
+  height: 2px;
+  background: var(--color-main);
+  z-index: 1;
+}
+
+/* --- 各フェーズ列 --- */
+.t-11 .phase {
+  position: relative;
+  padding-top: 26px;  /* 円から本文タイトルまでの空き */
+}
+
+/* フェーズ円（アクセントカラー、白リングでタイムラインを切る） */
+.t-11 .phase .dot {
+  position: absolute;
+  top: -23px;        /* ロードマップ padding-top 30 + dot top -23 = 7 → 円中心 15 = 線中心 15 で一致 */
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  transform: translateX(-50%);
+  box-shadow: 0 0 0 5px #ffffff;  /* 線を視覚的に断ち切る白いリング */
+  z-index: 2;
+}
+
+/* フェーズタイトル（メインカラー） */
+.t-11 .phase-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-main);
+  margin: 0 0 14px;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+}
+
+/* 説明文 */
+.t-11 .phase-desc {
+  font-size: 14px;
+  color: var(--color-text);
+  line-height: 1.85;
+  margin: 0 0 18px;
+  letter-spacing: 0.02em;
+}
+
+/* サブ箇条書き（薄いグレー、装飾としての補足列挙） */
+.t-11 .sub-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+  color: #b0b6bc;
+  line-height: 2;
+  letter-spacing: 0.02em;
+}
+
+/* --- 著作権フッター --- */
+.t-11 .copyright {
+  font-size: 11px;
+  color: #b0b8c0;
+  margin: 12px 0 0;
+  letter-spacing: 0.04em;
+}
+
+/* ============================================================
+   14. テンプレート 12 :「文章 ＋ 図解（ヘッダーで領域を明示する2分割）」
+   - 上部に「説明文 / 図解」と書かれたヘッダー罫線でスライドの2ゾーンを宣言
+   - 左半分：箇条書き（最後の1点だけアクセントカラーで下線強調）
+   - 右半分：垂直方向の階層スタック + 右側に役割帯（サイドアノテーション）
+   - メインカラーで構造（ヘッダー罫・スタックレイヤー）、アクセントで強調と帯下部を担う
+   ============================================================ */
+
+.t-12 {
+  padding: 26px 56px 14px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-jp);
+}
+
+/* --- ヘッダー罫線（［説明文］［図解］） --- */
+.t-12 .header-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.t-12 .header-divider .line {
+  flex: 1;
+  height: 2px;
+  background: var(--color-main);
+}
+.t-12 .header-divider .label {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-main);
+  letter-spacing: 0.20em;
+  padding: 0 18px;
+}
+.t-12 .header-divider .bracket {
+  display: inline-flex;
+  gap: 6px;
+}
+.t-12 .header-divider .br {
+  width: 8px;
+  height: 22px;
+  border: 2px solid var(--color-main);
+}
+.t-12 .header-divider .br-end   { border-left:  none; }   /* ] 形 */
+.t-12 .header-divider .br-start { border-right: none; }   /* [ 形 */
+
+/* --- 本体：左 文章 / 右 図解 の2分割 --- */
+.t-12 .content {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 36px;
+  align-items: stretch;
+  min-height: 0;
+}
+
+/* ===== 左：箇条書きパネル ===== */
+.t-12 .text-panel {
+  font-size: 15.5px;
+  color: var(--color-text);
+  line-height: 1.95;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+}
+.t-12 .text-panel ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+.t-12 .text-panel li {
+  position: relative;
+  padding-left: 18px;
+  margin-bottom: 14px;
+}
+.t-12 .text-panel li::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 0.7em;
+  width: 6px;
+  height: 6px;
+  background: var(--color-text);
+  border-radius: 50%;
+}
+.t-12 .text-panel .emph {
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: var(--color-accent);
+  text-decoration-thickness: 2.5px;
+  text-underline-offset: 5px;
+  letter-spacing: 0.02em;
+}
+
+/* ===== 右：図解パネル（階層スタック + サイドアノテーション） ===== */
+.t-12 .diagram-panel {
+  display: flex;
+  align-items: stretch;
+  gap: 22px;
+  padding: 6px 0;
+}
+
+/* 階層スタック（6 段） */
+.t-12 .stack {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.t-12 .stack .layer {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  border-radius: 2px;
+  text-align: center;
+  padding: 4px 6px;
+}
+/* 上から下へ濃 → 淡 のグラデーション（メインカラーのαで段階表現） */
+.t-12 .stack .layer-1 { background: rgba(0, 113, 188, 1.00); }
+.t-12 .stack .layer-2 { background: rgba(0, 113, 188, 0.86); }
+.t-12 .stack .layer-3 { background: rgba(0, 113, 188, 0.72); }
+.t-12 .stack .layer-4 { background: rgba(0, 113, 188, 0.58); }
+.t-12 .stack .layer-5 { background: rgba(0, 113, 188, 0.45); }
+.t-12 .stack .layer-6 { background: rgba(0, 113, 188, 0.32); }
+
+/* サイドアノテーション（垂直バー + 役割ラベル） */
+.t-12 .annot {
+  width: 138px;
+  position: relative;
+  flex-shrink: 0;
+}
+.t-12 .annot .annot-bar {
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 12px;
+  border-radius: 3px;
+  /* 上 65% は淡いアクセント色、下 35% はソリッドのアクセント色 */
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 80, 80, 0.16) 0%,
+    rgba(255, 80, 80, 0.16) 65%,
+    var(--color-accent) 65%,
+    var(--color-accent) 100%
+  );
+}
+.t-12 .annot .a-label {
+  position: absolute;
+  left: 24px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--color-accent);
+  white-space: nowrap;
+}
+.t-12 .annot .a-1 { top: 10%; opacity: 0.65; }
+.t-12 .annot .a-2 { top: 38%; opacity: 0.85; }
+.t-12 .annot .a-3 { top: 78%; }
+
+/* --- 出典 --- */
+.t-12 .citation {
+  font-size: 12px;
+  color: var(--color-sub);
+  margin: 14px 0 0;
+  text-align: right;
+  letter-spacing: 0.02em;
+}
+
+/* ============================================================
+   今後追加するテンプレートはこの下に .t-13, .t-14 ... と
+   名前空間を分けて記述する
+   ============================================================ */
+
+</style>
 </head>
 <body>
-  <!--
-    USAGE:
-    - Copy this file as slide-01.html, slide-02.html, etc.
-    - Edit only inside <section class="slide">
-    - Do NOT add external CSS/JS files (keep everything inline)
-    - Maximum 3 lines of text per slide
-    - Icons: ../cache/icons/{slug}/{variant}.svg
-  -->
 
-  <section class="slide">
+<header class="page-header">
+  <h1>スライドテンプレート集</h1>
+  <p>Claude Code スライド作成スキル用 / 1280 × 720 (16:9) 基準</p>
+  <div class="color-chips">
+    <span><i style="background:#0071BC"></i>Main #0071BC</span>
+    <span><i style="background:#FF5050"></i>Accent #FF5050</span>
+  </div>
+</header>
 
-    <!-- ========== SLIDE CONTENT START ========== -->
+<main class="gallery">
 
-    <h1 class="slide-title">{{SLIDE_TITLE}}</h1>
-    <hr class="slide-divider">
-
-    <div class="slide-body">
-      <p>{{LINE_1}}</p>
-      <p>{{LINE_2}}</p>
-      <p>{{LINE_3}}</p>
+  <!-- ============================================================
+       TEMPLATE 01 :「グラフ強調（吹き出し付き棒グラフ）」
+       ============================================================ -->
+  <section class="template-card">
+    <div class="template-meta">
+      <span class="id">T-01</span>
+      <h2>グラフ強調（吹き出し付き棒グラフ）</h2>
+      <p class="desc">
+        複数カテゴリの中から最大値を強調し、結論メッセージを右側に大きく配置するパターン。
+        定量データを「結論ファースト」で見せたい場面に有効。
+      </p>
     </div>
 
-    <!-- ========== SLIDE CONTENT END ========== -->
+    <div class="slide-frame">
+      <div class="slide t-01">
 
-    <div class="slide-number">{{SLIDE_NUMBER}}</div>
+        <h3 class="slide-title">グラフタイトルについて</h3>
 
+        <div class="body">
+
+          <!-- ===== 左：棒グラフ ===== -->
+          <svg class="chart" viewBox="0 0 700 520" preserveAspectRatio="xMidYMid meet">
+            <!--
+              プロット領域: x = 60 〜 680, y = 60 〜 460
+              y軸: 0〜7 (1目盛 = 約57px)  =>  y(value) = 460 - value * 57
+              4カテゴリ × 3バー
+            -->
+
+            <!-- グリッド線と Y 軸ラベル -->
+            <g>
+              <!-- 1〜7 -->
+              <line class="grid-line" x1="60"  y1="403" x2="680" y2="403"/>
+              <text class="axis-label" x="40" y="408" text-anchor="end">1</text>
+              <line class="grid-line" x1="60"  y1="346" x2="680" y2="346"/>
+              <text class="axis-label" x="40" y="351" text-anchor="end">2</text>
+              <line class="grid-line" x1="60"  y1="289" x2="680" y2="289"/>
+              <text class="axis-label" x="40" y="294" text-anchor="end">3</text>
+              <line class="grid-line" x1="60"  y1="232" x2="680" y2="232"/>
+              <text class="axis-label" x="40" y="237" text-anchor="end">4</text>
+              <line class="grid-line" x1="60"  y1="175" x2="680" y2="175"/>
+              <text class="axis-label" x="40" y="180" text-anchor="end">5</text>
+              <line class="grid-line" x1="60"  y1="118" x2="680" y2="118"/>
+              <text class="axis-label" x="40" y="123" text-anchor="end">6</text>
+              <line class="grid-line" x1="60"  y1="61"  x2="680" y2="61" />
+              <text class="axis-label" x="40" y="66"  text-anchor="end">7</text>
+
+              <!-- ベースライン -->
+              <line class="grid-line" x1="60" y1="460" x2="680" y2="460" style="stroke:#cccccc"/>
+            </g>
+
+            <!--
+              バー配置:
+              4カテゴリの中心を x = 140, 295, 450, 605 とする
+              各カテゴリ内 3 本のバー幅 = 36, 間隔 = 8 → 全幅 = 36*3 + 8*2 = 124
+              各バーの x = 中心 - 62 + i*44  (i=0,1,2)
+              バー色: 通常は .bar (gray)、強調は .bar-highlight (main color)
+            -->
+
+            <!-- カテゴリ1: 4.3, 2.4, 2.0 -->
+            <rect class="bar" x="78"  y="215" width="36" height="245" />
+            <text class="value-label" x="96" y="207">4.3</text>
+            <rect class="bar" x="122" y="323" width="36" height="137" />
+            <text class="value-label" x="140" y="315">2.4</text>
+            <rect class="bar" x="166" y="346" width="36" height="114" />
+            <text class="value-label" x="184" y="338">2.0</text>
+
+            <!-- カテゴリ2: 3.5, 6.0(★強調), 4.0 -->
+            <rect class="bar" x="233" y="261" width="36" height="199" />
+            <text class="value-label" x="251" y="253">3.5</text>
+            <rect class="bar-highlight" x="277" y="118" width="36" height="342" />
+            <rect class="bar" x="321" y="232" width="36" height="228" />
+            <text class="value-label" x="339" y="224">4.0</text>
+
+            <!-- カテゴリ3: 1.5, 1.3, 3.0 -->
+            <rect class="bar" x="388" y="374" width="36" height="86" />
+            <text class="value-label" x="406" y="366">1.5</text>
+            <rect class="bar" x="432" y="386" width="36" height="74" />
+            <text class="value-label" x="450" y="378">1.3</text>
+            <rect class="bar" x="476" y="289" width="36" height="171" />
+            <text class="value-label" x="494" y="281">3.0</text>
+
+            <!-- カテゴリ4: 2.5, 2.8, 3.0 -->
+            <rect class="bar" x="543" y="318" width="36" height="142" />
+            <text class="value-label" x="561" y="310">2.5</text>
+            <rect class="bar" x="587" y="301" width="36" height="159" />
+            <text class="value-label" x="605" y="293">2.8</text>
+            <rect class="bar" x="631" y="289" width="36" height="171" />
+            <text class="value-label" x="649" y="281">3.0</text>
+
+            <!-- X軸ラベル -->
+            <text class="x-label" x="140" y="492">カテゴリ 1</text>
+            <text class="x-label" x="295" y="492">カテゴリ 2</text>
+            <text class="x-label" x="450" y="492">カテゴリ 3</text>
+            <text class="x-label" x="605" y="492">カテゴリ 4</text>
+
+            <!-- ===== 吹き出し（強調バーの上） ===== -->
+            <!--
+              吹き出し本体: 角丸長方形
+              中心 x = 295 (カテゴリ2の中央バー中央), 上端 y ≈ 18
+              幅 110, 高さ 78, 三角は下向き
+            -->
+            <g>
+              <path class="callout-bg"
+                    d="M 240 14
+                       h 110
+                       a 14 14 0 0 1 14 14
+                       v 50
+                       a 14 14 0 0 1 -14 14
+                       h -42
+                       l -13 12
+                       l -13 -12
+                       h -42
+                       a 14 14 0 0 1 -14 -14
+                       v -50
+                       a 14 14 0 0 1 14 -14
+                       z" />
+              <text class="callout-text" x="295" y="46">最高</text>
+              <text class="callout-text" x="295" y="72">成績</text>
+            </g>
+          </svg>
+
+          <!-- ===== 右：メッセージ ===== -->
+          <div class="message">
+            <p class="lead">カテゴリ２で</p>
+            <p class="headline">
+              <span class="emph">最高成績<span class="num">6.0</span>を達成。</span>
+            </p>
+            <p class="desc">
+              てきすとがここにはいります。てきすとがここに入ります。てきすとがここにはいります。
+              てきすとがここに入ります。てきすとがここにはいります。てきすとがここに入ります。
+              てきすとがここにはいります。てきすとがここに入ります。
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </div>
   </section>
 
-  <script>
-    document.fonts.ready.then(function () {
-      document.body.classList.add('fonts-ready');
+  <!-- ============================================================
+       TEMPLATE 02 :「範囲強調（連続するデータ群を帯で強調）」
+       ============================================================ -->
+  <section class="template-card">
+    <div class="template-meta">
+      <span class="id">T-02</span>
+      <h2>範囲強調（連続するデータ群を帯で強調）</h2>
+      <p class="desc">
+        連続する複数のデータをひとつのまとまりとして強調するパターン。
+        帯状の背景＋メインカラーの棒で「このグループに注目」と視線を誘導する。
+        時系列の特定期間や、特定セグメントの抽出表示に有効。
+      </p>
+    </div>
+
+    <div class="slide-frame">
+      <div class="slide t-02">
+
+        <h3 class="slide-title">グラフタイトルについて</h3>
+
+        <div class="chart-wrap">
+          <svg class="chart" viewBox="0 0 1100 620" preserveAspectRatio="xMidYMid meet">
+            <!--
+              プロット領域: x = 80 〜 1080, y = 30 〜 540
+              y軸: 0〜6 (1目盛 = 85px)  =>  y(value) = 540 - value * 85
+              9バーを 3グループに分けて配置
+                G1: ①②③ ⇒ x = 110, 190, 270
+                G2: ④⑤⑥ ⇒ x = 480, 560, 640 （★強調）
+                G3: ⑦⑧⑨ ⇒ x = 850, 930, 1010
+            -->
+
+            <!-- 強調帯（背景レイヤー：最初に描画） -->
+            <rect class="highlight-band" x="410" y="25" width="340" height="520" rx="2"/>
+
+            <!-- グリッド線 + Y軸ラベル -->
+            <g>
+              <line class="grid-line" x1="80" y1="540" x2="1080" y2="540" style="stroke:#cccccc"/>
+              <text class="axis-label" x="60" y="547" text-anchor="end">0</text>
+
+              <line class="grid-line" x1="80" y1="455" x2="1080" y2="455"/>
+              <text class="axis-label" x="60" y="462" text-anchor="end">1</text>
+
+              <line class="grid-line" x1="80" y1="370" x2="1080" y2="370"/>
+              <text class="axis-label" x="60" y="377" text-anchor="end">2</text>
+
+              <line class="grid-line" x1="80" y1="285" x2="1080" y2="285"/>
+              <text class="axis-label" x="60" y="292" text-anchor="end">3</text>
+
+              <line class="grid-line" x1="80" y1="200" x2="1080" y2="200"/>
+              <text class="axis-label" x="60" y="207" text-anchor="end">4</text>
+
+              <line class="grid-line" x1="80" y1="115" x2="1080" y2="115"/>
+              <text class="axis-label" x="60" y="122" text-anchor="end">5</text>
+
+              <line class="grid-line" x1="80" y1="30" x2="1080" y2="30"/>
+              <text class="axis-label" x="60" y="37" text-anchor="end">6</text>
+            </g>
+
+            <!-- グループ1: ①4.3, ②2.4, ③2.0 -->
+            <rect class="bar" x="110" y="175" width="60" height="365"/>
+            <rect class="bar" x="190" y="336" width="60" height="204"/>
+            <rect class="bar" x="270" y="370" width="60" height="170"/>
+
+            <!-- グループ2: ④2.5, ⑤4.4, ⑥2.0 （★メインカラーで強調） -->
+            <rect class="bar-highlight" x="480" y="328" width="60" height="212"/>
+            <rect class="bar-highlight" x="560" y="166" width="60" height="374"/>
+            <rect class="bar-highlight" x="640" y="370" width="60" height="170"/>
+
+            <!-- グループ3: ⑦3.5, ⑧1.8, ⑨3.0 -->
+            <rect class="bar" x="850" y="243" width="60" height="297"/>
+            <rect class="bar" x="930" y="387" width="60" height="153"/>
+            <rect class="bar" x="1010" y="285" width="60" height="255"/>
+
+            <!-- 番号ラベル（円付き数字 ①〜⑨） -->
+            <text class="num-label" x="140" y="585">①</text>
+            <text class="num-label" x="220" y="585">②</text>
+            <text class="num-label" x="300" y="585">③</text>
+            <text class="num-label" x="510" y="585">④</text>
+            <text class="num-label" x="590" y="585">⑤</text>
+            <text class="num-label" x="670" y="585">⑥</text>
+            <text class="num-label" x="880" y="585">⑦</text>
+            <text class="num-label" x="960" y="585">⑧</text>
+            <text class="num-label" x="1040" y="585">⑨</text>
+
+          </svg>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       TEMPLATE 03 :「ステップ表現（4ステップカード）」
+       ============================================================ -->
+  <section class="template-card">
+    <div class="template-meta">
+      <span class="id">T-03</span>
+      <h2>ステップ表現（プロセスを4ステップカードで表示）</h2>
+      <p class="desc">
+        手順やプロセスを横並びのカードで段階的に見せるパターン。
+        アイコン＋STEP番号＋見出し＋説明文の構成で、矢印が次の段階への流れを誘導する。
+        制作フロー、研究プロセス、患者導線などの可視化に有効。
+      </p>
+    </div>
+
+    <div class="slide-frame">
+      <div class="slide t-03">
+
+        <h3 class="slide-title">ホームページ制作のステップ</h3>
+
+        <div class="steps">
+
+          <!-- ===== STEP 1 ===== -->
+          <div class="step-card">
+            <div class="step-top"></div>
+            <div class="step-body">
+              <div class="step-icon-wrap">
+                <svg class="step-icon" viewBox="0 0 64 64" aria-hidden="true">
+                  <g fill="none" stroke="currentColor" stroke-width="2.5"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="14" y="14" width="36" height="44" rx="3"/>
+                    <rect x="22" y="10" width="20" height="8" rx="2" fill="#ffffff"/>
+                    <polyline points="19,28 22,31 27,26"/>
+                    <line x1="32" y1="29" x2="44" y2="29"/>
+                    <polyline points="19,40 22,43 27,38"/>
+                    <line x1="32" y1="41" x2="44" y2="41"/>
+                    <polyline points="19,52 22,55 27,50"/>
+                    <line x1="32" y1="53" x2="44" y2="53"/>
+                  </g>
+                </svg>
+              </div>
+              <div class="step-num">STEP 01</div>
+              <h4 class="step-title">要件定義</h4>
+              <p class="step-desc">
+                ホームページを作成する理由を明確にします。どのようなユーザーに向けてサイトを作るのかを決定します。ターゲットユーザーの年齢、性別、興味、行動パターンなどを分析し、ユーザーに合ったコンテンツやデザインを考えます。
+              </p>
+            </div>
+          </div>
+
+          <!-- 矢印 -->
+          <div class="step-arrow" aria-hidden="true">
+            <svg viewBox="0 0 32 32">
+              <circle class="arrow-bg" cx="16" cy="16" r="14"/>
+              <polyline class="arrow-line" points="14,10 20,16 14,22"/>
+            </svg>
+          </div>
+
+          <!-- ===== STEP 2 ===== -->
+          <div class="step-card">
+            <div class="step-top"></div>
+            <div class="step-body">
+              <div class="step-icon-wrap">
+                <svg class="step-icon" viewBox="0 0 64 64" aria-hidden="true">
+                  <g fill="none" stroke="currentColor" stroke-width="2.5"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="52" y1="12" x2="38" y2="26"/>
+                    <path d="M34 22 L42 30 L36 36 L28 28 Z"/>
+                    <path d="M28 28 C 18 32 14 50 22 54 C 32 54 36 44 36 36"/>
+                  </g>
+                </svg>
+              </div>
+              <div class="step-num">STEP 02</div>
+              <h4 class="step-title">デザイン制作</h4>
+              <p class="step-desc">
+                各ページの基本的なレイアウトを画面に作成します。テキストブロック、画像、ナビゲーションなどの位置を決定します。ユーザーがサイト内でどのように情報を見つけ、どのように操作するかを確認します。
+              </p>
+            </div>
+          </div>
+
+          <!-- 矢印 -->
+          <div class="step-arrow" aria-hidden="true">
+            <svg viewBox="0 0 32 32">
+              <circle class="arrow-bg" cx="16" cy="16" r="14"/>
+              <polyline class="arrow-line" points="14,10 20,16 14,22"/>
+            </svg>
+          </div>
+
+          <!-- ===== STEP 3 ===== -->
+          <div class="step-card">
+            <div class="step-top"></div>
+            <div class="step-body">
+              <div class="step-icon-wrap">
+                <svg class="step-icon" viewBox="0 0 64 64" aria-hidden="true">
+                  <g fill="none" stroke="currentColor" stroke-width="2.5"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="8" y="14" width="48" height="32" rx="2"/>
+                    <line x1="32" y1="46" x2="32" y2="52"/>
+                    <line x1="22" y1="52" x2="42" y2="52"/>
+                    <polyline points="24,24 18,30 24,36"/>
+                    <polyline points="40,24 46,30 40,36"/>
+                    <line x1="36" y1="22" x2="28" y2="38"/>
+                  </g>
+                </svg>
+              </div>
+              <div class="step-num">STEP 03</div>
+              <h4 class="step-title">システム開発</h4>
+              <p class="step-desc">
+                ページの基本構造をHTMLで作成します。適切なタグを使用して、セマンティックなマークアップを行います。CSSを使用して、デザインモックアップ通りにスタイルを設定します。レイアウト、色、フォント、スペースなどを調整します。
+              </p>
+            </div>
+          </div>
+
+          <!-- 矢印 -->
+          <div class="step-arrow" aria-hidden="true">
+            <svg viewBox="0 0 32 32">
+              <circle class="arrow-bg" cx="16" cy="16" r="14"/>
+              <polyline class="arrow-line" points="14,10 20,16 14,22"/>
+            </svg>
+          </div>
+
+          <!-- ===== STEP 4 ===== -->
+          <div class="step-card">
+            <div class="step-top"></div>
+            <div class="step-body">
+              <div class="step-icon-wrap">
+                <svg class="step-icon" viewBox="0 0 64 64" aria-hidden="true">
+                  <g fill="none" stroke="currentColor" stroke-width="2.5"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M 37 17 a 2 2 0 0 0 0 3 l 4 4 a 2 2 0 0 0 3 0 l 9 -9
+                             a 13 13 0 0 1 -16 16
+                             l -16 16
+                             a 5 5 0 1 1 -7 -7
+                             l 16 -16
+                             a 13 13 0 0 1 16 -16
+                             l -9 9 z"/>
+                  </g>
+                </svg>
+              </div>
+              <div class="step-num">STEP 04</div>
+              <h4 class="step-title">保守・運用</h4>
+              <p class="step-desc">
+                主要なブラウザ（Chrome、Firefox、Edge、Safariなど）でサイトの表示と機能を確認します。ブラウザごとの表示の違いや不具合をチェックします。フォーム送信、リンク、ボタンなど、すべての機能が正しく動作するかをテストします。
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       TEMPLATE 04 :「研究結果テーブル（アイコン+項目+数値+解釈文）」
+       ============================================================ -->
+  <section class="template-card">
+    <div class="template-meta">
+      <span class="id">T-04</span>
+      <h2>研究結果テーブル（アイコン＋項目＋数値＋解釈文）</h2>
+      <p class="desc">
+        論文の主要結果（OR/HR/RRなど）を1スライドにまとめるパターン。
+        「上部ヘッダーに結論文」「テーブルに各アウトカムの数値と解釈」「右下に出典」という
+        論文発表で頻出する3要素構成。読み手が結論→根拠→詳細の順に視線を運べる設計。
+      </p>
+    </div>
+
+    <div class="slide-frame">
+      <div class="slide t-04">
+
+        <div class="content">
+
+          <!-- 上部ヘッダーバー -->
+          <div class="head-bar">
+            フレイルは<mark>入院中の院内死亡率</mark>、<mark>入院期間</mark>、<mark>自宅退院</mark>、<mark>院内合併症</mark>と関連
+          </div>
+
+          <!-- 結果テーブル -->
+          <table class="result-table">
+            <thead>
+              <tr>
+                <th class="th-icon"></th>
+                <th class="th-out">Outcomes</th>
+                <th class="th-or">Odds ratio, 95%CI</th>
+                <th class="th-msg"></th>
+              </tr>
+            </thead>
+            <tbody>
+
+              <!-- Row 1: 院内死亡率 -->
+              <tr>
+                <td class="icon-cell">
+                  <span class="circle">
+                    <svg viewBox="0 0 64 64" aria-hidden="true">
+                      <path fill="#fff" d="M32 50 C 18 40 12 30 12 22 C 12 16 16 12 22 12 C 26 12 30 14 32 18 C 34 14 38 12 42 12 C 48 12 52 16 52 22 C 52 30 46 40 32 50 Z"/>
+                    </svg>
+                  </span>
+                </td>
+                <td class="name-cell">院内死亡率</td>
+                <td class="value-cell">1.12<span class="ci">, 1.05–1.19</span></td>
+                <td class="msg-cell">
+                  フレイルは,<br>
+                  <span class="msg-emph">死亡リスクを増大</span>させる
+                </td>
+              </tr>
+
+              <!-- Row 2: 入院期間 -->
+              <tr>
+                <td class="icon-cell">
+                  <span class="circle">
+                    <svg viewBox="0 0 64 64" aria-hidden="true">
+                      <g fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="10" y="16" width="44" height="38" rx="2"/>
+                        <line x1="10" y1="26" x2="54" y2="26"/>
+                        <line x1="20" y1="10" x2="20" y2="20"/>
+                        <line x1="44" y1="10" x2="44" y2="20"/>
+                      </g>
+                      <g fill="#fff">
+                        <circle cx="22" cy="36" r="2"/>
+                        <circle cx="32" cy="36" r="2"/>
+                        <circle cx="42" cy="36" r="2"/>
+                        <circle cx="22" cy="44" r="2"/>
+                        <circle cx="32" cy="44" r="2"/>
+                      </g>
+                    </svg>
+                  </span>
+                </td>
+                <td class="name-cell">入院期間</td>
+                <td class="value-cell">2.04<span class="ci">, 1.51–2.56</span></td>
+                <td class="msg-cell">
+                  フレイルは,<br>
+                  <span class="msg-emph">入院期間を延長</span>させる
+                </td>
+              </tr>
+
+              <!-- Row 3: 自宅退院 -->
+              <tr>
+                <td class="icon-cell">
+                  <span class="circle">
+                    <svg viewBox="0 0 64 64" aria-hidden="true">
+                      <path fill="#fff" d="M32 10 L 8 30 L 14 30 L 14 52 L 26 52 L 26 38 L 38 38 L 38 52 L 50 52 L 50 30 L 56 30 Z"/>
+                    </svg>
+                  </span>
+                </td>
+                <td class="name-cell">自宅退院</td>
+                <td class="value-cell">0.58<span class="ci">, 0.53–0.63</span></td>
+                <td class="msg-cell">
+                  フレイルは,<br>
+                  <span class="msg-emph">自宅復帰を阻害</span>する
+                </td>
+              </tr>
+
+              <!-- Row 4: 院内合併症 -->
+              <tr>
+                <td class="icon-cell">
+                  <span class="circle">
+                    <svg viewBox="0 0 64 64" aria-hidden="true">
+                      <circle cx="32" cy="32" r="7" fill="#fff"/>
+                      <g fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round">
+                        <line x1="32" y1="10" x2="32" y2="18"/>
+                        <line x1="32" y1="46" x2="32" y2="54"/>
+                        <line x1="10" y1="32" x2="18" y2="32"/>
+                        <line x1="46" y1="32" x2="54" y2="32"/>
+                        <line x1="17" y1="17" x2="22" y2="22"/>
+                        <line x1="42" y1="42" x2="47" y2="47"/>
+                        <line x1="17" y1="47" x2="22" y2="42"/>
+                        <line x1="42" y1="22" x2="47" y2="17"/>
+                      </g>
+                    </svg>
+                  </span>
+                </td>
+                <td class="name-cell">院内合併症</td>
+                <td class="value-cell">1.17<span class="ci">, 1.10–1.24</span></td>
+                <td class="msg-cell">
+                  フレイルは,<br>
+                  <span class="msg-emph">合併症リスクを高</span>める
+                </td>
+              </tr>
+
+            </tbody>
+          </table>
+
+          <p class="citation">Alqarni, Abdullah G., et al. Age and Ageing 52.5 (2023): afad073.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       TEMPLATE 05 :「要素分解（階層ブラケットで構造を可視化）」
+       ============================================================ -->
+  <section class="template-card">
+    <div class="template-meta">
+      <span class="id">T-05</span>
+      <h2>要素分解（階層ブラケットで構造を可視化）</h2>
+      <p class="desc">
+        ある概念を「親 → 中間カテゴリ → 末端要素」と段階的に分解して見せるパターン。
+        料金体系・コンポーネント分解・カテゴリ分類などに有効。
+        末端の数値だけメインカラーで強調し、+演算子のみアクセントカラーで「足し合わせ」の構造を示す。
+      </p>
+    </div>
+
+    <div class="slide-frame">
+      <div class="slide t-05">
+
+        <div class="title-area">
+          <h3 class="slide-title">サービス料金体系</h3>
+        </div>
+
+        <div class="diagram-wrap">
+          <div class="diagram">
+
+            <!-- ===== ルート ===== -->
+            <div class="root">料金</div>
+
+            <!-- ===== コネクタ1: ルート → 中間ブロック2つ ===== -->
+            <div class="conn conn-1">
+              <svg viewBox="0 0 24 100" preserveAspectRatio="none" aria-hidden="true">
+                <g stroke="#a0a8b0" stroke-width="1.2" fill="none" vector-effect="non-scaling-stroke">
+                  <path d="M 0 57 L 12 57"/>          <!-- ルート → 縦軸 -->
+                  <path d="M 12 28 L 12 86"/>         <!-- 縦軸 -->
+                  <path d="M 12 28 L 24 28"/>         <!-- 縦軸 → 初期費用 -->
+                  <path d="M 12 86 L 24 86"/>         <!-- 縦軸 → ランニング費用 -->
+                </g>
+              </svg>
+            </div>
+
+            <!-- ===== 中間ブロック ===== -->
+            <div class="mid mid-1">初期<br>費用</div>
+            <div class="plus">＋</div>
+            <div class="mid mid-2">ランニング<br>費用</div>
+
+            <!-- ===== コネクタ2: 中間 → リーフ ===== -->
+            <div class="conn conn-2">
+              <svg viewBox="0 0 24 100" preserveAspectRatio="none" aria-hidden="true">
+                <g stroke="#a0a8b0" stroke-width="1.2" fill="none" vector-effect="non-scaling-stroke">
+                  <!-- 初期費用 → 会員 + 一般 -->
+                  <path d="M 0 28 L 12 28"/>
+                  <path d="M 12 14 L 12 42"/>
+                  <path d="M 12 14 L 24 14"/>
+                  <path d="M 12 42 L 24 42"/>
+                  <!-- ランニング費用 → 共通 (1本のみ) -->
+                  <path d="M 0 86 L 24 86"/>
+                </g>
+              </svg>
+            </div>
+
+            <!-- ===== リーフラベル ===== -->
+            <div class="leaf leaf-1">会員</div>
+            <div class="leaf leaf-2">一般</div>
+            <div class="leaf leaf-3">共通</div>
+
+            <!-- ===== 数値パネル ===== -->
+            <div class="value value-1">
+              <span class="num">100,000</span><span class="unit">円/回</span>
+            </div>
+            <div class="value value-2">
+              <span class="num">200,000</span><span class="unit">円/回</span>
+            </div>
+            <div class="value value-3">
+              <span class="num">5,000</span><span class="unit">円/月</span>
+            </div>
+
+          </div>
+        </div>
+
+        <footer class="copyright">© XXXX ALL RIGHTS RESERVED.</footer>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       TEMPLATE 06 :「強みテーブル（ラベル+アイコン+チェック箇条書き）」
+       ============================================================ -->
+  <section class="template-card">
+    <div class="template-meta">
+      <span class="id">T-06</span>
+      <h2>強みテーブル（ラベル＋アイコン＋チェック箇条書き）</h2>
+      <p class="desc">
+        自社・自製品の強みを「カテゴリ名 + ピクトグラム + チェック付き詳細」の3要素で4項目並べる定番パターン。
+        会社紹介・サービス概要・提案書の中盤に頻出。読み手は左の見出しで概要を掴み、右パネルのアイコンと箇条書きで詳細を確認できる視線誘導。
+        左列をメインカラー、チェック印をアクセントカラーで打って強弱をつける。
+      </p>
+    </div>
+
+    <div class="slide-frame">
+      <div class="slide t-06">
+
+        <div class="title-area">
+          <h3 class="slide-title">当社の強み</h3>
+        </div>
+
+        <table class="strength-table">
+          <colgroup>
+            <col class="col-label">
+            <col class="col-detail">
+          </colgroup>
+          <thead>
+            <tr>
+              <th class="th-label">
+                <!-- 親指アイコン -->
+                <svg class="thumb" viewBox="0 0 24 24" aria-hidden="true">
+                  <path fill="#ffffff" d="M2 10 H6 V22 H2 Z M8 10 L13 2 C 14 2 15 3 15 4 L14 9 H21 C 22 9 23 10 23 11 L21 21 C 21 22 20 22 19 22 H8 Z"/>
+                </svg>強み
+              </th>
+              <th class="th-detail">詳細</th>
+            </tr>
+          </thead>
+          <tbody>
+
+            <!-- Row 1: 実績 -->
+            <tr>
+              <td class="label-cell">実績</td>
+              <td class="detail-cell">
+                <div class="detail-inner">
+                  <span class="icon-wrap">
+                    <!-- 月桂冠（ローレル） -->
+                    <svg viewBox="0 0 64 64" aria-hidden="true">
+                      <g fill="#4a4a4a">
+                        <ellipse cx="14" cy="22" rx="3.5" ry="6.5" transform="rotate(-30 14 22)"/>
+                        <ellipse cx="12" cy="32" rx="3.5" ry="6.5" transform="rotate(-15 12 32)"/>
+                        <ellipse cx="14" cy="42" rx="3.5" ry="6.5" transform="rotate(5 14 42)"/>
+                        <ellipse cx="20" cy="50" rx="3.5" ry="6"   transform="rotate(30 20 50)"/>
+                        <ellipse cx="50" cy="22" rx="3.5" ry="6.5" transform="rotate(30 50 22)"/>
+                        <ellipse cx="52" cy="32" rx="3.5" ry="6.5" transform="rotate(15 52 32)"/>
+                        <ellipse cx="50" cy="42" rx="3.5" ry="6.5" transform="rotate(-5 50 42)"/>
+                        <ellipse cx="44" cy="50" rx="3.5" ry="6"   transform="rotate(-30 44 50)"/>
+                      </g>
+                      <g fill="none" stroke="#4a4a4a" stroke-width="2.2" stroke-linecap="round">
+                        <path d="M 22 56 Q 16 38 20 18"/>
+                        <path d="M 42 56 Q 48 38 44 18"/>
+                      </g>
+                    </svg>
+                  </span>
+                  <ul>
+                    <li>業界トップクラスの導入実績（年間100社以上）</li>
+                    <li>大手企業から中小企業まで幅広く対応</li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 2: 現地教育 -->
+            <tr>
+              <td class="label-cell">現地教育</td>
+              <td class="detail-cell">
+                <div class="detail-inner">
+                  <span class="icon-wrap">
+                    <!-- 受講者 + ボード -->
+                    <svg viewBox="0 0 64 64" aria-hidden="true">
+                      <g fill="#4a4a4a">
+                        <circle cx="20" cy="18" r="6"/>
+                        <path d="M14 28 L26 28 C 28 28 28 30 28 32 L28 50 L12 50 L12 32 C 12 30 12 28 14 28 Z"/>
+                      </g>
+                      <g fill="none" stroke="#4a4a4a" stroke-width="2.5" stroke-linejoin="round">
+                        <rect x="34" y="22" width="22" height="22"/>
+                      </g>
+                      <g fill="#4a4a4a">
+                        <rect x="38" y="28" width="3" height="3"/>
+                        <rect x="44" y="28" width="3" height="3"/>
+                        <rect x="50" y="28" width="3" height="3"/>
+                        <rect x="38" y="34" width="3" height="3"/>
+                        <rect x="44" y="34" width="3" height="3"/>
+                        <rect x="50" y="34" width="3" height="3"/>
+                        <rect x="38" y="40" width="3" height="3"/>
+                        <rect x="44" y="40" width="3" height="3"/>
+                      </g>
+                      <line x1="6" y1="54" x2="58" y2="54" stroke="#4a4a4a" stroke-width="2.5"/>
+                    </svg>
+                  </span>
+                  <ul>
+                    <li>専門講師による個別研修プログラムを提供</li>
+                    <li>現場のニーズに合わせカスタマイズ可能</li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 3: コミュニケーション -->
+            <tr>
+              <td class="label-cell">コミュニ<br>ケーション</td>
+              <td class="detail-cell">
+                <div class="detail-inner">
+                  <span class="icon-wrap">
+                    <!-- 二人 + 吹き出し -->
+                    <svg viewBox="0 0 64 64" aria-hidden="true">
+                      <g fill="#4a4a4a">
+                        <!-- 吹き出し（左） -->
+                        <path d="M 6 10 L 24 10 C 25 10 26 11 26 12 L 26 22 C 26 23 25 24 24 24 L 18 24 L 14 28 L 14 24 L 8 24 C 7 24 6 23 6 22 L 6 12 C 6 11 7 10 8 10 Z"/>
+                        <!-- 吹き出し（右） -->
+                        <path d="M 58 10 L 40 10 C 39 10 38 11 38 12 L 38 22 C 38 23 39 24 40 24 L 46 24 L 50 28 L 50 24 L 56 24 C 57 24 58 23 58 22 L 58 12 C 58 11 57 10 56 10 Z"/>
+                        <!-- 人 1 -->
+                        <circle cx="20" cy="38" r="6"/>
+                        <path d="M 12 56 C 12 48 16 46 20 46 C 24 46 28 48 28 56 Z"/>
+                        <!-- 人 2 -->
+                        <circle cx="44" cy="38" r="6"/>
+                        <path d="M 36 56 C 36 48 40 46 44 46 C 48 46 52 48 52 56 Z"/>
+                      </g>
+                    </svg>
+                  </span>
+                  <ul>
+                    <li>専任担当者による迅速な対応</li>
+                    <li>月次定例会で進捗を継続的に共有</li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 4: サポート体制 -->
+            <tr>
+              <td class="label-cell">サポート体制</td>
+              <td class="detail-cell">
+                <div class="detail-inner">
+                  <span class="icon-wrap">
+                    <!-- 電話 + メール（通知ドットでアクセントカラー） -->
+                    <svg viewBox="0 0 64 64" aria-hidden="true">
+                      <!-- 電話受話器（左下） -->
+                      <g fill="#4a4a4a">
+                        <path d="M 8 28 C 6 26 6 22 8 20 L 14 14 C 16 12 20 12 22 14 L 26 18 C 28 20 28 23 26 25 L 24 27 C 26 33 31 38 37 40 L 39 38 C 41 36 44 36 46 38 L 50 42 C 52 44 52 48 50 50 L 44 56 C 42 58 38 58 36 56 C 22 50 14 42 8 28 Z"/>
+                      </g>
+                      <!-- 封筒（右上） -->
+                      <g fill="#4a4a4a">
+                        <rect x="34" y="6" width="22" height="14" rx="1"/>
+                      </g>
+                      <g fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linejoin="round">
+                        <path d="M 34 6 L 45 14 L 56 6"/>
+                      </g>
+                      <!-- 通知ドット（アクセントカラー） -->
+                      <circle cx="55" cy="6" r="4" fill="#FF5050"/>
+                    </svg>
+                  </span>
+                  <ul>
+                    <li>24時間365日のサポート窓口を完備</li>
+                    <li>電話・メール・チャットなど複数チャネルに対応</li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+
+        <footer class="copyright">© XXXX ALL RIGHTS RESERVED.</footer>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       TEMPLATE 07 :「対比比較（縦軸4観点 × 横軸2項目）」
+       ============================================================ -->
+  <section class="template-card">
+    <div class="template-meta">
+      <span class="id">T-07</span>
+      <h2>対比比較（縦軸4観点 × 横軸2項目、推し側を強調枠で囲む）</h2>
+      <p class="desc">
+        2つの選択肢/対象を複数観点で並べて優劣を見せる定番パターン（自国 vs 他国、A案 vs B案、Before/After 等）。
+        観点（行）は4項目、比較軸（列）は2項目で構成し、各セルに ○ / △ / − の評価マークと箇条書きを配置する。
+        推したい側の列をアクセントカラーの枠で囲むことで、主張が一目で伝わる視線誘導。
+      </p>
+    </div>
+
+    <div class="slide-frame">
+      <div class="slide t-07">
+
+        <div class="title-area">
+          <h3 class="slide-title">学校教育の実態</h3>
+        </div>
+
+        <div class="compare-grid">
+
+          <!-- ===== Row 1 : ヘッダー ===== -->
+          <div></div><!-- 左上は空セル -->
+          <div class="col-header">日本</div>
+          <div class="col-header">近隣諸国</div>
+
+          <!-- ===== Row 2 : 体制 ===== -->
+          <div class="row-label">体制</div>
+          <div class="data-cell">
+            <span class="mark mark-good">
+              <svg viewBox="0 0 36 36" aria-label="良い"><circle cx="18" cy="18" r="13" fill="none" stroke="currentColor" stroke-width="3"/></svg>
+            </span>
+            <ul>
+              <li>6-3-3-4 制で全国統一カリキュラム</li>
+              <li>義務教育は公立校が中心</li>
+            </ul>
+          </div>
+          <div class="data-cell">
+            <span class="mark mark-mid">
+              <svg viewBox="0 0 36 36" aria-label="やや劣る"><polygon points="18,5 32,30 4,30" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/></svg>
+            </span>
+            <ul>
+              <li>国ごとに制度が大きく異なる</li>
+              <li>改革の途上にある国も多い</li>
+            </ul>
+          </div>
+
+          <!-- ===== Row 3 : 費用 ===== -->
+          <div class="row-label">費用</div>
+          <div class="data-cell">
+            <span class="mark mark-good">
+              <svg viewBox="0 0 36 36" aria-label="良い"><circle cx="18" cy="18" r="13" fill="none" stroke="currentColor" stroke-width="3"/></svg>
+            </span>
+            <ul>
+              <li>高校まで授業料無償化が進む</li>
+              <li>給食費・教材費の負担は別途</li>
+            </ul>
+          </div>
+          <div class="data-cell">
+            <span class="mark mark-mid">
+              <svg viewBox="0 0 36 36" aria-label="やや劣る"><polygon points="18,5 32,30 4,30" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/></svg>
+            </span>
+            <ul>
+              <li>公立校でも費用負担が大きい国</li>
+              <li>私立志向が強く家計圧迫</li>
+            </ul>
+          </div>
+
+          <!-- ===== Row 4 : 負担 ===== -->
+          <div class="row-label">負担</div>
+          <div class="data-cell">
+            <span class="mark mark-good">
+              <svg viewBox="0 0 36 36" aria-label="良い"><circle cx="18" cy="18" r="13" fill="none" stroke="currentColor" stroke-width="3"/></svg>
+            </span>
+            <ul>
+              <li>働き方改革で勤務時間を是正中</li>
+              <li>部活動の地域移行が進行</li>
+            </ul>
+          </div>
+          <div class="data-cell">
+            <span class="mark mark-bad">
+              <svg viewBox="0 0 36 36" aria-label="劣る"><line x1="6" y1="18" x2="30" y2="18" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+            </span>
+            <ul>
+              <li>受験競争が極めて激しい</li>
+              <li>教員の給与水準が相対的に低い</li>
+            </ul>
+          </div>
+
+          <!-- ===== Row 5 : その他 ===== -->
+          <div class="row-label">その他</div>
+          <div class="data-cell">
+            <span class="mark mark-good">
+              <svg viewBox="0 0 36 36" aria-label="良い"><circle cx="18" cy="18" r="13" fill="none" stroke="currentColor" stroke-width="3"/></svg>
+            </span>
+            <ul>
+              <li>GIGAスクール構想で1人1台端末</li>
+              <li>不登校・いじめ対応を強化</li>
+            </ul>
+          </div>
+          <div class="data-cell">
+            <span class="mark mark-mid">
+              <svg viewBox="0 0 36 36" aria-label="やや劣る"><polygon points="18,5 32,30 4,30" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/></svg>
+            </span>
+            <ul>
+              <li>進学塾市場が急速に拡大</li>
+              <li>国際バカロレア導入校が増加</li>
+            </ul>
+          </div>
+
+          <!-- ===== 強調枠：日本列をアクセントカラーで囲む ===== -->
+          <div class="emphasis-frame"></div>
+
+        </div>
+
+        <footer class="copyright">© XXXX ALL RIGHTS RESERVED.</footer>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       TEMPLATE 08 :「因果（"Aだから、Bである" 構文の2パネル因果図）」
+       ============================================================ -->
+  <section class="template-card">
+    <div class="template-meta">
+      <span class="id">T-08</span>
+      <h2>因果（「Aだから、Bである」構文の2パネル因果図）</h2>
+      <p class="desc">
+        ある事象（原因）から別の事象（結果）が必然的に導かれる、という因果関係を1スライドで表現する定番パターン。
+        左に原因、右に結果のパネルを置き、間に大きな三角矢印で「だから」をビジュアル化する。
+        原因側はニュートラルグレー、結果側はメインカラーで色相に強弱をつけ、矢印をアクセントカラーで打つことで
+        「現状 → 因果 → 結論」の流れを視線で追える設計。
+      </p>
+    </div>
+
+    <div class="slide-frame">
+      <div class="slide t-08">
+
+        <div class="title-area">
+          <h3 class="slide-title">技能実習生の増加</h3>
+        </div>
+
+        <div class="causal">
+
+          <!-- ===== 原因パネル（左） ===== -->
+          <div class="panel cause">
+            <p class="sub-title">日本の人口減少</p>
+            <svg class="illust" viewBox="0 0 240 180" aria-label="人口減少の棒グラフ">
+              <!-- 軸 -->
+              <line class="axis" x1="22" y1="20"  x2="22"  y2="160" stroke-width="3" stroke-linecap="round"/>
+              <line class="axis" x1="22" y1="160" x2="220" y2="160" stroke-width="3" stroke-linecap="round"/>
+              <!-- 棒（減少） -->
+              <rect class="bar" x="44"  y="42"  width="32" height="118"/>
+              <rect class="bar" x="88"  y="68"  width="32" height="92"/>
+              <rect class="bar" x="132" y="96"  width="32" height="64"/>
+              <rect class="bar" x="176" y="120" width="32" height="40"/>
+            </svg>
+          </div>
+
+          <!-- ===== 因果矢印（中央、▶） ===== -->
+          <div class="arrow">
+            <svg viewBox="0 0 60 60" aria-label="だから">
+              <polygon points="14,8 52,30 14,52" fill="#FF5050"/>
+            </svg>
+          </div>
+
+          <!-- ===== 結果パネル（右） ===== -->
+          <div class="panel effect">
+            <p class="sub-title">外国人材の増加</p>
+            <svg class="illust" viewBox="0 0 240 180" aria-label="外国人材増加の棒グラフ">
+              <!-- 軸 -->
+              <line class="axis" x1="22" y1="20"  x2="22"  y2="160" stroke-width="3" stroke-linecap="round"/>
+              <line class="axis" x1="22" y1="160" x2="220" y2="160" stroke-width="3" stroke-linecap="round"/>
+              <!-- 棒（増加） -->
+              <rect class="bar" x="40"  y="132" width="26" height="28"/>
+              <rect class="bar" x="74"  y="110" width="26" height="50"/>
+              <rect class="bar" x="108" y="86"  width="26" height="74"/>
+              <rect class="bar" x="142" y="58"  width="26" height="102"/>
+              <rect class="bar" x="176" y="28"  width="26" height="132"/>
+              <!-- トレンド矢印（右肩上がり） -->
+              <path class="trend" d="M 32 142 L 208 22" stroke-width="4" stroke-linecap="round"/>
+              <polygon class="trend-head" points="208,22 188,18 196,40"/>
+            </svg>
+          </div>
+
+        </div>
+
+        <footer class="copyright">© XXXX ALL RIGHTS RESERVED.</footer>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       TEMPLATE 09 :「仕様比較表（行強調パターン）」
+       ============================================================ -->
+  <section class="template-card">
+    <div class="template-meta">
+      <span class="id">T-09</span>
+      <h2>仕様比較表（行強調：観点軸で訴求）</h2>
+      <p class="desc">
+        複数の製品/プランを6属性 × 5項目で並べる仕様一覧スライド。"どの観点で勝つか" を見せたい時に使うパターン。
+        着目させたい行（例：価格）の値だけをメインカラーの太字に切り替え、他は黒のままにすることで読み手の視線を行方向に誘導する。
+        セットの T-10「列強調」と組み合わせ、同じデータでも訴求軸を行/列で切り替えられる。
+      </p>
+    </div>
+
+    <div class="slide-frame">
+      <div class="slide t-09">
+
+        <div class="title-area">
+          <h3 class="slide-title">製品スペック比較</h3>
+        </div>
+
+        <div class="spec-grid">
+
+          <!-- ===== Row 1 : ヘッダー（コーナー + 5製品） ===== -->
+          <div></div>
+          <div class="header-cell">
+            <span class="product-icon">
+              <!-- 電子レンジ -->
+              <svg viewBox="0 0 64 64" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M4 16 H60 V50 H4 Z M8 20 H36 V46 H8 Z"/>
+                <rect x="42" y="24" width="14" height="2"/>
+                <rect x="42" y="30" width="14" height="2"/>
+                <rect x="42" y="36" width="14" height="2"/>
+                <circle cx="49" cy="44" r="2.5"/>
+              </svg>
+            </span>
+            <span class="product-name">製品A</span>
+          </div>
+          <div class="header-cell">
+            <span class="product-icon">
+              <!-- ブラウン管TV -->
+              <svg viewBox="0 0 64 64" aria-hidden="true">
+                <g fill="currentColor"><path fill-rule="evenodd" d="M6 22 H58 V54 H6 Z M10 26 H54 V50 H10 Z"/></g>
+                <g stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none">
+                  <line x1="22" y1="22" x2="14" y2="6"/>
+                  <line x1="42" y1="22" x2="50" y2="6"/>
+                </g>
+              </svg>
+            </span>
+            <span class="product-name">製品B</span>
+          </div>
+          <div class="header-cell">
+            <span class="product-icon">
+              <!-- スマホ縦型 -->
+              <svg viewBox="0 0 64 64" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M22 6 H46 V58 H22 Z M25 12 H43 V50 H25 Z"/>
+                <circle cx="34" cy="54" r="1.6"/>
+              </svg>
+            </span>
+            <span class="product-name">製品C</span>
+          </div>
+          <div class="header-cell">
+            <span class="product-icon">
+              <!-- タブレット -->
+              <svg viewBox="0 0 64 64" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M14 6 H50 V58 H14 Z M17 12 H47 V52 H17 Z"/>
+                <circle cx="32" cy="55" r="1.6"/>
+              </svg>
+            </span>
+            <span class="product-name">製品D</span>
+          </div>
+          <div class="header-cell">
+            <span class="product-icon">
+              <!-- ノートPC -->
+              <svg viewBox="0 0 64 64" aria-hidden="true">
+                <g fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 12 H54 V44 H10 Z M14 16 H50 V40 H14 Z"/>
+                  <path d="M4 46 H60 L58 54 H6 Z"/>
+                </g>
+              </svg>
+            </span>
+            <span class="product-name">製品E</span>
+          </div>
+
+          <!-- ===== Row 2 : 価格（強調行） ===== -->
+          <div class="row-label">価格</div>
+          <div class="value row-emph">22,800円</div>
+          <div class="value row-emph">28,300円</div>
+          <div class="value row-emph">30,500円</div>
+          <div class="value row-emph">35,700円</div>
+          <div class="value row-emph">39,800円</div>
+
+          <!-- ===== Row 3 : 画素数 ===== -->
+          <div class="row-label">画素数</div>
+          <div class="value">100万画素</div>
+          <div class="value">100万画素</div>
+          <div class="value">150万画素</div>
+          <div class="value">150万画素</div>
+          <div class="value">200万画素</div>
+
+          <!-- ===== Row 4 : モニター ===== -->
+          <div class="row-label">モニター</div>
+          <div class="value">1.5インチ</div>
+          <div class="value">1.5インチ</div>
+          <div class="value">2.0インチ</div>
+          <div class="value">2.0インチ</div>
+          <div class="value">1.9インチ</div>
+
+          <!-- ===== Row 5 : 本体保証 ===== -->
+          <div class="row-label">本体保証</div>
+          <div class="value">3年</div>
+          <div class="value">3年</div>
+          <div class="value">3年</div>
+          <div class="value">3年</div>
+          <div class="value">5年</div>
+
+          <!-- ===== Row 6 : 無線LAN ===== -->
+          <div class="row-label">無線LAN</div>
+          <div class="value">×</div>
+          <div class="value">×</div>
+          <div class="value">×</div>
+          <div class="value">○</div>
+          <div class="value">○</div>
+
+          <!-- ===== Row 7 : GPS機能 ===== -->
+          <div class="row-label">GPS機能</div>
+          <div class="value">×</div>
+          <div class="value">○</div>
+          <div class="value">×</div>
+          <div class="value">○</div>
+          <div class="value">○</div>
+
+        </div>
+
+        <footer class="copyright">© XXXX ALL RIGHTS RESERVED.</footer>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       TEMPLATE 10 :「仕様比較表（列強調パターン）」
+       ============================================================ -->
+  <section class="template-card">
+    <div class="template-meta">
+      <span class="id">T-10</span>
+      <h2>仕様比較表（列強調：製品軸で訴求）</h2>
+      <p class="desc">
+        T-09 と同じスペック表構造を踏襲しつつ、強調軸を「行」から「列」に切り替えたバリアント。
+        推したい1製品の列にメインカラーの枠線を引き、列内の値もすべてメインカラーの太字にすることで
+        "どれを推すか" を一目で伝える設計。提案・推奨・採用判断を促すスライドに最適。
+      </p>
+    </div>
+
+    <div class="slide-frame">
+      <div class="slide t-10">
+
+        <div class="title-area">
+          <h3 class="slide-title">製品スペック比較</h3>
+        </div>
+
+        <div class="spec-grid">
+
+          <!-- ===== Row 1 : ヘッダー ===== -->
+          <div></div>
+          <div class="header-cell">
+            <span class="product-name">製品A</span>
+            <span class="product-icon">
+              <svg viewBox="0 0 64 64" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M4 16 H60 V50 H4 Z M8 20 H36 V46 H8 Z"/>
+                <rect x="42" y="24" width="14" height="2"/>
+                <rect x="42" y="30" width="14" height="2"/>
+                <rect x="42" y="36" width="14" height="2"/>
+                <circle cx="49" cy="44" r="2.5"/>
+              </svg>
+            </span>
+          </div>
+          <div class="header-cell">
+            <span class="product-name">製品B</span>
+            <span class="product-icon">
+              <svg viewBox="0 0 64 64" aria-hidden="true">
+                <g fill="currentColor"><path fill-rule="evenodd" d="M6 22 H58 V54 H6 Z M10 26 H54 V50 H10 Z"/></g>
+                <g stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none">
+                  <line x1="22" y1="22" x2="14" y2="6"/>
+                  <line x1="42" y1="22" x2="50" y2="6"/>
+                </g>
+              </svg>
+            </span>
+          </div>
+          <div class="header-cell">
+            <span class="product-name">製品C</span>
+            <span class="product-icon">
+              <svg viewBox="0 0 64 64" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M22 6 H46 V58 H22 Z M25 12 H43 V50 H25 Z"/>
+                <circle cx="34" cy="54" r="1.6"/>
+              </svg>
+            </span>
+          </div>
+          <div class="header-cell">
+            <span class="product-name">製品D</span>
+            <span class="product-icon">
+              <svg viewBox="0 0 64 64" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M14 6 H50 V58 H14 Z M17 12 H47 V52 H17 Z"/>
+                <circle cx="32" cy="55" r="1.6"/>
+              </svg>
+            </span>
+          </div>
+          <div class="header-cell col-emph">
+            <span class="product-name">製品E</span>
+            <span class="product-icon">
+              <svg viewBox="0 0 64 64" aria-hidden="true">
+                <g fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 12 H54 V44 H10 Z M14 16 H50 V40 H14 Z"/>
+                  <path d="M4 46 H60 L58 54 H6 Z"/>
+                </g>
+              </svg>
+            </span>
+          </div>
+
+          <!-- ===== Row 2 : 価格 ===== -->
+          <div class="row-label">価格</div>
+          <div class="value">22,800円</div>
+          <div class="value">28,300円</div>
+          <div class="value">30,500円</div>
+          <div class="value">35,700円</div>
+          <div class="value col-emph">39,800円</div>
+
+          <!-- ===== Row 3 : 画素数 ===== -->
+          <div class="row-label">画素数</div>
+          <div class="value">100万画素</div>
+          <div class="value">100万画素</div>
+          <div class="value">150万画素</div>
+          <div class="value">150万画素</div>
+          <div class="value col-emph">200万画素</div>
+
+          <!-- ===== Row 4 : モニター ===== -->
+          <div class="row-label">モニター</div>
+          <div class="value">1.5インチ</div>
+          <div class="value">1.5インチ</div>
+          <div class="value">2.0インチ</div>
+          <div class="value">2.0インチ</div>
+          <div class="value col-emph">1.9インチ</div>
+
+          <!-- ===== Row 5 : 本体保証 ===== -->
+          <div class="row-label">本体保証</div>
+          <div class="value">3年</div>
+          <div class="value">3年</div>
+          <div class="value">3年</div>
+          <div class="value">3年</div>
+          <div class="value col-emph">5年</div>
+
+          <!-- ===== Row 6 : 無線LAN ===== -->
+          <div class="row-label">無線LAN</div>
+          <div class="value">×</div>
+          <div class="value">×</div>
+          <div class="value">×</div>
+          <div class="value">○</div>
+          <div class="value col-emph">○</div>
+
+          <!-- ===== Row 7 : GPS機能 ===== -->
+          <div class="row-label">GPS機能</div>
+          <div class="value">×</div>
+          <div class="value">○</div>
+          <div class="value">×</div>
+          <div class="value">○</div>
+          <div class="value col-emph">○</div>
+
+          <!-- ===== 強調枠：製品E列をアクセントカラーで囲む ===== -->
+          <div class="emphasis-frame"></div>
+
+        </div>
+
+        <footer class="copyright">© XXXX ALL RIGHTS RESERVED.</footer>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       TEMPLATE 11 :「ロードマップ（4フェーズ水平タイムライン）」
+       ============================================================ -->
+  <section class="template-card">
+    <div class="template-meta">
+      <span class="id">T-11</span>
+      <h2>ロードマップ（4フェーズ水平タイムライン）</h2>
+      <p class="desc">
+        プロジェクト・施策・導入計画を「準備 → 実行 → 拡大 → 改善」のような4段階に分けて時系列で見せる定番パターン。
+        横1本のタイムライン上に4つの円を等間隔で打ち、各列に「フェーズ名 + 概要文 + サブタスク列挙」の3段構造を置く。
+        タイムラインとフェーズ名はメインカラー、フェーズ円はアクセントカラーで対比させ、
+        サブタスクは淡灰で「補足情報」として後退させて読み手の視線を本文側に集中させる設計。
+      </p>
+    </div>
+
+    <div class="slide-frame">
+      <div class="slide t-11">
+
+        <div class="title-area">
+          <h3 class="slide-title">実装のロードマップ</h3>
+        </div>
+
+        <div class="roadmap">
+          <div class="timeline-line"></div>
+
+          <!-- ===== Phase 1 : 準備段階 ===== -->
+          <div class="phase">
+            <span class="dot"></span>
+            <h4 class="phase-title">準備段階</h4>
+            <p class="phase-desc">
+              まず、ビジネスニーズを明確にし、ChatGPTの導入目的を定義します。この段階で、必要なリソースや予算も確保します。
+            </p>
+            <ul class="sub-list">
+              <li>ビジネスニーズ分析</li>
+              <li>導入目的の定義</li>
+              <li>リソースと予算の確保</li>
+            </ul>
+          </div>
+
+          <!-- ===== Phase 2 : プロトタイプの作成 ===== -->
+          <div class="phase">
+            <span class="dot"></span>
+            <h4 class="phase-title">プロトタイプの作成</h4>
+            <p class="phase-desc">
+              次に、ChatGPTのプロトタイプを作成し、限定的な環境でテストします。この段階では、初期の問題点を洗い出し、改善点を特定します。
+            </p>
+            <ul class="sub-list">
+              <li>プロトタイプの作成</li>
+              <li>限定テストの実施</li>
+              <li>改善点の特定</li>
+            </ul>
+          </div>
+
+          <!-- ===== Phase 3 : 本格導入 ===== -->
+          <div class="phase">
+            <span class="dot"></span>
+            <h4 class="phase-title">本格導入</h4>
+            <p class="phase-desc">
+              プロトタイプの改善を経て、ChatGPTを本格的に導入します。全社的なトレーニングを実施し、各部門での利用を促進します。
+            </p>
+            <ul class="sub-list">
+              <li>ChatGPTの本格導入</li>
+              <li>全社的なトレーニング</li>
+              <li>各部門での利用開始</li>
+            </ul>
+          </div>
+
+          <!-- ===== Phase 4 : 評価と改善 ===== -->
+          <div class="phase">
+            <span class="dot"></span>
+            <h4 class="phase-title">評価と改善</h4>
+            <p class="phase-desc">
+              導入後、ChatGPTのパフォーマンスを評価し、定期的に改善を行います。また、ユーザーフィードバックを取り入れ、継続的な改善を図ります。
+            </p>
+            <ul class="sub-list">
+              <li>パフォーマンス評価</li>
+              <li>ユーザーフィードバックの収集</li>
+              <li>定期的な改善</li>
+            </ul>
+          </div>
+
+        </div>
+
+        <footer class="copyright">© XXXX ALL RIGHTS RESERVED.</footer>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       TEMPLATE 12 :「文章 ＋ 図解（ヘッダーで領域を明示する2分割）」
+       ============================================================ -->
+  <section class="template-card">
+    <div class="template-meta">
+      <span class="id">T-12</span>
+      <h2>文章 ＋ 図解（ヘッダーで領域を明示する2分割）</h2>
+      <p class="desc">
+        スライド上部に「説明文 / 図解」と書かれた罫線ヘッダーを置き、左右で「文字情報」と「図解情報」を明確に分離して同時に見せるパターン。
+        会社紹介・事業紹介・サービス概要など、定性的な記述と構造的な視覚情報を1スライドに同居させたい場合に有効。
+        メインカラーで構造（ヘッダー罫・スタック）、アクセントカラーで強調（最終結論の下線・役割帯下部）を担い、
+        左右で同じ事実を「文章で説明」「図で構造化」と二重表現することで読み手の理解を補強する設計。
+      </p>
+    </div>
+
+    <div class="slide-frame">
+      <div class="slide t-12">
+
+        <!-- ヘッダー罫線：［説明文］ ─── ][ ─── ［図解］ -->
+        <div class="header-divider">
+          <span class="line"></span>
+          <span class="label">説明文</span>
+          <span class="line"></span>
+          <span class="bracket">
+            <span class="br br-end"></span>
+            <span class="br br-start"></span>
+          </span>
+          <span class="line"></span>
+          <span class="label">図解</span>
+          <span class="line"></span>
+        </div>
+
+        <div class="content">
+
+          <!-- ===== 左：箇条書き ===== -->
+          <div class="text-panel">
+            <ul>
+              <li>事業の最上流戦略レイヤーから関わり、クライアントと共創しながらサービス全体をデザイン</li>
+              <li>ユーザーが触れるデジタルプロダクトの開発まで担当</li>
+              <li>最低2名、平均3〜4名のデザイナー（エンジニア含む）がプロジェクトに参画</li>
+              <li>顧客企業あたりの平均継続期間は10ヶ月前後</li>
+              <li><span class="emph">故に請負ではなく主に準委任契約での仕事</span></li>
+            </ul>
+          </div>
+
+          <!-- ===== 右：図解（階層スタック + 役割帯） ===== -->
+          <div class="diagram-panel">
+
+            <!-- 階層スタック：市場 → ユーザー -->
+            <div class="stack">
+              <div class="layer layer-1">市場</div>
+              <div class="layer layer-2">企業</div>
+              <div class="layer layer-3">事業</div>
+              <div class="layer layer-4">サービス</div>
+              <div class="layer layer-5">デジタルプロダクト</div>
+              <div class="layer layer-6">ユーザー</div>
+            </div>
+
+            <!-- 役割帯（縦バー + ラベル） -->
+            <div class="annot">
+              <div class="annot-bar"></div>
+              <div class="a-label a-1">Business</div>
+              <div class="a-label a-2">Service, UX</div>
+              <div class="a-label a-3">UX, UI, Engineering</div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <p class="citation">出典：株式会社グッドパッチ 2021年8月期第2四半期決算説明資料</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       === ここから下に T-13, T-14 ... を追加していく ===
+       ============================================================ -->
+
+</main>
+
+<script>
+/* ============================================================
+   スライド (1280×720) を親フレーム幅にフィットさせるスケーラ
+   - JS は最小限。resize にも追従。
+   ============================================================ */
+(function () {
+  const BASE_W = 1280;
+  function fit() {
+    document.querySelectorAll('.slide-frame').forEach(frame => {
+      const w = frame.clientWidth;
+      const scale = w / BASE_W;
+      const slide = frame.querySelector('.slide');
+      if (slide) slide.style.setProperty('--slide-scale', scale);
     });
-  </script>
+  }
+  window.addEventListener('load', fit);
+  window.addEventListener('resize', fit);
+  fit();
+})();
+</script>
+
 </body>
 </html>
