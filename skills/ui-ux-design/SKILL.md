@@ -1,284 +1,221 @@
 ---
 name: ui-ux-design
-description: "UI/UXデザインインテリジェンス。68スタイル、96カラーパレット、59フォントペアリング、13テックスタック、60コンポーネントパターン、95+デザインシステム参照対応。Use when user requests UI/UX work: design, build, create, implement, review, fix, improve web/mobile interfaces or UI components. Trigger phrases: ランディングページ, ダッシュボード, UI設計, フロントエンド, React, Tailwind, デザインシステム, カラーパレット, レスポンシブ, website, landing page, portfolio, SaaS, e-commerce, コンポーネント, accordion, modal, datepicker, drawer, button, tabs, dialog, form, tooltip, card, table, widget, Nothing style, Nothing design, monochrome industrial, モノクロ. File types: .html, .tsx, .jsx, .vue, .svelte."
+description: "Web/mobile UI の設計・実装・レビュー・改善で使用する。ランディングページ、ダッシュボード、デザインシステム、レスポンシブUI、ボタン・モーダル・フォーム等のコンポーネント実装に対応し、視覚階層・余白・色・タイポグラフィ・状態設計・アクセシビリティを補助する。React/Next.js/Tailwind/Vue/Svelte/HTML および Nothing 系UI参照に対応。67スタイル、96カラーパレット、59フォントペアリング、95+デザインシステム参照、60コンポーネントパターン収録。Use when user requests UI/UX work: design, build, create, implement, review, fix, improve web/mobile interfaces or UI components. Trigger phrases: ランディングページ, ダッシュボード, UI設計, フロントエンド, React, Tailwind, デザインシステム, カラーパレット, レスポンシブ, website, landing page, portfolio, SaaS, e-commerce, コンポーネント, accordion, modal, datepicker, drawer, button, tabs, dialog, form, tooltip, card, table, widget, Nothing style, Nothing design, monochrome industrial, モノクロ, きれい, デザイン感度, LP, UI作成. File types: .html, .tsx, .jsx, .vue, .svelte."
 ---
 
 # UI/UX Design Intelligence
 
-> Source: [ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) v2.2 をベースに凝縮。
+## CORE RULES
 
-## WORKFLOW
+1. タスク種別を最初に判定し、TASK ROUTING に従って処理を切り替える。
+2. ユーザーの既存デザインシステム・トークン・規約がある場合は必ずそれを優先する。
+3. 新規UI設計時のみデザインシステムを明示的に定義する（小規模修正時は省略）。
+4. 実装時はアクセシビリティ・レスポンシブ・状態設計を必ず確認する。
+5. 参照ファイルは必要なものだけ読む。
 
-UI/UX タスクを受けたら、以下のステップで進める:
+## RULE PRECEDENCE
+
+ルールが競合する場合は以下の優先順位に従う：
+
+1. ユーザーの明示的な指定
+2. 既存プロジェクトのデザインシステム・トークン
+3. 特定スタイル仕様（例：Nothing / Monochrome Industrial）
+4. 業界別デフォルトルール（INDUSTRY DEFAULTS）
+5. 一般品質ルール（QUALITY CHECKS）
+
+---
+
+## TASK ROUTING
+
+タスク種別に応じて処理を切り替える：
+
+| タスク種別 | 判断基準 | 処理フロー |
+|---|---|---|
+| **新規ページ / LP / Dashboard** | 「作って」「設計して」「作成して」 | 要件分析 → デザインシステム定義 → 実装 → 品質チェック |
+| **既存UI の修正 / レビュー** | 「直して」「改善して」「レビューして」「このUIを」 | 問題特定 → 最小修正 → 品質チェック |
+| **コンポーネント実装** | 特定コンポーネント名（modal, button, form 等） | references 参照 → アクセシビリティ確認 → 実装 |
+| **デザインシステム提案のみ** | 「デザインの方向性を」「色を決めて」 | DESIGN SYSTEM FORMAT で出力、コード生成不要 |
+
+### 既存UI修正時の追加ルール
+
+- 既存デザインシステム・トークン・コンポーネント規約を優先する
+- 要求されていない全面再設計をしない
+- 新しいフォント・色・ライブラリを安易に追加しない
+- 問題点と修正意図を簡潔に説明してから変更する
+
+---
+
+## CORE WORKFLOW
 
 ### Step 1: 要件分析
-ユーザーのリクエストから以下を特定:
 - **Product type**: SaaS, e-commerce, portfolio, dashboard, landing page 等
 - **Style keywords**: minimal, playful, professional, elegant, dark mode 等
-- **Industry**: healthcare, fintech, gaming, education 等
+- **Industry**: healthcare, fintech, gaming, education 等（→ INDUSTRY DEFAULTS で自動選択）
 - **Stack**: React, Next.js, Vue, HTML+Tailwind（デフォルト）等
 
-### Step 2: デザインシステム生成
-以下の5要素を決定して提示:
+### Step 2: デザイン方向の決定
+新規設計時のみ以下の5要素を決定して提示：
+
 1. **Pattern** — ランディングページ構造 / レイアウトパターン
 2. **Style** — UIスタイル（67種から選択。詳細は `references/styles-catalog.md`）
 3. **Colors** — カラーパレット（詳細は `references/color-typography.md`）
 4. **Typography** — フォントペアリング（詳細は `references/color-typography.md`）
 5. **Key Effects** — アニメーション・インタラクション
 
-> **Nothing Style 選択時**: Style に "Nothing / Monochrome Industrial" を選択した場合、
-> `references/nothing-design.md` の完全なトークン・コンポーネント仕様に従う。
-> カラーは Nothing トークン（dark/light）、フォントは Doto / Space Grotesk / Space Mono、
-> コンポーネントは Nothing 専用パターンを使用。通常の Colors/Typography 選択をスキップし、
-> Nothing のトークンシステムをそのまま適用する。
+> **Nothing Style 選択時**（RULE PRECEDENCE 3 が適用）：`references/nothing-design.md` の完全なトークン・コンポーネント仕様に従う。通常の Colors/Typography 選択をスキップし、Nothing トークンシステムをそのまま適用する。
 
-### Step 3: コード実装
-デザインシステムに基づいてコードを生成。
+### Step 3: 実装
+- デザイン方向に基づいてコードを生成
+- コンポーネント実装時は `references/components.md` と `references/design-systems.md` を参照
 
-### Step 4: Pre-delivery チェック
-- [ ] 絵文字をアイコン代わりに使っていない（SVG: Heroicons/Lucide を使用）
-- [ ] クリッカブル要素に `cursor-pointer` を設定
-- [ ] ホバー状態にスムーズなトランジション（150-300ms）
-- [ ] テキストコントラスト比 4.5:1 以上
-- [ ] キーボードナビゲーション用のフォーカス状態
-- [ ] `prefers-reduced-motion` の尊重
-- [ ] レスポンシブ: 375px, 768px, 1024px, 1440px
+### Step 4: 品質チェック
+QUALITY CHECKS セクションの MUST 項目を全て確認してから出力する。新規LP/ページ生成時は DEFAULT VISUAL QUALITY も内部確認する（hero spacing, heading impact, CTA prominence, color restraint, typography, card treatment, hover states, mobile typography, realistic content）。
 
 ---
 
-## INDUSTRY-SPECIFIC REASONING RULES
+## QUALITY CHECKS
 
-業界ごとの推奨設定。ユーザーのプロダクトに合わせて自動選択:
+### MUST（全タスク必須）
 
-### Tech & SaaS
-- **Pattern**: Feature-Rich Showcase + Trust & Authority
-- **Style Priority**: Minimalism, Glassmorphism, AI-Native UI
-- **Color Mood**: Blue-dominant professional, tech gradients
-- **Typography**: Inter / Geist / SF Pro — clean, modern sans-serif
-- **Anti-patterns**: 過度な装飾、スキューモーフィズム
+- [ ] **アクセシビリティ** — セマンティック HTML、ARIA 属性、WCAG AA（コントラスト比 4.5:1 以上）
+- [ ] **キーボード** — Tab / Enter / Escape / Arrow キー操作、可視フォーカスインジケータ
+- [ ] **レスポンシブ** — 375px / 768px / 1024px / 1440px、本文 min 16px
+- [ ] **インタラクション状態** — hover / focus / active / disabled / loading / error
+- [ ] **`prefers-reduced-motion`** の尊重
 
-### Healthcare / Medical
-- **Pattern**: Trust & Authority + Social Proof
-- **Style Priority**: Accessible & Ethical, Inclusive Design, Soft UI
-- **Color Mood**: Blue/green trust palette, calming tones
-- **Typography**: Source Sans Pro / Noto Sans — 高い可読性
-- **Anti-patterns**: ダークモード、派手なアニメーション、低コントラスト
+### DEFAULT VISUAL QUALITY（新規設計時の品質基準）
 
-### Fintech / Banking
-- **Pattern**: Trust & Authority + Data Dashboard
-- **Style Priority**: Glassmorphism, Minimalism, Dark Mode
-- **Color Mood**: Navy/dark blue trust, green for positive
-- **Typography**: Inter / IBM Plex — 数字に強いフォント
-- **Anti-patterns**: AI purple/pink gradients、カジュアルすぎるデザイン
+**視覚階層**
+- フォントサイズに明確な段差（例: 48px / 24px / 16px / 14px）
+- 見出しウェイト 700-900、本文 400-500
+- CTA ボタンが画面内で最も目立つ要素
 
-### E-commerce
-- **Pattern**: Hero-Centric + Conversion-Optimized
-- **Style Priority**: Flat Design, 3D Product Preview, Bento Grid
-- **Color Mood**: Brand-specific with high-contrast CTA
-- **Typography**: DM Sans / Poppins — フレンドリーかつ読みやすい
-- **Anti-patterns**: 情報過多、CTA不明確
+**スペーシング**
+- 8px グリッド（8, 16, 24, 32, 48, 64, 96, 128px）
+- セクション間余白: min 80px（モバイル）/ min 120px（デスクトップ）
+- カード内パディング: 24px 以上
 
-### Beauty / Wellness / Spa
-- **Pattern**: Hero-Centric + Social Proof
-- **Style Priority**: Soft UI Evolution, Organic Biophilic, Nature Distilled
-- **Color Mood**: Soft pink, sage green, gold accents
-- **Typography**: Cormorant Garamond / Montserrat — エレガント
-- **Anti-patterns**: ネオン色、ハードなアニメーション、ダークモード
+**カラー・タイポグラフィ**
+- 使用色は最大5色以内（プライマリ・セカンダリ・背景・テキスト・アクセント）
+- 本文の行間（line-height）: 1.6〜1.8
+- 1行の文字数: 45〜75文字（`max-w-prose` or `max-w-2xl`）
 
-### Portfolio / Creative Agency
-- **Pattern**: Storytelling-Driven + Interactive Demo
-- **Style Priority**: Motion-Driven, Brutalism, Interactive Cursor
-- **Color Mood**: Bold, high contrast, monochrome or accent
-- **Typography**: Space Grotesk / Syne — 個性的
-- **Anti-patterns**: ジェネリックテンプレート感
+**コンポーネント**
+- ボタン padding: `px-6 py-3`（小）/ `px-8 py-4`（大）以上
+- カード: `border border-gray-100 shadow-sm`
+- ホバー: `transition-all duration-150-300ms`
+- SVG アイコン使用（絵文字をアイコン代わりに使わない）
 
-### Education
-- **Pattern**: Feature-Rich + Social Proof
-- **Style Priority**: Claymorphism, Inclusive Design, Flat Design
-- **Color Mood**: Warm, friendly, high contrast
-- **Typography**: Nunito / Quicksand — 親しみやすい
-- **Anti-patterns**: 複雑なナビゲーション、小さいフォント
+### AVOID BY DEFAULT
 
-### Gaming / Entertainment
-- **Pattern**: Hero-Centric + Interactive
-- **Style Priority**: Cyberpunk, 3D Hyperrealism, HUD/Sci-Fi
-- **Color Mood**: Neon, dark backgrounds, vivid accents
-- **Typography**: Rajdhani / Orbitron — futuristic
-- **Anti-patterns**: 退屈なレイアウト、ミニマルすぎ
-
-### Developer Tools / Technical Dashboards / Hardware
-- **Pattern**: Data Dashboard + Minimal & Direct
-- **Style Priority**: Nothing / Monochrome Industrial
-- **Color Mood**: Monochrome grayscale, red accent (#D71921) as signal only
-- **Typography**: Doto (display) / Space Grotesk (body) / Space Mono (data/labels)
-- **Anti-patterns**: Gradients, shadows, blur, skeleton loaders, toasts, spring animations
+- purple / pink グラデーション（AI生成バレ）
+- Inter + Lucide のデフォルト組み合わせをそのまま使用（意図を持って選ぶなら可）
+- "Lorem ipsum" や "Empower your workflow" 等の generic コンテンツ
+- z-index の無計画な乱用
 
 ---
 
-## STACK-SPECIFIC GUIDELINES
+## VISUAL DESIGN SENSIBILITY（Hallmark 原則）
 
-### HTML + Tailwind（デフォルト）
-- Semantic HTML5 タグを使用（`<header>`, `<main>`, `<section>`, `<article>`）
-- `@apply` は最小限に、utility-first を維持
-- Container: `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8`
+全 UI タスクに適用する設計原則：
 
-### React / Next.js
-- コンポーネント単位で分離
-- shadcn/ui を推奨（アクセシビリティ内蔵）
-- `use client` / `use server` の適切な使い分け（Next.js App Router）
-- コンポーネント実装時は `references/design-systems.md` のヘッドレスライブラリを参照
+**原則1: 余白は要素と同等に重要**
+空白を怖がらない。セクション間は `py-20 md:py-32` を基本、8px グリッドで管理する。
 
-### Vue / Nuxt
-- Composition API + `<script setup>`
-- Nuxt UI コンポーネントライブラリ推奨
+**原則2: タイポグラフィで格を出す**
+見出しは大きく・重く・字間を詰める。本文は読みやすく。フォントは意図を持って選ぶ（Geist / DM Sans / Plus Jakarta Sans 等を検討）。
 
-### SwiftUI
-- System colors / Dynamic Type / SF Symbols
+**原則3: 色数を絞ってコントラストで演出**
+ブランドカラー1色 + ニュートラル + アクセント1色が基本。色を使うなら理由を持つ。
 
-### React Native
-- React Native Paper / NativeBase / Tamagui
-- `SafeAreaView` の使用
+**原則4: コンポーネントに「重み」をつける**
+ボタン・カード・入力フォームに適切な padding / shadow / border を与えて存在感を出す。
 
-### Flutter
-- Material 3 / Cupertino widgets
-- Theme data で一元管理
+**原則5: 視覚階層を3段階で設計**
+Level 1（Hero/CTA）→ Level 2（見出し/強調）→ Level 3（本文/補足）で明確に分ける。
+
+**原則6: ディテールで差をつける**
+ボーダーは薄く（`border-gray-100`）、shadow は控えめに（`shadow-sm` / `shadow-md`）、角丸は統一する。
+
+**原則7: 状態設計でリッチ感を出す**
+hover: scale-up、active: scale-down、disabled: opacity-50、loading: pulse/spin を実装する。
 
 ---
 
-## COMPONENT IMPLEMENTATION WORKFLOW
+## INDUSTRY DEFAULTS
 
-UIコンポーネントの実装リクエストを受けたら、以下のステップで進める:
+ユーザーのプロダクト業界に合わせて自動選択（RULE PRECEDENCE 4）：
 
-### Step 1: コンポーネント特定
-- `references/components.md` でコンポーネントパターンを特定（エイリアスで表記揺れを吸収）
-- セマンティック HTML 要素と必要な ARIA 属性を確認
-
-### Step 2: リファレンス参照
-- `references/design-systems.md` でユーザーのスタックに最適なデザインシステムを選択
-- 複雑なコンポーネント（Dialog, Data Table, Date Picker 等）は 2-3 の実装を比較
-- 必要に応じて `component.gallery/components/{slug}/` で横断検索
-
-### Step 3: 実装チェックリスト
-- [ ] **セマンティック HTML** — 正しい要素を使用
-- [ ] **ARIA 属性** — roles, states, labels
-- [ ] **キーボードナビゲーション** — Tab, Enter, Escape, Arrow keys
-- [ ] **フォーカス管理** — 可視フォーカスインジケータ、モーダルのフォーカストラップ
-- [ ] **状態** — Default, hover, focus, active, disabled, loading, error
-- [ ] **命名** — 確立されたコンポーネント名を使用（エイリアスは components.md で確認）
+| 業界 | Style Priority | Typography | Anti-patterns |
+|---|---|---|---|
+| Tech & SaaS | Minimalism, Glassmorphism, AI-Native UI | Inter / Geist / SF Pro | 過度な装飾、スキューモーフィズム |
+| Healthcare | Accessible & Ethical, Soft UI | Source Sans Pro / Noto Sans | ダークモード、派手なアニメーション |
+| Fintech | Glassmorphism, Minimalism, Dark Mode | Inter / IBM Plex | AI purple/pink gradients |
+| E-commerce | Flat Design, 3D Product Preview, Bento Grid | DM Sans / Poppins | 情報過多、CTA不明確 |
+| Beauty / Wellness | Soft UI, Organic Biophilic | Cormorant Garamond / Montserrat | ネオン色、ダークモード |
+| Portfolio / Creative | Motion-Driven, Brutalism | Space Grotesk / Syne | ジェネリックテンプレート感 |
+| Education | Claymorphism, Inclusive Design | Nunito / Quicksand | 複雑なナビゲーション、小フォント |
+| Gaming | Cyberpunk, 3D Hyperrealism, HUD | Rajdhani / Orbitron | 退屈なレイアウト |
+| Developer Tools / Hardware | **Nothing / Monochrome Industrial** | Doto / Space Grotesk / Space Mono | Gradients, shadows, skeleton loaders |
 
 ---
 
-## UX ANTI-PATTERNS（絶対に避けること）
+## STACK GUIDELINES
 
-1. **絵文字をアイコンに使わない** — 必ず SVG アイコン（Heroicons, Lucide, Phosphor）を使用
-2. **クリッカブル要素に `cursor-pointer` を忘れない**
-3. **ホバー/フォーカス状態がない** — 必ずトランジション付きで実装
-4. **コントラスト不足** — WCAG AA（4.5:1）を必ずクリア
-5. **z-index の乱用** — 計画的に管理（10, 20, 30, 40, 50）
-6. **アニメーション過多** — `prefers-reduced-motion` を尊重
-7. **モバイル非対応** — Mobile-first で設計
-8. **フォームの UX が悪い** — インラインバリデーション、明確なエラー表示
-9. **ローディング状態がない** — Skeleton / Spinner を実装
-10. **AI っぽいデザイン** — purple/pink グラデーション、generic なイラストを避ける
+| Stack | ポイント |
+|---|---|
+| HTML + Tailwind（デフォルト） | Semantic HTML5、utility-first、Container: `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8` |
+| React / Next.js | shadcn/ui 推奨、`use client`/`use server` 適切な使い分け、`references/design-systems.md` 参照 |
+| Vue / Nuxt | Composition API + `<script setup>`、Nuxt UI 推奨 |
+| SwiftUI | System colors / Dynamic Type / SF Symbols |
+| React Native | React Native Paper / Tamagui、`SafeAreaView` 使用 |
+| Flutter | Material 3 / Cupertino、Theme data で一元管理 |
 
 ---
 
-## DESIGN SYSTEM OUTPUT FORMAT
+## VISUAL INPUT PREFERENCE
 
-デザインシステムを提案する際は、以下のフォーマットで出力:
+ユーザーがスクリーンショット・ワイヤーフレーム・ムードボードを提供している場合は、抽象的な言葉より視覚参照を優先してレイアウト・色・密度を判断する。不足していて品質に大きく影響する場合のみ、必要な視覚資料を提案する。
+
+詳細は `references/vibe-coding.md` を参照。
+
+---
+
+## OUTPUT FORMATS
+
+### デザインシステム提案フォーマット
+
+新規UI設計やユーザーがデザイン方向の提案を求めた場合に使用。小規模修正・既存コンポーネント修正では必要な判断のみ内部適用し、このフォーマットの出力は省略する。
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🎨 DESIGN SYSTEM: [Project Name]
+DESIGN SYSTEM: [Project Name]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📐 PATTERN: [Landing Page Pattern]
-🎭 STYLE: [UI Style Name]
-🎨 COLORS:
-   Primary:    [hex] ([name])
-   Secondary:  [hex] ([name])
-   CTA:        [hex] ([name])
-   Background: [hex] ([name])
-   Text:       [hex] ([name])
-✏️ TYPOGRAPHY: [Heading Font] / [Body Font]
-   Google Fonts: [URL]
-✨ KEY EFFECTS: [animations, transitions]
-🚫 ANTI-PATTERNS: [what to avoid]
-
+PATTERN:     [Landing Page Pattern]
+STYLE:       [UI Style Name]
+COLORS:
+  Primary:    [hex] ([name])
+  Secondary:  [hex] ([name])
+  CTA:        [hex] ([name])
+  Background: [hex] ([name])
+  Text:       [hex] ([name])
+TYPOGRAPHY:  [Heading Font] / [Body Font]
+EFFECTS:     [animations, transitions]
+AVOID:       [anti-patterns for this project]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
-
----
-
-## VIBE CODING UI（AI UI生成のベストプラクティス）
-
-AIでUIを生成する際の7つの原則:
-
-### 1. スケッチ優先、プロンプト後
-- テキストから始めない。**Excalidraw** 等でワイヤーフレームを描く
-- ボックス、ボタン、画像配置を視覚化してからAIに渡す
-- 「この構造に正確に従って」と指示 → AIは想像より模倣が得意
-
-### 2. 好みのUIをスクショ
-- **Dribbble**, **Mobbin**, 気に入ったサイトから具体的なセクションをスクショ
-- ナビバー、プライシングカード、ヒーローセクション等を個別にキャプチャ
-- 「このスタイルをコピーして」と添付 → 結果が劇的に改善
-
-### 3. ムードボードでカラー指定
-- 「モダンで温かみのある」では毎回同じ青になる
-- **Nano Banner** 等のムードボード生成ツールで画像を作成
-- その画像を「このカラーパレットを参考に」と渡す
-
-### 4. コード前にデザインシステム定義
-- ブランドカラー、タイポグラフィ、スペーシングルールを先に決める
-- このスキルの Step 2 で必ずデザインシステムを生成してから実装
-- 一貫性のなさがAI UIの最大の問題
-
-### 5. アンチパターンルールを厳守
-- このスキルの「UX ANTI-PATTERNS」と「INDUSTRY-SPECIFIC REASONING RULES」を参照
-- AIデフォルトのグラデーション禁止ルールを適用
-- 「他のAIアプリと同じ見た目にするな」をシステムに組み込む
-
-### 6. スクショを主要コミュニケーション手段に
-- AIは模倣が得意、想像が苦手
-- 視覚的コンテキストを多く与えるほど推測が減る
-- 「クリーンに」と書くより、クリーンの実例を見せる
-
-### 7. フォントとアイコンで差別化
-- AIデフォルトの Inter + Lucide は即座にAI生成バレ
-- **Google Fonts** からユニークなフォントを選択
-- Lucide を **Phosphor**, **Heroicons**, **Tabler** に変更
-- 小さな変更でテンプレート感が消える
-
----
-
-## TROUBLESHOOTING
-
-### デザインが「AIっぽい」と感じる場合
-
-- purple/pink グラデーションを避ける
-- generic なイラスト・アイコンを避ける
-- 実際のコンテンツ/画像を使用する
-
-### レスポンシブが崩れる場合
-
-1. Mobile-first で再設計
-2. `flex-wrap` / `grid` の使用を確認
-3. 固定幅（px）を相対単位（%、rem）に変更
-
-### コントラストが不足している場合
-
-WCAG AA 基準（4.5:1）を満たすツールで確認:
-- WebAIM Contrast Checker
-- Chrome DevTools > Rendering > CSS Overview
 
 ---
 
 ## REFERENCES
 
-詳細データは以下を参照:
 - `references/styles-catalog.md` — 67スタイル完全一覧 + ダッシュボードスタイル
 - `references/color-typography.md` — カラーパレット + フォントペアリング20選 + チャート推奨
 - `references/components.md` — 60コンポーネントパターン（セマンティックHTML、ARIA、キーボードナビ、複雑度）
 - `references/design-systems.md` — 95+プロダクションデザインシステム（スタック別索引、Best-in-Class一覧）
 - `references/nothing-design.md` — Nothing Design System 完全仕様（哲学、トークン、コンポーネント、プラットフォーム対応）
+- `references/vibe-coding.md` — AI UI生成のベストプラクティス（スケッチ優先、スクショ活用、ムードボード等）
+
+---
+
+> Source: [ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) v2.2 をベースに Hallmark 原則を統合。

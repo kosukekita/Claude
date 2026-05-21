@@ -110,6 +110,14 @@ Actions:
 **Cause:** レビュー対象の変更がない（`--uncommitted` 時）
 **Solution:** `--base <branch>` や `--commit <SHA>` で範囲を指定する
 
+### Error: bwrap: loopback: Failed RTM_NEWADDR / sandbox が機能しない
+**Cause:** WSL2やコンテナ環境ではbubblewrapがネットワーク名前空間を作成できないためサンドボックスが失敗する
+**Solution:** フラグはトップレベルの `codex` に付ける（`codex review` には付けられない）：
+```bash
+codex --dangerously-bypass-approvals-and-sandbox review --uncommitted "..."
+```
+サンドボックスを完全にスキップするため、コードレビュー目的なら実害はないが名前の通り危険フラグなので注意。
+
 ## References
 
 - `references/prompt-templates.md` — 各種レビュープロンプトのテンプレート集
