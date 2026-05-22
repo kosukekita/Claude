@@ -246,10 +246,26 @@ def find_text_top(img_path, color_check, x_range=(84, 1600), y_range=(80, 300)):
 
 ### Phase 4 — PowerPoint へ（オプション）
 
+用途に応じて 2 つの方法を選ぶ。
+
+#### 方法 A: PNG 貼付（デザイン完全保持）
 PNG を PowerPoint に貼付する場合：
 1. 「挿入」→「画像」→「このデバイスから」で PNG を選択
 2. 「書式」→「サイズ」で幅 `33.87cm`（13.33インチ）に設定
 3. 位置を左上 `(0, 0)` に合わせる
+
+#### 方法 B: html2pptx.app で編集可能 .pptx に変換
+テキスト・図形を PowerPoint 上で編集したい場合。事前に `HTML2PPTX_API_KEY` 環境変数を設定すること（https://html2pptx.app で取得）。
+
+```powershell
+# 1枚変換
+uv run skills/slide-making/scripts/export_to_pptx.py --input slide-01.html --output slide-01.pptx
+
+# バッチ変換（複数スライドを1つの.pptxに）
+uv run skills/slide-making/scripts/export_to_pptx.py --input "slides/*.html" --output deck.pptx
+```
+
+詳細は `references/html2pptx-guide.md` を参照。
 
 ---
 
@@ -375,5 +391,6 @@ codex exec \
 - `references/powerpoint-handoff.md` — HTML→PNG→PowerPoint 貼付の完全手順
 - `scripts/fetch_icon.py` — theSVG CDN取得＋キャッシュ
 - `scripts/render_slide.py` — Playwright経由でPNG化（環境対応時のみ）
+- `scripts/export_to_pptx.py` — html2pptx.app REST API経由で編集可能 .pptx 出力（`HTML2PPTX_API_KEY` 要設定）
 - `assets/slide-base.html` — 1920×1080単一スライドHTML雛形
 - `assets/template.html` — デザインパターンギャラリー（T-01〜T-12）
