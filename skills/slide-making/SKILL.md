@@ -1,55 +1,38 @@
 ---
 name: slide-making
 description: >
-  PowerPoint に1枚ずつ貼り付けるための単一 HTML スライドを生成する。
-  1スライド=1ファイル（slide-01.html, slide-02.html…）、CSS/JS 全インライン、
-  1920×1080、最大3行テキスト、theSVG アイコン+CDN キャッシュ、横線のみ表、
-  強調4階層（下線→反転→メインカラー→アクセントカラー）、余白0.5インチ厳守。
+  Codex の Image Gen を使って日本風コンサル資料スタイルの高品質HTMLスライドを生成し、
+  PNG として出力する一気通貫スキル。
+  1スライド=1ファイル（slide-01.html, slide-02.html…）、1920×1080固定、
+  CSS/JS全インライン、最大3行テキスト、T-01〜T-12テンプレート。
   Use when user requests HTMLスライド作成, スライドHTML, PowerPoint貼付用スライド,
-  1920x1080 slide, 単一HTMLスライド, スライドメイキング, slide-making,
-  ブラウザで見るスライド, presentation HTML slide, スライドデザイン, 発表スライド HTML.
-  Do NOT trigger for .pptx generation (use powerpoint skill),
+  1920x1080 slide, スライドメイキング, slide-making, スライドデザイン,
+  発表スライド HTML, PNG出力.
+  Do NOT trigger for .pptx generation (use python-pptx directly — no dedicated skill exists),
   multi-slide single-file decks (use infographic),
   academic poster (use make-poster).
 ---
 
-# slide-making
+# slide-making — Codex Image Gen → HTML → PNG 統合スキル
 
 ## Overview
 
-**1スライド = 1HTMLファイル**。CSS/JS は全てインライン。PowerPoint に画像として貼り付けるための 1920×1080 スライドを生成する。テキストは1スライドあたり最大3行。グラフ・図・アイコンでビジュアルに伝え、文章では説明しない。
+**Codex の Image Gen でデザイン参照画像を生成 → HTMLで完全再現 → PNG出力** の3フェーズで
+プロのコンサル資料レベルのスライドを作る。
+
+```
+[Image Gen] 参照デザイン生成
+     ↓
+[Codex] 画像を視覚的に読み取りHTMLで再現（フィードバックループ）
+     ↓
+[Playwright] HTML → PNG変換
+     ↓
+（オプション）PowerPoint に PNG を貼付
+```
 
 ---
 
-## When to Use
-
-**Should trigger:**
-- 「HTMLスライド作って」「PowerPointに貼るスライドのHTMLを生成して」
-- 「1920×1080のスライドを1枚作成して」「スライドHTMLを1枚ずつ」
-- 「slide-making でタイトルスライドを作って」
-- 「発表用スライドをHTMLで」「表紙スライドのHTMLが欲しい」
-
-**Should NOT trigger:**
-- 「.pptx ファイルを作って」→ `powerpoint` スキルを使う
-- 「Marpでスライドを作って」→ `powerpoint` スキルを使う
-- 「インフォグラフィックを作って」→ `infographic` スキルを使う
-- 「学術ポスターを作って」→ `make-poster` スキルを使う
-
----
-
-## CRITICAL Rules
-
-**CRITICAL: 以下は絶対ルール。1つでも違反したら修正してから出力する。**
-
-1. **1スライド = 1HTMLファイル** — 複数スライドを1つのHTMLにまとめることは禁止
-2. **テキスト最大3行** — 箇条書き・本文を合わせて1スライドあたり3行を超えない
-3. **縦罫線禁止** — 表は `border-bottom` のみ使用、`border-left`/`border-right` は禁止
-4. **1920×1080 固定** — `html, body { width: 1920px; height: 1080px; }` を変更しない
-5. **CSS/JS 全インライン** — 外部 CSS/JS ファイルへの分割は禁止（Chart.js CDN の `<script src>` は例外）
-
----
-
-## Design System
+## Design System（必ず踏襲すること）
 
 | 要素 | 値 | CSS 変数 |
 |------|-----|---------|
@@ -63,6 +46,15 @@ description: >
 | 余白（全辺） | 48px（= 0.5インチ） | `--margin-edge` |
 
 **フォント**: `'Noto Sans JP', 'Inter', 'Meiryo', sans-serif`（Google Fonts CDN 使用）
+
+```css
+:root {
+  --base-color: #F9F9F9;  --text-color: #1A1A1A;
+  --main-color: #0071BC;  --accent-color: #FF5050;
+  --font-size-title: 50pt; --font-size-heading: 35pt; --font-size-body: 25pt;
+  --margin-edge: 48px; --slide-w: 1920px; --slide-h: 1080px;
+}
+```
 
 ---
 
@@ -81,182 +73,278 @@ description: >
 
 ---
 
-## Quick Reference
+## CRITICAL Rules
 
-### テンプレートの使い方
+1. **1スライド = 1HTMLファイル** — 複数スライドを1つのHTMLにまとめることは禁止
+2. **テキスト最大3行** — 箇条書き・本文を合わせて1スライドあたり3行を超えない
+3. **縦罫線禁止** — 表は `border-bottom` のみ使用
+4. **1920×1080 固定** — `html, body { width: 1920px; height: 1080px; overflow: hidden; }` を変更しない
+5. **CSS/JS 全インライン** — 外部ファイルへの分割禁止（Google Fonts CDN・Chart.js CDN は例外）
 
-**単一スライド雛形（新規スライド作成時）:**
-1. `assets/slide-base.html` をコピーして `slide-01.html` にリネーム
-2. `<section class="slide">` の中身をスライド種別のスニペットに置き換える（`references/slide-templates.md` 参照）
-3. `{{PLACEHOLDER}}` をコンテンツで埋める
+---
 
-**デザインパターンギャラリー（レイアウト確認・参考時）:**
-`assets/template.html` をブラウザで開くと T-01〜T-12 の完成例を一覧で確認できる。
-スライド内容に合わせて適切なテンプレートを選び、そのCSSとHTMLを `slide-base.html` に移植する。
+## Template Gallery（T-01〜T-12）
 
-### テンプレートギャラリー一覧 (`assets/template.html`)
+| ID | 名称 | 用途 |
+|----|------|------|
+| T-01 | グラフ強調 | 棒グラフ最大値を強調 |
+| T-02 | 範囲強調 | 特定グループをまとめて強調 |
+| T-03 | ステップ表現 | 手順・プロセス（4ステップ） |
+| T-04 | 研究結果テーブル | OR/HR/RR等の統計数値一覧 |
+| T-05 | 要素分解 | 階層ブラケット構造 |
+| T-06 | 強みテーブル | 4項目の強み箇条書き |
+| T-07 | 対比比較 | 2選択肢×4観点 |
+| T-08 | 因果図 | 原因→結果パネル |
+| T-09 | 仕様比較表（行強調） | 特定行（観点）を訴求 |
+| T-10 | 仕様比較表（列強調） | 特定列（製品）を推薦 |
+| T-11 | ロードマップ | 時系列フェーズ計画 |
+| T-12 | 文章｜図解 | 左テキスト+右図解 2列 |
 
-| ID | 名称 | 用途 | 主な構成要素 |
-|----|------|------|-------------|
-| T-01 | グラフ強調 | 複数カテゴリ中の最大値を強調したい | 棒グラフ（SVG）+ 吹き出し + 右側結論メッセージ |
-| T-02 | 範囲強調 | 連続する複数データをひとまとまりで強調したい | 帯状ハイライト（main-tint）+ メインカラー棒グラフ |
-| T-03 | ステップ表現 | 手順・プロセスを段階的に見せたい | 4枚カード + STEPラベル + アイコン + 矢印 |
-| T-04 | 研究結果テーブル | 論文の主要結果（OR/HR/RR等）を1枚にまとめたい | ヘッダーバー + アイコン付き4行テーブル + 出典 |
-| T-05 | 要素分解 | 概念を親→中間→末端と階層分解して見せたい | 縦書きルート + ブラケット（SVGコネクタ）+ 数値パネル |
-| T-06 | 強みテーブル | 自社・製品の強みを4項目で見せたい | ラベル列 + アイコン列 + チェック箇条書き列（4行） |
-| T-07 | 対比比較 | 2つの選択肢を複数観点で比較したい | 縦軸4観点 × 横軸2項目 + 強調フレーム |
-| T-08 | 因果図 | 原因→結果の因果関係を見せたい | 左パネル（原因）→ 矢印 → 右パネル（結論）|
-| T-09 | 仕様比較表（行強調） | 複数製品を比較し特定の観点（行）で訴求したい | 3列仕様表 + 特定行をメインカラー帯で強調 |
-| T-10 | 仕様比較表（列強調） | 複数製品を比較し特定の製品（列）を推薦したい | 3列仕様表 + 推薦列をメインカラー縦帯で強調 |
-| T-11 | ロードマップ | プロジェクト計画を時系列で見せたい | 4フェーズ横並びタイムライン + フェーズ名 + 施策リスト |
-| T-12 | 文章｜図解 | 文字情報と図解を同時に見せたい | 左列テキスト + 右列図解（2列分割） |
-
-**テンプレート選択の目安:**
-- データ（棒グラフ）の最大値を強調したい → T-01（グラフ強調）
-- 複数データのうち特定グループをまとめて強調したい → T-02（範囲強調）
-- 手順・プロセス・フローを見せたい → T-03（ステップカード）
-- 統計結果・OR/HR/RR等の数値を一覧にしたい → T-04（研究結果テーブル）
-- 概念・料金・構造を階層分解して見せたい → T-05（階層ブラケット）
-- 自社・製品の強みを箇条書きで見せたい → T-06（強みテーブル）
-- 2つの選択肢を複数観点で比較したい → T-07（対比比較）
-- 原因と結果の因果関係を見せたい → T-08（因果図）
-- 複数製品の比較で特定の観点（行）を訴求したい → T-09（仕様比較・行強調）
-- 複数製品の比較で特定の製品（列）を推薦したい → T-10（仕様比較・列強調）
-- プロジェクト計画を時系列フェーズで見せたい → T-11（ロードマップ）
-- テキストと図解を並べて見せたい → T-12（文章｜図解）
-
-### CSS 変数一覧
-
-```css
-:root {
-  --base-color: #F9F9F9;  --text-color: #1A1A1A;
-  --main-color: #0071BC;  --accent-color: #FF5050;
-  --font-size-title: 50pt; --font-size-heading: 35pt; --font-size-body: 25pt;
-  --margin-edge: 48px; --slide-w: 1920px; --slide-h: 1080px;
-}
-```
+完成例: `assets/template.html` をブラウザで開いて確認。
 
 ---
 
 ## Workflow
 
-### Step 1 — 要件確認 & テンプレート提案
+### Phase 1 — 要件確認 & テンプレート提案
 
-- スライド枚数・種別（タイトル/箇条書き/グラフ/比較/まとめ 等）
-- 各スライドのタイトルとキーメッセージ（1スライド1メッセージ）
-- データがある場合は数値（グラフ化する）
-- 使いたいアイコン（theSVG slug または用途で判断）
+1. スライド枚数・各スライドのタイトルとキーメッセージを確認
+2. T-01〜T-12 から最適テンプレートを選んでユーザーに提案
+3. 承認後に Phase 2 へ
 
-**テンプレート提案（必須）**: 要件を把握したら、以下の選択基準でテンプレートを1つ選び、理由とともにユーザーに提案する。ユーザーが承認するか、別のテンプレートを希望するまで実装に進まない。
+### Phase 2 — Codex で Image Gen → HTML生成
 
-```
-選択基準:
-- データ（棒グラフ）があり、最大値を強調したい        → T-01（グラフ強調）
-- 複数データのうち特定グループをまとめて強調したい    → T-02（範囲強調）
-- 手順・プロセス・フローを見せたい                    → T-03（ステップ表現）
-- 統計結果・OR/HR/RR等の数値を一覧にしたい            → T-04（研究結果テーブル）
-- 概念・料金・構造を階層分解して見せたい              → T-05（要素分解）
-- 自社・製品の強みを箇条書きで見せたい               → T-06（強みテーブル）
-- 2つの選択肢を複数観点で比較したい                  → T-07（対比比較）
-- 原因と結果の因果関係を見せたい                     → T-08（因果図）
-- 複数製品の比較で特定の観点（行）を訴求したい        → T-09（仕様比較・行強調）
-- 複数製品の比較で特定の製品（列）を推薦したい        → T-10（仕様比較・列強調）
-- プロジェクト計画を時系列フェーズで見せたい          → T-11（ロードマップ）
-- テキストと図解を並べて見せたい                     → T-12（文章｜図解）
-- 上記に当てはまらない                               → references/slide-templates.md のスニペットを使う
-```
-
-提案例:
-> 「データの最大値を強調したい内容なので **T-01（グラフ強調）** を提案します。
-> `assets/template.html` の T-01 セクションで完成イメージが確認できます。
-> このままで進めますか？それとも別のテンプレートにしますか？」
-
-### Step 2 — テンプレート複製
-
-ユーザーが承認したテンプレートを使って実装する。
+**Codex に以下のプロンプトで依頼する（`codex exec` 経由）：**
 
 ```
-assets/slide-base.html → slide-01.html  （単一スライド雛形をコピー）
+/goal 日本風コンサル資料スタイルのスライドを作成してください。
+
+## STEP 1: Image Gen で参照デザイン画像を生成
+image_gen ツールを使って以下のプロンプトで参照画像を生成し、
+{出力ディレクトリ}/reference-{スライド番号}.png として保存してください。
+
+プロンプト：
+"Professional Japanese business consulting presentation slide,
+McKinsey BCG style, white background #F9F9F9, blue accent #0071BC,
+{テンプレート種別} layout, minimal clean design, 16:9 widescreen,
+bold Noto Sans JP typography, high quality, no watermark"
+
+## STEP 2: 画像を参考に HTML を作成
+生成した参照画像のデザイン言語（色・タイポグラフィ・カード構造・余白感）を
+忠実に再現し、以下の制約でHTMLを作成してください。
+
+### 必須制約（絶対に変更しない）
+- html, body { width: 1920px; height: 1080px; overflow: hidden; }
+- フォント: @import Google Fonts Noto Sans JP
+- CSS変数: --base-color:#F9F9F9; --text-color:#1A1A1A; --main-color:#0071BC; --accent-color:#FF5050
+- CSS・JSは全てインライン（Google Fonts CDN は除く）
+- テキストは最大3行
+
+### コンテンツ
+{スライドのコンテンツ詳細}
+
+### 保存先
+{出力ディレクトリ}/slide-{番号}.html
+
+## STEP 3: フィードバックループ
+HTMLを生成したら参照画像と見比べ、デザインのズレを修正して再度保存してください。
+完璧に一致したら完了を報告してください。
 ```
 
-`assets/template.html` の選択テンプレート（`.t-XX` ブロック）のCSSとHTML構造を `slide-01.html` に移植し、デザインを再現する。
+### Phase 3 — PNG 出力 & フィードバックループ
 
-### Step 3 — コンテンツ流し込み
+**スクリーンショット取得（環境別）：**
 
-`references/slide-templates.md` から種別に合うスニペットを `<section class="slide">` 内にコピーし、プレースホルダを埋める。
+```bash
+# 推奨: Anaconda Python の Playwright（libatspi エラーを回避できる）
+env -u LD_LIBRARY_PATH /home/kita/anaconda3/bin/python3 - << 'EOF'
+import asyncio
+from playwright.async_api import async_playwright
 
-チェック: テキストが3行以内か？ 縦罫線がないか？ 略語に初出フルテキストがあるか？
+async def screenshot():
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(
+            headless=True,
+            args=['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
+        )
+        page = await browser.new_page(viewport={'width': 1920, 'height': 1080})
+        await page.goto('file:///path/to/slide.html')
+        await page.wait_for_timeout(2000)  # Google Fonts 読み込み待ち
+        await page.screenshot(path='/path/to/output.png', full_page=False)
+        await browser.close()
 
-### Step 4 — アイコン取得
-
-```powershell
-# ブランドアイコン（原色）
-uv run skills/slide-making/scripts/fetch_icon.py --slug github --variant default
-
-# 汎用装飾アイコン（recolor）
-uv run skills/slide-making/scripts/fetch_icon.py --slug arrow-right --variant mono --recolor
+asyncio.run(screenshot())
+EOF
 ```
 
-詳細は `references/thesvg-usage.md` を参照。
+> ⚠️ `uv run playwright` や `chrome-headless-shell` が `libatspi: undefined symbol` で落ちる場合は
+> 上記の `/home/kita/anaconda3/bin/python3` を使うこと。
 
-### Step 5 — ブラウザ確認
+**PIL を使った定量的なピクセル差分分析（フィードバックループ）：**
 
-Chrome / Edge で `file://` から HTML を開いて目視確認。
+```python
+# reference-design.png と生成HTMLのスクリーンショットを比較する
+import asyncio, numpy as np
+from PIL import Image
+from playwright.async_api import async_playwright
 
-### Step 6 — PNG 化して PowerPoint へ
+async def take_screenshot(html_path, out_path):
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True,
+            args=['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu'])
+        page = await browser.new_page(viewport={'width': 1920, 'height': 1080})
+        await page.goto(f'file://{html_path}')
+        await page.wait_for_timeout(2000)
+        await page.screenshot(path=out_path, full_page=False)
+        await browser.close()
 
-```powershell
-# 初回のみ
-uv run playwright install chromium
+# 差分スコア計算
+def diff_score(ref_path, cur_path):
+    ref = Image.open(ref_path).resize((1920, 1080), Image.LANCZOS)
+    cur = Image.open(cur_path)
+    diff = np.abs(np.array(ref, dtype=float) - np.array(cur, dtype=float)).mean()
+    return diff  # 目安: 15以下で良好、10以下で優秀
 
-# 変換（3840×2160）
-uv run skills/slide-making/scripts/render_slide.py --input slide-01.html --output slide-01.png
+# 特定要素のY座標を測定（dark navy テキスト）
+def find_text_top(img_path, color_check, x_range=(84, 1600), y_range=(80, 300)):
+    arr = np.array(Image.open(img_path))
+    for y in range(*y_range):
+        row = arr[y, x_range[0]:x_range[1]]
+        if color_check(row).sum() > 100:
+            return y
+    return None
 ```
 
-詳細は `references/powerpoint-handoff.md` を参照。
+**フィードバックループの進め方：**
+
+1. `take_screenshot()` → スクリーンショット保存
+2. `diff_score()` で定量評価（差分 15 以下を目標）
+3. PIL で問題エリアを特定：
+   - タイトル/カードタイトルの Y 座標ズレ → CSS `top` を調整
+   - アイコン・カードサイズのズレ → `width/height` を測定値に合わせる
+4. CSS修正 → 再スクリーンショット → ループ
+
+**収束判定：**
+- 平均 diff ≤ 15 を目標
+- 残差の大半がフォントの antialiasing 差（Image Gen ラスター vs ブラウザ）であれば収束とみなす
+
+**⚠️ 収束しない差異（無視してよい）：**
+- Image Gen が生成したラスター画像はアンチエイリアスが異なるため、フォント周辺のピクセルは原理的に揃わない
+- Google Fonts の読み込みタイミングによる微細なカーニング差
+
+**⚠️ CSS の SVG サイズ上書き罠：**
+
+グローバルに `svg { width: 100%; height: 100%; }` を設定すると、
+ネストした SVG のサイズが制御できなくなる。
+特定のアイコンコンテナに対して個別に上書きが必要：
+
+```css
+/* グローバル設定が効かない場合は !important またはインラインスタイルを使う */
+.card-icon svg { width: 100% !important; height: 100% !important; }
+.banner-icon svg { width: 68px !important; height: 63px !important; }
+```
+
+### Phase 4 — PowerPoint へ（オプション）
+
+PNG を PowerPoint に貼付する場合：
+1. 「挿入」→「画像」→「このデバイスから」で PNG を選択
+2. 「書式」→「サイズ」で幅 `33.87cm`（13.33インチ）に設定
+3. 位置を左上 `(0, 0)` に合わせる
 
 ---
 
-## Icon Pipeline
+## Codex exec の呼び出し方（実際のコマンド）
 
-アイコンは `scripts/fetch_icon.py` で jsDelivr CDN から取得し、`cache/icons/` に永続保存する。
+> ⚠️ `--dangerously-bypass-approvals-and-sandbox` はサンドボックスを完全に無効化する。
+> Codex に渡すプロンプトにユーザー由来のコンテンツが含まれる場合、
+> 任意コマンド実行が可能になるため **信頼できるコンテンツのみ**渡すこと。
 
+```bash
+# 出力ディレクトリを作成・移動してから実行
+mkdir -p ~/slides/my-deck
+cd ~/slides/my-deck
+
+# Codex に HTML 生成を依頼（gpt-5.5 がデフォルトで Image Gen を使える）
+codex exec \
+  --dangerously-bypass-approvals-and-sandbox \
+  --cd ~/slides/my-deck \
+  "{上記 /goal プロンプト}"
 ```
-CDN fetch → cache/icons/{slug}/{variant}.svg → HTML に img src で参照
+
+---
+
+## HTML の基本構造（ベーステンプレート）
+
+`assets/slide-base.html` を出発点として使う。
+新規スライド作成時は以下のルールに従う：
+
+```html
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --base-color: #F9F9F9; --text-color: #1A1A1A;
+      --main-color: #0071BC; --accent-color: #FF5050;
+      --font-size-title: 50pt; --font-size-heading: 35pt; --font-size-body: 25pt;
+      --margin-edge: 48px;
+    }
+    html, body {
+      width: 1920px; height: 1080px; overflow: hidden; margin: 0;
+      background: var(--base-color); color: var(--text-color);
+      font-family: 'Noto Sans JP', 'Meiryo', sans-serif;
+    }
+    /* 強調クラス */
+    .emp-u   { text-decoration: underline; text-underline-offset: 0.15em; }
+    .emp-inv { background: var(--text-color); color: var(--base-color); padding: 0 0.2em; }
+    .emp-main   { color: var(--main-color); font-weight: 700; }
+    .emp-accent { color: var(--accent-color); font-weight: 700; }
+    /* 表：縦罫線禁止 */
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: none; border-bottom: 1px solid var(--text-color); padding: 0.4em 0.6em; }
+    thead th { border-bottom-width: 2px; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <section class="slide" style="
+    box-sizing:border-box; width:1920px; height:1080px; padding:48px;
+    display:flex; flex-direction:column; position:relative;
+  ">
+    <!-- コンテンツをここに -->
+    <div style="position:absolute;bottom:48px;right:48px;font-size:18pt;opacity:0.4;">1</div>
+  </section>
+</body>
+</html>
 ```
-
-**IMPORTANT: AWS Architecture アイコン（slug が `aws-architecture-` で始まるもの）は CC BY-ND ライセンスのため recolor 禁止。必ず default バリアントを原色で使用すること。**
-
-ブランドアイコン（GitHub, AWS, Python 等）も原色維持が原則。recolor は汎用装飾アイコンのみ。
-
-詳細は `references/thesvg-usage.md` を参照。
 
 ---
 
 ## Verification Checklist
 
 ### デザイン
-- [ ] 背景が `#F9F9F9` になっている
-- [ ] テキスト色が `#1A1A1A` になっている
+- [ ] 背景が `#F9F9F9`
+- [ ] テキスト色が `#1A1A1A`
 - [ ] メインカラー + アクセントカラーの合計使用率が 5% 以下
-- [ ] フォントサイズが タイトル 50pt / 見出し 35pt / 本文 25pt
-- [ ] 上下左右の余白が 48px 以上ある
+- [ ] フォントサイズがタイトル 50pt / 見出し 35pt / 本文 25pt
+- [ ] 上下左右の余白が 48px 以上
 
 ### 内容
 - [ ] テキストが1スライドあたり最大3行
-- [ ] 1スライド1メッセージになっている
-- [ ] データがある箇所は図表で視覚化している
-- [ ] 略語の初出にフルテキスト or 日本語が付記されている
+- [ ] 1スライド1メッセージ
+- [ ] データがある箇所は図表で視覚化
+- [ ] 略語の初出にフルテキストまたは日本語が付記
 
 ### 技術
-- [ ] CSS/JS が全てインライン（外部ファイルへのリンクがない）
-- [ ] `html, body` が `1920px × 1080px` 固定
+- [ ] `html, body` が `1920px × 1080px; overflow: hidden` 固定
+- [ ] CSS/JS が全てインライン（Google Fonts CDN は除く）
 - [ ] 表に縦罫線がない（`border-bottom` のみ）
-- [ ] アイコンの `src` が `../cache/icons/...` を参照している
 
-### 出力
-- [ ] ブラウザで `file://` 開いて目視確認した
-- [ ] `render_slide.py` で PNG 化して PowerPoint 貼付テストをした（最低1枚）
+### PNG 出力
+- [ ] 1920×1080px で出力されている
+- [ ] フォント・アイコンが正しく表示されている
+- [ ] 背景が正しい色になっている
 
 **Iron Law: 1 slide = 1 HTML file. Never combine.**
 
@@ -266,22 +354,26 @@ CDN fetch → cache/icons/{slug}/{variant}.svg → HTML に img src で参照
 
 | ミス | 問題 | 修正 |
 |------|------|------|
+| `html, body` にサイズ指定しない | スライドサイズが崩れる | `width:1920px; height:1080px; overflow:hidden` を必ず設定 |
 | 本文を文章で書く | 情報過多・読まれない | キーワード＋数字＋アイコンに置き換える |
-| 4行以上のテキスト | スライドの目的が分散 | 2枚に分割するか箇条書きを削る |
-| 表に縦罫線を引く | デザインルール違反 | `border` を削除し `border-bottom` のみに |
-| アイコン色を全部 recolor | ブランド識別消失 / AWS は ND 違反 | ブランド・AWS は原色のまま |
-| 1 HTML に複数スライドを入れる | PowerPoint 貼付不可 | ファイルを分割する |
-| 略語をフルテキストなしで初出 | 読者が意味を取れない | 初出は `略語（フルテキスト）` 形式 |
+| 4行以上のテキスト | スライドの目的が分散 | 2枚に分割か箇条書きを削る |
+| 表に縦罫線を引く | デザインルール違反 | `border-bottom` のみに |
+| Image Gen なしで HTML を書く | デザイン品質が低い | 必ず Image Gen で参照画像を生成してから HTML に落とす |
+| 1 HTML に複数スライドを入れる | PNG化・PowerPoint貼付不可 | ファイルを分割する |
+| `svg { width:100%; height:100% }` でグローバル設定 | 個別アイコンのサイズが制御不能になる | 特定コンテナには `.container svg { width: Xpx !important; }` で上書き |
+| フォント差を追い続ける | Image Gen と ブラウザの antialias は本質的に異なるため収束しない | diff ≤ 15 で収束とみなして打ち切る |
+| `uv run playwright` や Chrome headless を使う | `libatspi` エラーで exit 144 になる環境がある | `/home/kita/anaconda3/bin/python3` の playwright を使う |
 
 ---
 
 ## References
 
-- `references/design-rules.md` — 色/フォント/余白/強調/略語の詳細リファレンス（OK・NG 例付き）
-- `references/slide-templates.md` — 8 種スライド種別の HTML スニペット集
-- `references/thesvg-usage.md` — アイコン取得・recolor・ライセンス・よく使う slug
+- `references/design-rules.md` — 色/フォント/余白/強調の詳細リファレンス
+- `references/slide-templates.md` — 8種スライド種別のHTMLスニペット集
+- `references/thesvg-usage.md` — アイコン取得・recolor・ライセンス
+- `references/html2pptx-guide.md` — HTML→PPTX変換ガイド（html2pptx.app使用時）
 - `references/powerpoint-handoff.md` — HTML→PNG→PowerPoint 貼付の完全手順
-- `scripts/fetch_icon.py` — theSVG CDN 取得＋キャッシュ（`uv run` で実行）
-- `scripts/render_slide.py` — Playwright 経由で 3840×2160 PNG 化（初回: `uv run playwright install chromium`）
-- `assets/slide-base.html` — 1920×1080 単一スライド HTML 雛形（新規スライド作成の出発点）
-- `assets/template.html` — スライドデザインパターンギャラリー（T-01〜T-12、ブラウザで開いて確認）
+- `scripts/fetch_icon.py` — theSVG CDN取得＋キャッシュ
+- `scripts/render_slide.py` — Playwright経由でPNG化（環境対応時のみ）
+- `assets/slide-base.html` — 1920×1080単一スライドHTML雛形
+- `assets/template.html` — デザインパターンギャラリー（T-01〜T-12）
