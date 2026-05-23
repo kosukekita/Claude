@@ -160,9 +160,9 @@ bold Noto Sans JP typography, high quality, no watermark,
 
 ---
 
-### Phase 3 — HTML生成 + diff フィードバックループ（Claude Code が全て担当）
+### Phase 3 — HTML生成 + 視覚的フィードバックループ（Claude Code が全て担当）
 
-**このフェーズは Claude Code が自律的に実行する。Codex は呼ばない。**
+**このフェーズは Claude Code が自律的に実行する。Codex は呼ばない（3連続失敗時を除く）。**
 
 #### Step 3-1: HTML 初版作成
 
@@ -172,7 +172,7 @@ bold Noto Sans JP typography, high quality, no watermark,
 #### Step 3-2: Playwright でスクリーンショット取得
 
 ```python
-# uv run --with playwright で実行
+# uv run --with playwright python - で実行
 import asyncio
 from playwright.async_api import async_playwright
 
@@ -181,7 +181,7 @@ async def screenshot(html_path: str, out_path: str):
         browser = await p.chromium.launch(args=['--no-sandbox'])
         page = await browser.new_page(viewport={'width': 1920, 'height': 1080})
         await page.goto(f'file:///{html_path}')
-        await page.wait_for_timeout(2000)  # Google Fonts 読み込み待ち
+        await page.wait_for_timeout(2500)  # Google Fonts 読み込み待ち
         await page.screenshot(path=out_path, full_page=False)
         await browser.close()
 
@@ -190,84 +190,61 @@ asyncio.run(screenshot('{html_path}', '{out_path}'))
 
 Windows では `file:///C:/...` 形式でパスを渡すこと。
 
-#### Step 3-3: diff 計算
+#### Step 3-3: 視覚的フィードバックループ（完全一致するまで繰り返す）
 
-```python
-import numpy as np
-from PIL import Image
+**判定は目視のみ。数値（diff）では判断しない。**
 
-def diff_score(ref_path: str, cur_path: str) -> float:
-    ref = Image.open(ref_path).resize((1920, 1080), Image.LANCZOS).convert('RGB')
-    cur = Image.open(cur_path).convert('RGB')
-    return float(np.abs(np.array(ref, dtype=float) - np.array(cur, dtype=float)).mean())
+スクリーンショットと参照画像を Read ツールで並べて表示し、以下を1項目ずつ確認する：
 
-score = diff_score('reference-01.png', 'screenshot-01.png')
-print(f'diff: {score:.2f}')
-```
+**目視チェックリスト（全項目一致で完了）：**
+- [ ] アイコン: 種類・形・太さ・サイズが参照と同じか
+- [ ] テキスト: 内容・改行位置・フォントの太さが参照と同じか
+- [ ] 番号バッジ: 位置・サイズ・色が参照と同じか
+- [ ] カード: 幅・高さ・角丸・影・余白が参照と同じか
+- [ ] 矢印: 形・色・サイズが参照と同じか
+- [ ] 全体配置: カードの縦位置・横の間隔が参照と同じか
+- [ ] 背景色・カード内の配色が参照と同じか
 
-#### Step 3-4: フィードバックループ（必須・diff ≤ 5 まで繰り返す）
+**修正サイクル：**
+1. 目視で差異を1つ特定する
+2. HTML/CSS を修正する
+3. Playwright で再スクリーンショット
+4. 再度目視確認 → 改善していなければ revert して別のアプローチを試みる
+5. 全チェック項目が一致するまで繰り返す
 
-**ループを絶対に省略しない。diff > 5 の間はループを継続すること。**
-
-```
-while diff > 5:
-    1. PIL で差分画像を生成し、ズレているエリアを特定する
-       - 色・背景のズレ → CSS カラー変数を修正
-       - レイアウト・余白のズレ → padding / margin / gap を調整
-       - カードサイズのズレ → width / height を px 単位で合わせる
-       - タイポグラフィのズレ → font-size / line-height / letter-spacing を調整
-    2. HTML の CSS を Edit ツールで修正（**修正前の diff を記録しておく**）
-    3. Playwright で再スクリーンショット
-    4. diff_score() で再評価
-    5. **diff が前回より悪化していたら即座に変更を元に戻し（Revert）、別のアプローチを考える**
-       → 悪化した修正を重ねてはいけない。必ずベストスコア時点に戻してから別手を打つ
-    6. diff ≤ 5 なら完了、それ以外は 1 に戻る
-```
-
-**⚠️ diff悪化時の鉄則（絶対に守ること）：**
-- 修正のたびに「前回 diff」と「今回 diff」を比較する
-- **今回 diff > 前回 diff** なら → その修正は失敗。Edit を Revert して前の状態に戻す
-- 悪化した状態のまま次の修正を積み重ねてはいけない
-- ベストスコアの状態を常に保持し、そこから別の修正を試みる
-
-**差分画像の生成方法：**
-
-```python
-import numpy as np
-from PIL import Image
-
-def make_diff_image(ref_path: str, cur_path: str, out_path: str):
-    ref = np.array(Image.open(ref_path).resize((1920, 1080), Image.LANCZOS).convert('RGB'), dtype=float)
-    cur = np.array(Image.open(cur_path).convert('RGB'), dtype=float)
-    diff = np.abs(ref - cur)
-    # 差分を8倍に増幅して可視化
-    diff_img = Image.fromarray(np.clip(diff * 8, 0, 255).astype('uint8'))
-    diff_img.save(out_path)
-```
-
-**収束判定：**
-- **diff ≤ 5 で完了**
-- diff が 5〜8 でループが3回以上進まない場合のみ、残差がフォントの antialiasing 差と判断して打ち切り可
-- それ以外はループを継続すること
-
-**⚠️ Codex フォールバック（3回連続改善なしで発動）：**
-- diff のベストスコアが **3回連続で更新されなかった** 場合、Claude Code によるループを打ち切り Codex に引き継ぐ
-- Codex には以下を渡す：
-  1. 参照画像（`reference-XX.png`）
-  2. 現在の HTML ファイル
-  3. 差分画像（`diff-XX.png`）
-  4. 現在の diff スコアと「どのエリアがズレているか」の分析結果
-- Codex プロンプト例：
+**Codexフォールバック（3修正連続で改善なし時）：**
+- 3回連続で目視で改善が見られない場合、Codex に引き継ぐ
+- Codex には参照画像・HTML・「どこが違うか」の具体的な説明を渡す：
   ```
-  /goal 添付のHTML（slide-01.html）を参照画像（reference-01.png）に近づけてください。
-  差分画像（diff-01.png）の明るいエリアがズレている箇所です。
-  現在の diff スコアは XX.XX です。CSS のみ修正し、HTMLのコンテンツは変えないでください。
-  修正後は Playwright でスクリーンショットを撮り、diff を計算して報告してください。
+  /goal 参照画像（reference-01.png）とスクリーンショット（screenshot-01.png）を見比べて、
+  HTMLを参照画像に完全一致させてください。
+  現在の差異: {具体的な差異のリスト（例: カード3のアイコンが違う、タイトルの改行位置がずれている）}
+  修正後はPlaywrightでスクリーンショットを撮り、目視で確認してください。
   ```
 
-**⚠️ 収束しない差異（無視してよい）：**
-- Image Gen のラスター画像とブラウザのフォント antialiasing は原理的に異なる（フォント周辺の微細なピクセル差）
-- Google Fonts のカーニング差（読み込みタイミングによる微細なズレ）
+#### Step 3-5: HTML完成後の codex-review
+
+視覚的フィードバックループで収束したら、生成した HTML のコード品質を `/codex-review` でチェックする。
+スライドHTMLが出力ディレクトリにある場合は、そのディレクトリに `cd` してから実行すること。
+
+```bash
+# 出力ディレクトリ（例: test-output3/）で実行
+cd /path/to/output-dir
+codex --dangerously-bypass-approvals-and-sandbox review "slide-01.html をレビューしてください：
+- インラインSVGアイコンがPPTX変換時に消えるリスクがないか
+- CSS変数（--main-color等）の使い方に問題がないか
+- 1920×1080固定・overflow:hidden が守られているか
+- グローバルな svg { width/height } でアイコンサイズが壊れるリスクがないか
+- PPTX変換を想定した場合の改善点
+日本語で回答してください。"
+```
+
+レビュー結果でCRITICAL/WARNINGが出た場合は修正してから次フェーズへ進む。
+
+**⚠️ 目視で一致とみなしてよい差異：**
+- フォント周辺の微細なアンチエイリアス差（Image Gen のラスター vs ブラウザレンダリング）
+- Google Fonts のカーニング差による1〜2px程度のテキスト位置ズレ
+- これらは構造的に発生するもので、アイコン・レイアウト・テキスト内容が合っていれば完了とする
 
 **⚠️ CSS の SVG サイズ上書き罠：**
 ```css
@@ -314,6 +291,40 @@ $pres.Close(); $pptApp.Quit()
 ```
 
 詳細は `references/html2pptx-guide.md` を参照。
+
+#### PPTX変換後の必須検証
+
+PPTX → PNG 化して目視で確認する（PowerShell COM）：
+
+```powershell
+$pptxPath = "$env:USERPROFILE\.claude\...\slide-01.pptx"
+$outPng   = "$env:USERPROFILE\.claude\...\pptx-slide-1.png"
+$pptApp   = New-Object -ComObject PowerPoint.Application
+$pptApp.Visible = 1
+$pres = $pptApp.Presentations.Open($pptxPath, 0, 0, 0)
+$pres.Slides[1].Export($outPng, "PNG", 1920, 1080)
+$pres.Close(); $pptApp.Quit()
+```
+
+**目視チェック項目（PNG をHTMLと並べて確認）：**
+- [ ] 全アイコンが表示されている（インラインSVGは消えることがある）
+- [ ] テキストの改行位置が崩れていない
+- [ ] カード・矢印・区切り線など全要素が揃っている
+- [ ] フォントが正しく表示されている
+
+**問題があった場合 — `/codex-review` で原因特定と修正：**
+
+```bash
+# 出力ディレクトリで実行
+cd /path/to/output-dir
+codex --dangerously-bypass-approvals-and-sandbox review "slide-01.html で以下のPPTX変換後の問題が発生しました：{問題の詳細}
+HTMLのどの部分が原因か特定し、PPTX変換に対応した修正案を提示してください。
+特にインラインSVG・フォント埋め込み・外部リソース参照の観点で見てください。
+インラインSVGが消える場合は base64 data URI の img タグへの変換方法も示してください。
+日本語で回答してください。"
+```
+
+レビュー指摘を反映してHTMLを修正し、再度PPTX変換→目視確認を繰り返す。
 
 ---
 
@@ -381,10 +392,15 @@ $pres.Close(); $pptApp.Quit()
 - [ ] CSS/JS が全てインライン（Google Fonts CDN は除く）
 - [ ] 表に縦罫線がない（`border-bottom` のみ）
 
-### PNG 出力
-- [ ] 1920×1080px で出力されている
-- [ ] diff ≤ 5 を達成している（フィードバックループ完了）
-- [ ] フォント・アイコンが正しく表示されている
+### 視覚的フィードバックループ
+- [ ] アイコン・テキスト・カード・矢印・配置が参照画像と目視で一致している
+- [ ] `/codex-review` でCRITICAL/WARNINGがないことを確認した
+
+### PPTX変換後（方法Bのみ）
+- [ ] PPTX → PNG 化して目視確認した
+- [ ] 全アイコンが表示されている（インラインSVG消失なし）
+- [ ] テキストの改行・フォントが崩れていない
+- [ ] 問題があれば `/codex-review` で原因特定・修正した
 
 **Iron Law: 1 slide = 1 HTML file. Never combine.**
 
@@ -394,10 +410,10 @@ $pres.Close(); $pptApp.Quit()
 
 | ミス | 問題 | 修正 |
 |------|------|------|
-| diff ループを省略する | 参照画像とHTMLが乖離したまま完了する | **diff ≤ 5 になるまで必ずループを継続する** |
-| diff が悪化した修正を積み重ねる | どんどんスコアが悪化し収束しない | **修正後に前回より diff が大きければ即 Revert。ベストスコア時点から別手を打つ** |
-| 改善が止まっても Claude Code でループを続ける | 時間を無駄にして収束しない | **3回連続でベストスコアが更新されなければ Codex フォールバックに切り替える** |
-| Codex に HTML を書かせる | 担当外・フィードバックループが機能しない | HTML は Claude Code が書く。Codex は Image Gen のみ |
+| 視覚的フィードバックループを省略する | 参照画像とHTMLが乖離したまま完了する | **目視で全項目一致するまで必ずループを継続する** |
+| 修正後に目視で改善していないのに次の修正に進む | 悪化した状態が積み重なる | **改善していなければ即 Revert して別のアプローチを試みる** |
+| 目視で改善が3回連続でない場合にループを続ける | 時間を無駄にして収束しない | **3回連続で改善なしなら Codex フォールバックに切り替える** |
+| Codex に HTML を書かせる | 担当外・フィードバックループが機能しない | HTML は Claude Code が書く。Codex は Image Gen と Fallback のみ |
 | `html, body` にサイズ指定しない | スライドサイズが崩れる | `width:1920px; height:1080px; overflow:hidden` を必ず設定 |
 | 4行以上のテキスト | スライドの目的が分散 | 2枚に分割か箇条書きを削る |
 | 表に縦罫線を引く | デザインルール違反 | `border-bottom` のみに |
@@ -405,6 +421,10 @@ $pres.Close(); $pptApp.Quit()
 | `svg { width:100%; height:100% }` でグローバル設定 | 個別アイコンのサイズが制御不能 | 特定コンテナには `!important` で上書き |
 | diff 10 以下で「フォント差」と早期打ち切り | 参照画像との乖離が残る | diff 5 以下まで修正を続ける。5〜8 でループ停滞時のみ打ち切り可 |
 | `settings.local.json` の env をシェルから直接参照 | Bash ツールには自動注入されない | `python -c "import json; ..."` で明示的に取得する |
+| diff数値で収束判定する | 改行違い・アイコン差が数値に隠れて見逃される | **判定は目視のみ**。数値は使わない |
+| PPTX変換後の目視確認をしない | アイコン消失・改行崩れに気づかない | 必ずPPTX→PNG化して目視チェック。問題は `/codex-review` で原因特定する |
+| インラインSVGのままPPTX変換する | html2pptx.appはインラインSVG非対応のためアイコンが消える | base64 data URI の `<img>` タグに変換する |
+| HTML完成後に `/codex-review` をかけない | PPTX変換リスクやSVGサイズ罠を見逃す | 収束後に必ず `/codex-review` でレビューし、WARNINGを修正してから次フェーズへ |
 
 ---
 
@@ -413,10 +433,11 @@ $pres.Close(); $pptApp.Quit()
 - `references/design-rules.md` — 色/フォント/余白/強調の詳細リファレンス
 - `references/slide-templates.md` — T-01〜T-12 HTMLスニペット集
 - `references/thesvg-usage.md` — アイコン取得・recolor・ライセンス
-- `references/html2pptx-guide.md` — HTML→PPTX変換ガイド
+- `references/html2pptx-guide.md` — HTML→PPTX変換ガイド（インラインSVG非対応の注意事項含む）
 - `references/powerpoint-handoff.md` — HTML→PNG→PowerPoint 貼付の完全手順
 - `scripts/fetch_icon.py` — theSVG CDN取得＋キャッシュ
 - `scripts/render_slide.py` — Playwright経由でPNG化
-- `scripts/export_to_pptx.py` — html2pptx.app REST API経由で編集可能 .pptx 出力
+- `scripts/export_to_pptx.py` — html2pptx.app REST API経由で編集可能 .pptx 出力（`HTML2PPTX_API_KEY` 要設定）
 - `assets/slide-base.html` — 1920×1080単一スライドHTML雛形
 - `assets/template.html` — デザインパターンギャラリー（T-01〜T-12）
+- `../codex-review/SKILL.md` — Codex CLI によるコードレビュースキル（HTML完成後・PPTX問題時に使用）
