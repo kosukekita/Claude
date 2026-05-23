@@ -1,4 +1,5 @@
 # Sensitive Data
+settings.local.json
 .credentials.json
 client_secret_*.json
 mcp-needs-auth-cache.json
