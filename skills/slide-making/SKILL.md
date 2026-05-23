@@ -1,19 +1,17 @@
 ---
 name: slide-making
 description: >
-  Codex の Image Gen で参照画像を生成し、Claude Code が HTML を書いて
-  diff ≈ 0 になるまでフィードバックループで修正する一気通貫スライド作成スキル。
-  1スライド=1ファイル（slide-01.html, slide-02.html…）、1920×1080固定、
-  CSS/JS全インライン、最大3行テキスト、T-01〜T-12テンプレート。
+  1スライド=1HTMLファイル（slide-01.html…）で1920×1080の発表スライドを作成するスキル。
+  Codex の Image Gen で参照画像を生成し、Claude Code が HTML を書いて目視で完全一致するまで
+  フィードバックループで修正する。CSS/JS全インライン、最大3行テキスト、T-01〜T-12テンプレート。
   Use when user requests HTMLスライド作成, スライドHTML, PowerPoint貼付用スライド,
-  1920x1080 slide, スライドメイキング, slide-making, スライドデザイン,
-  発表スライド HTML, PNG出力.
-  Do NOT trigger for .pptx generation (use python-pptx directly — no dedicated skill exists),
-  multi-slide single-file decks (use infographic),
-  academic poster (use make-poster).
+  1920x1080 slide, スライドメイキング, slide-making, スライドデザイン, 発表スライド HTML, PNG出力.
+  複数スライドも可（各スライドを個別HTMLにする場合のみ）。
+  Do NOT trigger for: .pptx直接生成（python-pptx等）, 複数スライドを1HTMLにまとめるデッキ（use infographic）,
+  academic poster（use make-poster）.
 ---
 
-# slide-making — Image Gen → HTML → diff ループ → PNG 統合スキル
+# slide-making
 
 ## Overview
 
@@ -23,28 +21,40 @@ description: >
 |----------|------|------|
 | Phase 1 | Claude Code | 要件確認・テンプレート提案 |
 | Phase 2 | Codex | Image Gen で参照画像を生成するだけ |
-| Phase 3 | Claude Code | HTML 生成 → PNG → diff 計算 → CSS 修正ループ |
+| Phase 3 | Claude Code | HTML 生成 → Playwright スクリーンショット → 目視確認 → CSS 修正ループ |
 | Phase 4 | Claude Code | PPTX 変換・PNG 貼付（オプション） |
 
-```
-[Codex] Image Gen → reference.png
-     ↓
-[Claude Code] HTML 初版作成
-     ↓
-[Claude Code] Playwright → screenshot.png
-     ↓
-[Claude Code] PIL で diff 計算
-     ↓ diff > 5 なら CSS 修正して再ループ
-[Claude Code] diff ≈ 0 で完了
-     ↓
-（オプション）PPTX 変換
-```
+**Codex の使用箇所は3か所のみ：**
+1. Phase 2 — Image Gen で参照画像を生成
+2. Phase 3 Codex フォールバック — 3回連続で改善なしの場合
+3. HTML 完成後の `/codex-review` — コード品質チェック
 
-**収束目標: diff ≤ 5**（フォント antialiasing 差で下げ止まったら打ち切り可）
+**成果物ディレクトリ構造（例）：**
+
+```
+slides/my-deck/
+├── reference-01.png   # Codex Image Gen で生成した参照画像
+├── slide-01.html      # Claude Code が作成した最終 HTML
+├── screenshot-01.png  # Playwright スクリーンショット（確認用）
+├── slide-01.pptx      # html2pptx.app 変換後（方法B時）
+└── pptx-slide-1.png   # PPTX→PNG 変換済み（方法B検証時）
+```
 
 ---
 
-## Design System（必ず踏襲すること）
+## CRITICAL Rules
+
+**以下は絶対ルール。1つでも違反したら出力前に修正する。**
+
+1. **1スライド = 1HTMLファイル** — 複数スライドを1つのHTMLにまとめることは禁止
+2. **テキスト最大3行** — 箇条書き・本文を合わせて1スライドあたり3行を超えない
+3. **縦罫線禁止** — 表は `border-bottom` のみ使用
+4. **1920×1080 固定** — `html, body { width: 1920px; height: 1080px; overflow: hidden; }` を変更しない
+5. **CSS/JS 全インライン** — 外部ファイルへの分割禁止（Google Fonts CDN・Chart.js CDN は例外）
+
+---
+
+## Design System
 
 | 要素 | 値 | CSS 変数 |
 |------|-----|---------|
@@ -57,16 +67,9 @@ description: >
 | 本文 | 25pt | `--font-size-body` |
 | 余白（全辺） | 48px（= 0.5インチ） | `--margin-edge` |
 
-**フォント**: `'Noto Sans JP', 'Inter', 'Meiryo', sans-serif`（Google Fonts CDN 使用）
+**フォント**: `'Noto Sans JP', 'Meiryo', sans-serif`（Google Fonts CDN 使用）
 
-```css
-:root {
-  --base-color: #F9F9F9;  --text-color: #1A1A1A;
-  --main-color: #0071BC;  --accent-color: #FF5050;
-  --font-size-title: 50pt; --font-size-heading: 35pt; --font-size-body: 25pt;
-  --margin-edge: 48px; --slide-w: 1920px; --slide-h: 1080px;
-}
-```
+詳細は `references/design-rules.md` を参照。
 
 ---
 
@@ -82,16 +85,6 @@ description: >
 | ④（最後手段） | `.emp-accent` | アクセントカラー — 警告・ネガティブ（1スライド1語） |
 
 **Iron Law: メインカラー + アクセントカラーの合計使用率を 5% 以下に保つ。**
-
----
-
-## CRITICAL Rules
-
-1. **1スライド = 1HTMLファイル** — 複数スライドを1つのHTMLにまとめることは禁止
-2. **テキスト最大3行** — 箇条書き・本文を合わせて1スライドあたり3行を超えない
-3. **縦罫線禁止** — 表は `border-bottom` のみ使用
-4. **1920×1080 固定** — `html, body { width: 1920px; height: 1080px; overflow: hidden; }` を変更しない
-5. **CSS/JS 全インライン** — 外部ファイルへの分割禁止（Google Fonts CDN・Chart.js CDN は例外）
 
 ---
 
@@ -113,6 +106,7 @@ description: >
 | T-12 | 文章｜図解 | 左テキスト+右図解 2列 |
 
 完成例: `assets/template.html` をブラウザで開いて確認。
+HTMLスニペット: `references/slide-templates.md` を参照。
 
 ---
 
@@ -121,15 +115,17 @@ description: >
 ### Phase 1 — 要件確認 & テンプレート提案（Claude Code）
 
 1. スライド枚数・各スライドのタイトルとキーメッセージを確認
-2. T-01〜T-12 から最適テンプレートを選んでユーザーに提案
-3. 出力ディレクトリを決定（例: `~/slides/my-deck/`）
+2. 出力ディレクトリを決定（例: `~/slides/my-deck/`）
+3. T-01〜T-12 から最適テンプレートを選んでユーザーに提案・承認を得る
 4. 承認後に Phase 2 へ
+
+**ユーザー確認ポイント：** テンプレート選定後・最終PNG/PPTX完成後の2回。
 
 ---
 
 ### Phase 2 — Codex で Image Gen（参照画像生成のみ）
 
-**Codex の役割はここだけ。HTML は書かせない。**
+**Codex の役割はここだけ。HTML は書かせない。参照画像はレイアウト・雰囲気用であり、最終テキストは HTML 側で正確に再現する。**
 
 ```bash
 codex exec \
@@ -162,7 +158,7 @@ bold Noto Sans JP typography, high quality, no watermark,
 
 ### Phase 3 — HTML生成 + 視覚的フィードバックループ（Claude Code が全て担当）
 
-**このフェーズは Claude Code が自律的に実行する。Codex は呼ばない（3連続失敗時を除く）。**
+**このフェーズは Claude Code が自律的に実行する。Codex は3連続失敗時のフォールバックのみ。**
 
 #### Step 3-1: HTML 初版作成
 
@@ -190,25 +186,14 @@ asyncio.run(screenshot('{html_path}', '{out_path}'))
 
 Windows では `file:///C:/...` 形式でパスを渡すこと。
 
-#### Step 3-3: 視覚的フィードバックループ（完全一致するまで繰り返す）
+#### Step 3-3: 視覚的フィードバックループ（全項目 PASS になるまで繰り返す）
 
-**判定は目視のみ。数値（diff）では判断しない。**
+**判定は目視のみ。**
 
 スクリーンショットと参照画像を Read ツールで並べて表示し、以下を1項目ずつ確認する：
 
-**目視チェックリスト（全項目一致で完了）：**
-- [ ] アイコン: 種類・形・太さ・サイズが参照と同じか
-- [ ] テキスト: 内容・改行位置・フォントの太さが参照と同じか
-- [ ] 番号バッジ: 位置・サイズ・色が参照と同じか
-- [ ] カード: 幅・高さ・角丸・影・余白が参照と同じか
-- [ ] 矢印: 形・色・サイズが参照と同じか
-- [ ] 全体配置: カードの縦位置・横の間隔が参照と同じか
-- [ ] 背景色・カード内の配色が参照と同じか
-
-**停止条件（これを満たすまでループを絶対に終了しない）：**
-
 各ループの終わりに以下の PASS/FAIL 表を必ず記録する。
-**1項目でも FAIL があれば Phase 4 や codex-review に進んではならない。**
+**1項目でも FAIL があれば次フェーズに進んではならない。**
 
 | 項目 | 判定 | 差異の具体的記述 |
 |------|------|-----------------|
@@ -222,9 +207,8 @@ Windows では `file:///C:/...` 形式でパスを渡すこと。
 | 矢印形状 | PASS/FAIL | |
 | 全体縦位置 | PASS/FAIL | |
 
-**禁止事項（これを言ったら即アウト）：**
+**禁止事項：**
 - 「ほぼ一致」「十分近い」「雰囲気は合っている」という理由での完了宣言
-- アイコンが参照と明らかに違うのに「全体的に近い」として次フェーズへ進む
 - チェックリストを記録せずに完了と判断する
 
 **修正サイクル：**
@@ -234,23 +218,44 @@ Windows では `file:///C:/...` 形式でパスを渡すこと。
 4. 再度目視確認 → 改善していなければ **必ず revert** して別のアプローチを試みる
 5. 全項目 PASS になるまで繰り返す
 
+**目視で一致とみなしてよい差異（許容）：**
+- フォント周辺の微細なアンチエイリアス差（Image Gen ラスター vs ブラウザレンダリング）
+- Google Fonts のカーニング差による1〜2px程度のテキスト位置ズレ
+
+**注意 — CSS の SVG サイズ上書き罠：**
+```css
+/* グローバルに svg { width:100%; } を設定するとアイコンサイズが制御不能になる */
+.card-icon svg { width: 80px !important; height: 80px !important; }
+```
+
 **Codexフォールバック（3修正連続で改善なし時）：**
-- 3回連続で目視で改善が見られない場合、Codex に引き継ぐ
-- Codex には参照画像・HTML・「どこが違うか」の具体的な説明を渡す：
-  ```
-  /goal 参照画像（reference-01.png）とスクリーンショット（screenshot-01.png）を見比べて、
-  HTMLを参照画像に完全一致させてください。
-  現在の差異: {具体的な差異のリスト（例: カード3のアイコンが違う、タイトルの改行位置がずれている）}
-  修正後はPlaywrightでスクリーンショットを撮り、目視で確認してください。
-  ```
+```
+/goal 参照画像（reference-01.png）とスクリーンショット（screenshot-01.png）を見比べて、
+HTMLを参照画像に完全一致させてください。
+現在の差異: {具体的な差異のリスト}
+修正後はPlaywrightでスクリーンショットを撮り、目視で確認してください。
+```
+
+#### Step 3-4: アイコンが3回修正しても改善しない場合 — リファレンスPNGクロップ方式
+
+SVGで複雑なアイコンを再現しようとすると形状・太さが必ず乖離する。これは原理的な限界。
+
+**解決策：リファレンスPNGからアイコン領域を直接クロップして base64 埋め込みする。**
+
+詳細手順・コードは `references/png-crop-icon.md` を参照。
+
+要点：
+- クロップ座標は PIL で `ref.size` 確認後、目視で推定
+- 白余白は `trim_whitespace()` で除去してからbase64化
+- HTML は Python f-string で全体再構築（正規表現置換は禁止）
+- クロップ画像を確認用に保存してから埋め込む
 
 #### Step 3-5: HTML完成後の codex-review
 
 視覚的フィードバックループで収束したら、生成した HTML のコード品質を `/codex-review` でチェックする。
-スライドHTMLが出力ディレクトリにある場合は、そのディレクトリに `cd` してから実行すること。
 
 ```bash
-# 出力ディレクトリ（例: test-output3/）で実行
+# 出力ディレクトリで実行
 cd /path/to/output-dir
 codex --dangerously-bypass-approvals-and-sandbox review "slide-01.html をレビューしてください：
 - インラインSVGアイコンがPPTX変換時に消えるリスクがないか
@@ -261,140 +266,7 @@ codex --dangerously-bypass-approvals-and-sandbox review "slide-01.html をレビ
 日本語で回答してください。"
 ```
 
-レビュー結果でCRITICAL/WARNINGが出た場合は修正してから次フェーズへ進む。
-
-**⚠️ 目視で一致とみなしてよい差異：**
-- フォント周辺の微細なアンチエイリアス差（Image Gen のラスター vs ブラウザレンダリング）
-- Google Fonts のカーニング差による1〜2px程度のテキスト位置ズレ
-- これらは構造的に発生するもので、アイコン・レイアウト・テキスト内容が合っていれば完了とする
-
-**⚠️ CSS の SVG サイズ上書き罠：**
-```css
-/* グローバルに svg { width:100%; } を設定するとアイコンサイズが制御不能になる */
-/* 特定コンテナには !important またはインラインスタイルで個別上書きする */
-.card-icon svg { width: 80px !important; height: 80px !important; }
-```
-
----
-
-### Step 3-4: アイコンが3回修正しても改善しない場合 — リファレンスPNGクロップ方式
-
-**SVGによるアイコン手書きが全て失敗した場合の確実な解決策：**
-
-SVGで複雑なアイコン（棒グラフ+虫眼鏡、クリップボード+戦略図 など）を再現しようとすると、
-形状・サイズ・太さの細部が必ず乖離する。これは原理的な限界であり、繰り返しても収束しない。
-
-**解決策：リファレンスPNGからアイコン領域を直接クロップして base64 埋め込みする。**
-これによりピクセル単位の完全一致が保証される。
-
-#### 手順
-
-**Step A: アイコン座標を特定してクロップ**
-
-```python
-import os, base64, io, json
-from PIL import Image
-
-userprofile = os.environ['USERPROFILE']
-ref = Image.open(os.path.join(userprofile, r'.claude\slides\my-deck\reference-01.png'))
-print(f"Reference size: {ref.size}")  # 実際のサイズを確認して座標を計算
-
-# 各アイコン領域のクロップ座標（リファレンス画像を目視で測定）
-# 例: 4枚カードの場合、各カード中心X ± 幅、アイコンY範囲
-crops = {
-    'icon1': (left1, top1, right1, bot1),
-    'icon2': (left2, top2, right2, bot2),
-    'icon3': (left3, top3, right3, bot3),
-    'icon4': (left4, top4, right4, bot4),
-}
-
-icons = {}
-for key, bbox in crops.items():
-    crop = ref.crop(bbox)
-    icons[key] = crop
-    crop.save(rf'C:\temp\{key}_check.png')  # 確認用
-    print(f"{key}: {crop.size}")
-```
-
-> **座標の決め方**: PIL で `ref.size` を確認 → 参照画像を目視して各アイコンのX中心・Y範囲を推定。
-> タイトルテキストを含めないよう、アイコン本体より少し内側から始める。
-
-**Step B: 白余白をトリミングしてアイコン本体だけに**
-
-```python
-import numpy as np
-
-def trim_whitespace(img, threshold=240, padding=15):
-    arr = np.array(img)
-    is_content = ~((arr[:,:,0] > threshold) & (arr[:,:,1] > threshold) & (arr[:,:,2] > threshold))
-    rows = np.any(is_content, axis=1)
-    cols = np.any(is_content, axis=0)
-    r0, r1 = np.where(rows)[0][[0, -1]]
-    c0, c1 = np.where(cols)[0][[0, -1]]
-    r0, r1 = max(0, r0-padding), min(arr.shape[0]-1, r1+padding)
-    c0, c1 = max(0, c0-padding), min(arr.shape[1]-1, c1+padding)
-    return img.crop((c0, r0, c1+1, r1+1))
-
-trimmed = {}
-for key, img in icons.items():
-    t = trim_whitespace(img)
-    trimmed[key] = t
-    print(f"{key}: {img.size} → trimmed {t.size}")
-```
-
-**Step C: base64 エンコードして JSON に保存**
-
-```python
-b64_icons = {}
-for key, img in trimmed.items():
-    buf = io.BytesIO()
-    img.save(buf, 'PNG')
-    b64_icons[key] = 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode()
-
-json_path = os.path.join(userprofile, r'.claude\slides\my-deck\icon_b64.json')
-with open(json_path, 'w') as f:
-    json.dump(b64_icons, f)
-print(f"Saved {list(b64_icons.keys())} to icon_b64.json")
-```
-
-**Step D: HTML を Python f-string で全体再構築（正規表現置換は禁止）**
-
-```python
-with open(json_path, 'r') as f:
-    icons = json.load(f)
-
-html = f"""<!DOCTYPE html>
-<html lang="ja">
-<head>
-  ...（CSS等）
-</head>
-<body>
-  <section class="slide">
-    <div class="step-card">
-      <div class="step-icon"><img src="{icons['icon1']}" alt=""></div>
-    </div>
-    <div class="arrow"><img src="{icons['arrow']}" alt=""></div>
-    <div class="step-card">
-      <div class="step-icon"><img src="{icons['icon2']}" alt=""></div>
-    </div>
-    ...
-  </section>
-</body>
-</html>"""
-
-html_path = os.path.join(userprofile, r'.claude\slides\my-deck\slide-01.html')
-with open(html_path, 'w', encoding='utf-8') as f:
-    f.write(html)
-```
-
-> **⚠️ 正規表現による img src 置換は禁止。** HTMLに複数の base64 img タグがある場合、
-> 置換スクリプトが「出現順」で差し替えるためアイコンと矢印の順序が崩れる。
-> 必ず f-string で変数を直接埋め込んでHTMLを全体再構築すること。
-
-**Step E: スクリーンショット → 目視確認 → クロップ座標を微調整**
-
-クロップ画像を `C:\temp\{key}_check.png` として保存し Read ツールで確認してから HTML に埋め込む。
-「タイトルテキストが混入している」「アイコンが切れている」場合は座標を調整して Step A からやり直す。
+CRITICAL/WARNING が出た場合は修正してから次フェーズへ進む。
 
 ---
 
@@ -418,20 +290,8 @@ uv run --with httpx skills/slide-making/scripts/export_to_pptx.py \
   --input slide-01.html --output slide-01.pptx --api-key "$API_KEY"
 ```
 
-> ⚠️ export_to_pptx.py のダウンロード部分（`client.stream()`）が 400 エラーになる場合は
+> ⚠️ export_to_pptx.py の `client.stream()` が 400 エラーになる場合は、
 > ジョブが返す `downloadUrl` を `curl -o output.pptx` で直接ダウンロードすること。
-
-PPTX → PNG 変換は PowerShell + PowerPoint COM で行う：
-
-```powershell
-$pptxPath = "$env:USERPROFILE\.claude\...\slide-01.pptx"
-$outPng   = "$env:USERPROFILE\.claude\...\pptx-slide-1.png"
-$pptApp   = New-Object -ComObject PowerPoint.Application
-$pptApp.Visible = 1
-$pres = $pptApp.Presentations.Open($pptxPath, 0, 0, 0)
-$pres.Slides[1].Export($outPng, "PNG", 1920, 1080)
-$pres.Close(); $pptApp.Quit()
-```
 
 詳細は `references/html2pptx-guide.md` を参照。
 
@@ -440,8 +300,8 @@ $pres.Close(); $pptApp.Quit()
 PPTX → PNG 化して目視で確認する（PowerShell COM）：
 
 ```powershell
-$pptxPath = "$env:USERPROFILE\.claude\...\slide-01.pptx"
-$outPng   = "$env:USERPROFILE\.claude\...\pptx-slide-1.png"
+$pptxPath = "$env:USERPROFILE\path\to\slide-01.pptx"
+$outPng   = "$env:USERPROFILE\path\to\pptx-slide-1.png"
 $pptApp   = New-Object -ComObject PowerPoint.Application
 $pptApp.Visible = 1
 $pres = $pptApp.Presentations.Open($pptxPath, 0, 0, 0)
@@ -449,7 +309,7 @@ $pres.Slides[1].Export($outPng, "PNG", 1920, 1080)
 $pres.Close(); $pptApp.Quit()
 ```
 
-**目視チェック項目（PNG をHTMLと並べて確認）：**
+**目視チェック項目（PNG を HTML と並べて確認）：**
 - [ ] 全アイコンが表示されている（インラインSVGは消えることがある）
 - [ ] テキストの改行位置が崩れていない
 - [ ] カード・矢印・区切り線など全要素が揃っている
@@ -458,7 +318,6 @@ $pres.Close(); $pptApp.Quit()
 **問題があった場合 — `/codex-review` で原因特定と修正：**
 
 ```bash
-# 出力ディレクトリで実行
 cd /path/to/output-dir
 codex --dangerously-bypass-approvals-and-sandbox review "slide-01.html で以下のPPTX変換後の問題が発生しました：{問題の詳細}
 HTMLのどの部分が原因か特定し、PPTX変換に対応した修正案を提示してください。
@@ -473,7 +332,7 @@ HTMLのどの部分が原因か特定し、PPTX変換に対応した修正案を
 
 ## HTML の基本構造（ベーステンプレート）
 
-`assets/slide-base.html` を出発点として使う。
+`assets/slide-base.html` を出発点として使う。詳細は該当ファイルを参照。
 
 ```html
 <!doctype html>
@@ -518,31 +377,28 @@ HTMLのどの部分が原因か特定し、PPTX変換に対応した修正案を
 
 ## Verification Checklist
 
-### デザイン
-- [ ] 背景が `#F9F9F9`
-- [ ] テキスト色が `#1A1A1A`
-- [ ] メインカラー + アクセントカラーの合計使用率が 5% 以下
-- [ ] フォントサイズがタイトル 50pt / 見出し 35pt / 本文 25pt
-- [ ] 上下左右の余白が 48px 以上
-
-### 内容
-- [ ] テキストが1スライドあたり最大3行
-- [ ] 1スライド1メッセージ
-- [ ] データがある箇所は図表で視覚化
-
-### 技術
+### 技術（CRITICAL Rules）
 - [ ] `html, body` が `1920px × 1080px; overflow: hidden` 固定
 - [ ] CSS/JS が全てインライン（Google Fonts CDN は除く）
 - [ ] 表に縦罫線がない（`border-bottom` のみ）
+- [ ] 1スライド = 1HTMLファイル
+
+### デザイン
+- [ ] 背景 `#F9F9F9`・テキスト `#1A1A1A`・余白 48px 以上
+- [ ] フォントサイズ: タイトル 50pt / 見出し 35pt / 本文 25pt
+- [ ] メインカラー + アクセントカラーの合計使用率が 5% 以下
+
+### 内容
+- [ ] テキストが1スライドあたり最大3行
+- [ ] 1スライド1メッセージ・データは図表で視覚化
 
 ### 視覚的フィードバックループ
-- [ ] アイコン・テキスト・カード・矢印・配置が参照画像と目視で一致している
-- [ ] `/codex-review` でCRITICAL/WARNINGがないことを確認した
+- [ ] PASS/FAIL 表を記録し全項目 PASS を確認した
+- [ ] `/codex-review` で CRITICAL/WARNING がないことを確認した
 
 ### PPTX変換後（方法Bのみ）
 - [ ] PPTX → PNG 化して目視確認した
-- [ ] 全アイコンが表示されている（インラインSVG消失なし）
-- [ ] テキストの改行・フォントが崩れていない
+- [ ] 全アイコン表示・テキスト・フォントが崩れていない
 - [ ] 問題があれば `/codex-review` で原因特定・修正した
 
 **Iron Law: 1 slide = 1 HTML file. Never combine.**
@@ -551,26 +407,29 @@ HTMLのどの部分が原因か特定し、PPTX変換に対応した修正案を
 
 ## Common Mistakes
 
-| ミス | 問題 | 修正 |
-|------|------|------|
-| 視覚的フィードバックループを省略する | 参照画像とHTMLが乖離したまま完了する | **目視で全項目一致するまで必ずループを継続する** |
-| 修正後に目視で改善していないのに次の修正に進む | 悪化した状態が積み重なる | **改善していなければ即 Revert して別のアプローチを試みる** |
-| 目視で改善が3回連続でない場合にループを続ける | 時間を無駄にして収束しない | **3回連続で改善なしなら Codex フォールバックに切り替える** |
-| Codex に HTML を書かせる | 担当外・フィードバックループが機能しない | HTML は Claude Code が書く。Codex は Image Gen と Fallback のみ |
-| `html, body` にサイズ指定しない | スライドサイズが崩れる | `width:1920px; height:1080px; overflow:hidden` を必ず設定 |
-| 4行以上のテキスト | スライドの目的が分散 | 2枚に分割か箇条書きを削る |
-| 表に縦罫線を引く | デザインルール違反 | `border-bottom` のみに |
-| 1 HTML に複数スライドを入れる | PNG化・PowerPoint貼付不可 | ファイルを分割する |
-| `svg { width:100%; height:100% }` でグローバル設定 | 個別アイコンのサイズが制御不能 | 特定コンテナには `!important` で上書き |
-| diff 10 以下で「フォント差」と早期打ち切り | 参照画像との乖離が残る | diff 5 以下まで修正を続ける。5〜8 でループ停滞時のみ打ち切り可 |
-| `settings.local.json` の env をシェルから直接参照 | Bash ツールには自動注入されない | `python -c "import json; ..."` で明示的に取得する |
-| diff数値で収束判定する | 改行違い・アイコン差が数値に隠れて見逃される | **判定は目視のみ**。数値は使わない |
-| PPTX変換後の目視確認をしない | アイコン消失・改行崩れに気づかない | 必ずPPTX→PNG化して目視チェック。問題は `/codex-review` で原因特定する |
-| インラインSVGのままPPTX変換する | html2pptx.appはインラインSVG非対応のためアイコンが消える | base64 data URI の `<img>` タグに変換する |
-| HTML完成後に `/codex-review` をかけない | PPTX変換リスクやSVGサイズ罠を見逃す | 収束後に必ず `/codex-review` でレビューし、WARNINGを修正してから次フェーズへ |
-| SVGでアイコンを手書きし続ける | 複雑なアイコン（棒グラフ+虫眼鏡・クリップボード等）は形状・太さが必ず乖離し収束しない | 3回失敗したらリファレンスPNGから直接クロップしてbase64埋め込みに切り替える（Step 3-4参照） |
-| base64 img タグを正規表現で置換する | HTMLに複数のbase64 imgがある場合、アイコンと矢印の順序が崩れて全て間違ったカードに入る | 必ずPython f-stringでHTML全体を再構築する |
-| クロップ画像の白余白をトリミングしない | `object-fit: contain` が白余白込みで縮小するためアイコンが小さく見える | Pillowの `trim_whitespace()` で余白を除去してからbase64化する |
+| ミス | 修正 |
+|------|------|
+| 視覚的フィードバックループを省略する | 目視で全項目 PASS になるまで必ずループを継続する |
+| 修正後に改善していないのに次の修正に進む | 改善していなければ即 Revert して別のアプローチを試みる |
+| 3回連続で改善なしでもループを続ける | Codex フォールバックに切り替える |
+| Codex に HTML を書かせる | HTML は Claude Code が書く。Codex は Image Gen・フォールバック・レビューのみ |
+| `svg { width:100% }` でグローバル設定 | 特定コンテナには `!important` で個別上書きする |
+| インラインSVGのままPPTX変換する | base64 data URI の `img` タグに変換する |
+| SVGでアイコンを手書きし続ける | 3回失敗したらリファレンスPNGクロップ方式に切り替える（Step 3-4参照） |
+| base64 img を正規表現で置換する | Python f-string で HTML 全体を再構築する |
+| クロップ画像の白余白をトリミングしない | `trim_whitespace()` で除去してからbase64化する |
+| `settings.local.json` の env をシェルから直接参照 | `python -c "import json; ..."` で明示的に取得する |
+
+---
+
+## Prerequisites（依存関係）
+
+| ツール | 用途 | インストール |
+|--------|------|-------------|
+| Playwright | スクリーンショット取得 | `uv run playwright install chromium` |
+| Pillow + numpy | PNG クロップ・比較 | `uv add pillow numpy` |
+| PowerPoint（COM） | PPTX → PNG 変換（方法B検証） | Windows 標準 |
+| `HTML2PPTX_API_KEY` | html2pptx.app API | `~/.claude/settings.local.json` の `env` に設定済み |
 
 ---
 
@@ -579,11 +438,12 @@ HTMLのどの部分が原因か特定し、PPTX変換に対応した修正案を
 - `references/design-rules.md` — 色/フォント/余白/強調の詳細リファレンス
 - `references/slide-templates.md` — T-01〜T-12 HTMLスニペット集
 - `references/thesvg-usage.md` — アイコン取得・recolor・ライセンス
+- `references/png-crop-icon.md` — リファレンスPNGクロップ方式の詳細手順・コード
 - `references/html2pptx-guide.md` — HTML→PPTX変換ガイド（インラインSVG非対応の注意事項含む）
 - `references/powerpoint-handoff.md` — HTML→PNG→PowerPoint 貼付の完全手順
 - `scripts/fetch_icon.py` — theSVG CDN取得＋キャッシュ
 - `scripts/render_slide.py` — Playwright経由でPNG化
-- `scripts/export_to_pptx.py` — html2pptx.app REST API経由で編集可能 .pptx 出力（`HTML2PPTX_API_KEY` 要設定）
+- `scripts/export_to_pptx.py` — html2pptx.app REST API経由で編集可能 .pptx 出力
 - `assets/slide-base.html` — 1920×1080単一スライドHTML雛形
 - `assets/template.html` — デザインパターンギャラリー（T-01〜T-12）
-- `../codex-review/SKILL.md` — Codex CLI によるコードレビュースキル（HTML完成後・PPTX問題時に使用）
+- `../codex-review/SKILL.md` — Codex CLI によるコードレビュースキル
