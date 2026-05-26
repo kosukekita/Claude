@@ -60,7 +60,7 @@ playwright-cli open
 playwright-cli open --persistent
 
 # カスタムプロファイルディレクトリ
-playwright-cli open --profile=C:\Users\u8792\browser-profiles\myprofile
+playwright-cli open --profile=C:\Users\kitak\browser-profiles\myprofile
 
 # プロファイルデータの削除
 playwright-cli delete-data
