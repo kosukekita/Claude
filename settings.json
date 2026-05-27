@@ -1,6 +1,5 @@
 {
   "permissions": {
-    "defaultMode": "auto",
     "allow": [
       "Bash(git init:*)",
       "Bash(git remote:*)",
@@ -97,6 +96,7 @@
       "Bash(/c/Users/kitak/.antigravity/extensions/anthropic.claude-code-2.1.92-win32-x64/resources/native-binary/claude.exe plugin:*)",
       "Edit(~/.claude/skills/codex-review/**)"
     ],
+    "defaultMode": "auto",
     "additionalDirectories": [
       "C:\\Users\\kitak\\.claude",
       "C:\\Users\\kitak\\Desktop",
@@ -261,10 +261,11 @@
       }
     }
   },
-  "skipAutoPermissionPrompt": true,
-  "skipDangerousModePermissionPrompt": true,
+  "alwaysThinkingEnabled": false,
   "effortLevel": "high",
   "autoUpdatesChannel": "latest",
+  "skipDangerousModePermissionPrompt": true,
+  "skipAutoPermissionPrompt": true,
   "mcpServers": {
     "chrome-devtools": {
       "command": "npx",
@@ -275,5 +276,5 @@
       ]
     }
   },
-  "alwaysThinkingEnabled": false
+  "agentPushNotifEnabled": true
 }
