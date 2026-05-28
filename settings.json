@@ -45,37 +45,18 @@
       "Bash(npm list:*)",
       "Read(//usr/local/**)",
       "Bash(npm root:*)",
-      "Bash(/c/Users/kitak/AppData/Local/ms-playwright-go/1.50.1/node.exe --version)",
-      "Bash(/c/Users/kitak/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/playwright/driver/node.exe --version)",
-      "Bash(ls /c/Users/kitak/AppData/Local/ms-playwright-go/1.50.1/npm*)",
-      "Bash(ls /c/Users/kitak/AppData/Local/ms-playwright-go/1.50.1/npx*)",
-      "Bash(ls /c/Users/kitak/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/playwright/driver/npm*)",
       "Read(//c/ProgramData/**)",
       "Bash(winget --version)",
       "Bash(winget list:*)",
       "Bash(winget install:*)",
-      "Bash(export PATH=\"/c/Program Files/nodejs:$PATH\")",
       "Bash(npm --version)",
       "Bash(npm install:*)",
       "Bash(playwright-cli --version)",
-      "Bash(ls /c/Users/kitak/AppData/Roaming/npm/playwright-cli*)",
-      "Bash(export PATH=\"/c/Users/kitak/AppData/Roaming/npm:/c/Program Files/nodejs:$PATH\")",
       "Bash(python -c \"import sys,json;d=json.load\\(sys.stdin\\);print\\(d.get\\('bin',{}\\)\\);print\\(d.get\\('description',''\\)\\)\")",
       "Bash(npm uninstall:*)",
-      "Bash(ls /c/Users/kitak/AppData/Roaming/npm/*.cmd)",
       "Bash(playwright-cli snapshot:*)",
       "Bash(playwright-cli close:*)",
-      "Bash(python amed_intercept.py)",
-      "Bash(python amed_intercept2.py)",
-      "Bash(python amed_test_api.py)",
-      "Bash(python amed_test_api2.py)",
-      "Bash(python amed_test_api3.py)",
-      "Bash(python amed_scrape_final.py)",
-      "Bash(python amed_scrape_v2.py)",
-      "Bash(python amed_debug.py)",
       "Bash(python -c ':*)",
-      "Bash(python amed_debug2.py)",
-      "Bash(python amed_scrape_v3.py)",
       "WebFetch(domain:doi.org)",
       "Bash(gemini --version)",
       "Bash(gemini -p \"Say hello\" -m gemini-2.5-pro)",
@@ -87,21 +68,10 @@
       "Bash(codex --version)",
       "Bash(codex exec:*)",
       "WebFetch(domain:status.openai.com)",
-      "Bash(cp \"p:/Code/HP/北摂人工関節/xs575794.key\" ~/.ssh/xs575794.key)",
       "Bash(chmod 600 ~/.ssh/xs575794.key)",
-      "Bash(ssh -i ~/.ssh/xs575794.key -p 10022 -o StrictHostKeyChecking=no -o ConnectTimeout=10 xs575794@xs575794.xsrv.jp \"echo 'SSH OK'\")",
-      "Bash(rsync -avz --delete --exclude=.htaccess --exclude=.user.ini -e 'ssh -i ~/.ssh/xs575794.key -p 10022' p:/Code/HP/北摂人工関節/dist/ xs575794@xs575794.xsrv.jp:hokusetsu-jinkokansetsu.jp/public_html/)",
-      "Bash(scp -i ~/.ssh/xs575794.key -P 10022 -r \"p:/Code/HP/北摂人工関節/dist/\"* xs575794@xs575794.xsrv.jp:hokusetsu-jinkokansetsu.jp/public_html/)",
-      "Bash(ssh -i ~/.ssh/xs575794.key -p 10022 xs575794@xs575794.xsrv.jp \"ls -la hokusetsu-jinkokansetsu.jp/public_html/\")",
-      "Bash(/c/Users/kitak/.antigravity/extensions/anthropic.claude-code-2.1.92-win32-x64/resources/native-binary/claude.exe plugin:*)",
       "Edit(~/.claude/skills/codex-review/**)"
     ],
-    "defaultMode": "auto",
-    "additionalDirectories": [
-      "C:\\Users\\kitak\\.claude",
-      "C:\\Users\\kitak\\Desktop",
-      "C:\\Users\\kitak\\.codex"
-    ]
+    "defaultMode": "auto"
   },
   "model": "opusplan",
   "hooks": {
@@ -111,12 +81,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/block-dangerous.ps1\"",
+            "command": "if command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/block-dangerous.ps1\"; fi",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/log-commands.ps1\"",
+            "command": "if command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/log-commands.ps1\"; fi",
             "timeout": 10
           }
         ]
@@ -126,7 +96,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/protect-files.ps1\"",
+            "command": "if command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/protect-files.ps1\"; fi",
             "timeout": 10
           }
         ]
@@ -138,7 +108,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/auto-pull.ps1\"",
+            "command": "command -v powershell >/dev/null 2>&1 && powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/auto-pull.ps1\" || true",
             "timeout": 30
           }
         ]
@@ -150,7 +120,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/auto-push.ps1\"",
+            "command": "command -v powershell >/dev/null 2>&1 && powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/auto-push.ps1\" || true",
             "timeout": 30
           }
         ]
@@ -162,7 +132,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"C:/Users/kitak/Downloads/wmux-0.6.4-win-x64/resources/cli/wmux-hook.js\" Bash 2>/dev/null || true"
+            "command": "[ -n \"$WMUX_HOOK_JS\" ] && [ -f \"$WMUX_HOOK_JS\" ] && node \"$WMUX_HOOK_JS\" Bash 2>/dev/null || true"
           }
         ]
       },
@@ -171,7 +141,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"C:/Users/kitak/Downloads/wmux-0.6.4-win-x64/resources/cli/wmux-hook.js\" Read 2>/dev/null || true"
+            "command": "[ -n \"$WMUX_HOOK_JS\" ] && [ -f \"$WMUX_HOOK_JS\" ] && node \"$WMUX_HOOK_JS\" Read 2>/dev/null || true"
           }
         ]
       },
@@ -180,7 +150,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"C:/Users/kitak/Downloads/wmux-0.6.4-win-x64/resources/cli/wmux-hook.js\" Write 2>/dev/null || true"
+            "command": "[ -n \"$WMUX_HOOK_JS\" ] && [ -f \"$WMUX_HOOK_JS\" ] && node \"$WMUX_HOOK_JS\" Write 2>/dev/null || true"
           }
         ]
       },
@@ -189,7 +159,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"C:/Users/kitak/Downloads/wmux-0.6.4-win-x64/resources/cli/wmux-hook.js\" Edit 2>/dev/null || true"
+            "command": "[ -n \"$WMUX_HOOK_JS\" ] && [ -f \"$WMUX_HOOK_JS\" ] && node \"$WMUX_HOOK_JS\" Edit 2>/dev/null || true"
           }
         ]
       },
@@ -198,7 +168,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"C:/Users/kitak/Downloads/wmux-0.6.4-win-x64/resources/cli/wmux-hook.js\" Grep 2>/dev/null || true"
+            "command": "[ -n \"$WMUX_HOOK_JS\" ] && [ -f \"$WMUX_HOOK_JS\" ] && node \"$WMUX_HOOK_JS\" Grep 2>/dev/null || true"
           }
         ]
       },
@@ -207,7 +177,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"C:/Users/kitak/Downloads/wmux-0.6.4-win-x64/resources/cli/wmux-hook.js\" Glob 2>/dev/null || true"
+            "command": "[ -n \"$WMUX_HOOK_JS\" ] && [ -f \"$WMUX_HOOK_JS\" ] && node \"$WMUX_HOOK_JS\" Glob 2>/dev/null || true"
           }
         ]
       },
@@ -216,7 +186,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"C:/Users/kitak/Downloads/wmux-0.6.4-win-x64/resources/cli/wmux-hook.js\" Agent 2>/dev/null || true"
+            "command": "[ -n \"$WMUX_HOOK_JS\" ] && [ -f \"$WMUX_HOOK_JS\" ] && node \"$WMUX_HOOK_JS\" Agent 2>/dev/null || true"
           }
         ]
       },
@@ -225,7 +195,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"C:/Users/kitak/Downloads/wmux-0.6.4-win-x64/resources/cli/wmux-hook.js\" WebSearch 2>/dev/null || true"
+            "command": "[ -n \"$WMUX_HOOK_JS\" ] && [ -f \"$WMUX_HOOK_JS\" ] && node \"$WMUX_HOOK_JS\" WebSearch 2>/dev/null || true"
           }
         ]
       },
@@ -234,7 +204,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"C:/Users/kitak/Downloads/wmux-0.6.4-win-x64/resources/cli/wmux-hook.js\" WebFetch 2>/dev/null || true"
+            "command": "[ -n \"$WMUX_HOOK_JS\" ] && [ -f \"$WMUX_HOOK_JS\" ] && node \"$WMUX_HOOK_JS\" WebFetch 2>/dev/null || true"
           }
         ]
       },
@@ -243,7 +213,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"C:/Users/kitak/Downloads/wmux-0.6.4-win-x64/resources/cli/wmux-hook.js\" Skill 2>/dev/null || true"
+            "command": "[ -n \"$WMUX_HOOK_JS\" ] && [ -f \"$WMUX_HOOK_JS\" ] && node \"$WMUX_HOOK_JS\" Skill 2>/dev/null || true"
           }
         ]
       }
@@ -251,7 +221,8 @@
   },
   "enabledPlugins": {
     "codex@openai-codex": true,
-    "chrome-devtools-mcp@claude-plugins-official": false
+    "chrome-devtools-mcp@claude-plugins-official": false,
+    "security-guidance@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "openai-codex": {
@@ -266,6 +237,7 @@
   "autoUpdatesChannel": "latest",
   "skipDangerousModePermissionPrompt": true,
   "skipAutoPermissionPrompt": true,
+  "agentPushNotifEnabled": true,
   "mcpServers": {
     "chrome-devtools": {
       "command": "npx",
@@ -275,6 +247,5 @@
         "--browserUrl=http://127.0.0.1:9222"
       ]
     }
-  },
-  "agentPushNotifEnabled": true
+  }
 }
