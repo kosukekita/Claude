@@ -221,7 +221,7 @@
   },
   "enabledPlugins": {
     "codex@openai-codex": true,
-    "chrome-devtools-mcp@claude-plugins-official": false,
+    "chrome-devtools-mcp@claude-plugins-official": true,
     "security-guidance@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
@@ -236,8 +236,8 @@
   "effortLevel": "high",
   "autoUpdatesChannel": "latest",
   "skipDangerousModePermissionPrompt": true,
-  "skipAutoPermissionPrompt": true,
   "agentPushNotifEnabled": true,
+  "skipAutoPermissionPrompt": true,
   "mcpServers": {
     "chrome-devtools": {
       "command": "npx",
