@@ -31,3 +31,8 @@ statsig/
 nul
 sessions/
 downloads/*.exe
+security/
+tasks/
+.last-cleanup
+.last-update-result.json
+settings.json.bak.*

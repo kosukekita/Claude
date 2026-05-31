@@ -73,7 +73,7 @@
     ],
     "defaultMode": "auto"
   },
-  "model": "opusplan",
+  "model": "claude-opus-4-8",
   "hooks": {
     "PreToolUse": [
       {
@@ -233,7 +233,9 @@
     }
   },
   "alwaysThinkingEnabled": false,
-  "effortLevel": "high",
+  "effortLevel": "xhigh",
+  "ultracode": true,
+  "enableWorkflows": true,
   "autoUpdatesChannel": "latest",
   "skipDangerousModePermissionPrompt": true,
   "agentPushNotifEnabled": true,
