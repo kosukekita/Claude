@@ -110,6 +110,11 @@
             "type": "command",
             "command": "command -v powershell >/dev/null 2>&1 && powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/auto-pull.ps1\" || true",
             "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "command -v powershell >/dev/null 2>&1 && powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/memory-inject.ps1\" || true",
+            "timeout": 15
           }
         ]
       }
@@ -118,6 +123,16 @@
       {
         "matcher": "",
         "hooks": [
+          {
+            "type": "command",
+            "command": "command -v powershell >/dev/null 2>&1 && powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/memory-save.ps1\" || true",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "command -v powershell >/dev/null 2>&1 && powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/memory-sync-codex.ps1\" || true",
+            "timeout": 10
+          },
           {
             "type": "command",
             "command": "command -v powershell >/dev/null 2>&1 && powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/auto-push.ps1\" || true",
