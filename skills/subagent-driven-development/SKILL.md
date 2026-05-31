@@ -1,6 +1,6 @@
 ---
 name: subagent-driven-development
-description: Use when executing implementation plans with independent tasks in the current session
+description: Use when executing an implementation plan in the CURRENT session, fully automated via a fresh subagent per task with two-stage spec-then-quality review (no human-in-the-loop). For batched execution in a separate session with human review between batches, use executing-plans instead.
 ---
 
 # Subagent-Driven Development

@@ -1,6 +1,6 @@
 ---
 name: dispatching-parallel-agents
-description: Use when facing 2+ independent tasks that can be worked on without shared state or sequential dependencies
+description: Use when facing 2+ independent investigations, failures, or bugs across subsystems that can be worked on without shared state or sequential dependencies — fans them out to parallel subagents. Not for executing a single written plan (use executing-plans or subagent-driven-development for that).
 ---
 
 # Dispatching Parallel Agents

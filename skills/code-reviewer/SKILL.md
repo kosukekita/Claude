@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: Use when reviewing pull requests, conducting code quality audits, or identifying security vulnerabilities. Invoke for PR reviews, code quality checks, refactoring suggestions.
+description: Default code-review skill — performs the review IN-CLAUDE with Read/Grep/Glob (no external CLI, no subagent). Use for a bare "review this code / コードレビューして" request, code quality audits, and refactoring suggestions, producing a categorized report. To delegate to an external model use codex-review (Codex CLI) or gemini-review (Gemini CLI); to dispatch a reviewer subagent before merge use requesting-code-review.
 license: MIT
 allowed-tools: Read, Grep, Glob
 metadata:
@@ -42,7 +42,7 @@ You are a principal engineer with 12+ years of experience across multiple langua
 
 Load detailed guidance based on context:
 
-<!-- Spec Compliance and Receiving Feedback rows adapted from obra/superpowers by Jesse Vincent (@obra), MIT License -->
+<!-- Spec Compliance row adapted from obra/superpowers by Jesse Vincent (@obra), MIT License -->
 
 | Topic | Reference | Load When |
 |-------|-----------|-----------|
@@ -51,7 +51,7 @@ Load detailed guidance based on context:
 | Feedback Examples | `references/feedback-examples.md` | Writing good feedback |
 | Report Template | `references/report-template.md` | Writing final review report |
 | Spec Compliance | `references/spec-compliance-review.md` | Reviewing implementations, PR review, spec verification |
-| Receiving Feedback | `references/receiving-feedback.md` | Responding to review comments, handling feedback |
+| Receiving Feedback | Use the **receiving-code-review** skill | Responding to review comments, handling incoming feedback |
 
 ## Constraints
 

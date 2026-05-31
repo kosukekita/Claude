@@ -1,6 +1,6 @@
 ---
 name: infographic
-description: "AntV Infographic を活用したインフォグラフィック・スライド・図解生成。テキストや情報から視覚的なインフォグラフィックを作成。約200種のテンプレート、手書き風・グラデーション等のテーマ、SVG出力対応。Use when user creates slides, diagrams, visual explanations, presentations, infographics, flowcharts, timelines, or any visual content. Trigger phrases: スライド, 図解, インフォグラフィック, プレゼン, フローチャート, タイムライン, 組織図, SWOT, 比較表, ロードマップ, マインドマップ, slide, diagram, infographic, presentation, flowchart, timeline, org chart, visual, 図を作成, 可視化, ビジュアル."
+description: "AntV Infographic を活用したインフォグラフィック・図解・複数図を1HTMLにまとめたスライドデッキ生成。テキストや情報から視覚的なインフォグラフィックを作成。約200種のテンプレート、手書き風・グラデーション等のテーマ、SVG出力対応。Use when user creates infographics, diagrams, visual explanations, charts, or a multi-figure slide deck in one HTML. Trigger phrases: 図解, インフォグラフィック, フローチャート, タイムライン, 組織図, SWOT, 比較表, ロードマップ, マインドマップ, スライドデッキ, infographic, diagram, flowchart, timeline, org chart, visual, 図を作成, 可視化, ビジュアル. Do NOT trigger for: 単一の1920x1080発表スライドPNG/PPTX・PowerPoint貼付用スライド（use slide-making）, academic poster（use make-poster）."
 ---
 
 # Infographic Creator

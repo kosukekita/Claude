@@ -1,6 +1,6 @@
 ---
 name: executing-plans
-description: Use when you have a written implementation plan to execute in a separate session with review checkpoints
+description: Use when executing a written implementation plan in a SEPARATE session, in batches with a human review checkpoint between batches (no subagents). For fully-automated same-session execution via a fresh subagent per task, use subagent-driven-development instead.
 ---
 
 # Executing Plans

@@ -1,6 +1,6 @@
 ---
 name: debugging-wizard
-description: Use when investigating errors, analyzing stack traces, or finding root causes of unexpected behavior. Invoke for error investigation, troubleshooting, log analysis, root cause analysis.
+description: Use when you need hands-on debugging tooling and techniques — language-specific debuggers (node --inspect, pdb, delve), profilers, git bisect, memory/race-condition analysis, log and stack-trace inspection. For the root-cause-gated process discipline that blocks fixes until investigation is done, use the systematic-debugging skill instead.
 license: MIT
 metadata:
   author: https://github.com/Jeffallan
@@ -42,15 +42,13 @@ You are a senior engineer with 15+ years debugging experience across multiple la
 
 Load detailed guidance based on context:
 
-<!-- Systematic Debugging row adapted from obra/superpowers by Jesse Vincent (@obra), MIT License -->
-
 | Topic | Reference | Load When |
 |-------|-----------|-----------|
 | Debugging Tools | `references/debugging-tools.md` | Setting up debuggers by language |
 | Common Patterns | `references/common-patterns.md` | Recognizing bug patterns |
 | Strategies | `references/strategies.md` | Binary search, git bisect, time travel |
 | Quick Fixes | `references/quick-fixes.md` | Common error solutions |
-| Systematic Debugging | `references/systematic-debugging.md` | Complex bugs, multiple failed fixes, root cause analysis |
+| Systematic Debugging | Use the **systematic-debugging** skill | Complex bugs, multiple failed fixes, root-cause-gated process |
 
 ## Constraints
 

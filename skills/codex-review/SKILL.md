@@ -1,9 +1,11 @@
 ---
 name: codex-review
 description: >
-  Codex CLI (`codex review`) を使ってコードをレビューするスキル。
+  外部 Codex CLI (`codex review`) に委譲してコードをレビューするスキル。
   通常レビュー・敵対的レビュー・セキュリティ監査・アーキテクチャレビュー・PR前確認・構造化出力に対応。
-  「Codexでレビュー」「codex review」「敵対的レビュー」「adversarial」などと言われた時に使用。
+  ユーザーが Codex を明示した時に使用：「Codexでレビュー」「codex review」「敵対的レビュー」「adversarial」。
+  ツール無指定の素の「レビューして／コードレビュー」は code-reviewer（in-Claude）を使う。
+  Gemini 指定や論文・文章のセカンドオピニオンは gemini-review を使う。
 allowed-tools: Bash, Read, Glob
 ---
 

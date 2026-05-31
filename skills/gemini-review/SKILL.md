@@ -1,9 +1,11 @@
 ---
 name: gemini-review
 description: >
-  Gemini CLIを使ってコードや文章をGeminiにレビュー・確認してもらう。
-  コードレビュー、論文チェック、モデル自動フォールバックに対応。
-  「Geminiにも確認」「Geminiでチェック」「セカンドオピニオン」などと言われた時に使用。
+  外部 Gemini CLI に委譲してコードや文章（論文・原稿を含む）をレビュー・確認してもらうスキル。
+  コードレビュー、論文・文章チェック、モデル自動フォールバックに対応。
+  ユーザーが Gemini を明示した時、または第三者の視点を求めた時に使用：「Geminiにも確認」「Geminiでチェック」「セカンドオピニオン」。
+  ツール無指定の素の「レビューして／コードレビュー」は code-reviewer（in-Claude）を使う。
+  Codex 指定や敵対的レビューは codex-review を使う。
 allowed-tools: Bash, Read, Glob
 ---
 
