@@ -1,20 +1,48 @@
 ---
 name: project_totalsegmentator_license
-description: TotalSegmentatorのアカデミックライセンス取得済み。番号はconfig.jsonに保存、追加タスクが利用可能に
+description: TotalSegmentatorアカデミックライセンス＋全ライセンスタスクのモデルDL作業。ローカルは中断、リモートGPU PCで再開予定
 metadata:
   type: project
 ---
 
-# TotalSegmentator ライセンス（アカデミック）
+# TotalSegmentator ライセンス & ライセンスタスク・モデルDL
 
-2026-06-02 にアカデミックライセンスを取得（登録メール: kita.kosuke@naist.ac.jp）。これにより非オープンの追加タスク（heartchambers_highres / tissue_types / tissue_4_types / vertebrae_body / brain_structures / appendicular_bones / thigh_shoulder_muscles / coronary_arteries / aortic_sinuses ほか、MR版含む）が利用可能になった。
+2026-06-02 にアカデミックライセンス取得（登録メール: kita.kosuke@naist.ac.jp）。非オープンの追加タスク（下記15）が利用可能。
+**方針: ローカルPCはGPU無しでモデルDLが重いため中断。GPU搭載のリモートPCでDLを行う。** 本メモはリモートで再開するための完全手順。
 
-## 有効化と保存場所
-- 有効化コマンド: `totalseg_set_license -l <ライセンス番号>`（番号は秘密情報。ここには記載しない）
-- 保存先: `C:\Users\u8792\.totalsegmentator\config.json`（JSONキー `"license_number"` に平文保存）。**別マシンへの引き継ぎはこのファイルを各自で設定/コピーする。番号はメモリやGitに置かない**
-- 既定パスは `C:\Users\u8792\.totalsegmentator`（= Path.home()/.totalsegmentator）。環境変数 `TOTALSEG_HOME_DIR` で変更可
-- 確認コマンド: `totalseg_get_license`
+## ライセンスと保存場所
+- 有効化: `totalseg_set_license -l <ライセンス番号>`（番号は秘密情報。メモリ/Gitに置かない。取得元の登録メールを参照）
+- 保存先: `~/.totalsegmentator/config.json` のJSONキー `"license_number"`（平文。Windowsなら %USERPROFILE%\.totalsegmentator\config.json、Linuxなら ~/.totalsegmentator/config.json）
+- 既定パスは `Path.home()/.totalsegmentator`。環境変数 `TOTALSEG_HOME_DIR` で変更可（モデル重みもこの配下 `nnunet/results` に入る）
+- ライセンスはマシンごとに設定が必要。リモートPCでも最初に `totalseg_set_license` を1回実行する
 
-**Why:** 一度実行すればマシン上でずっと有効に見えるのは、OSの認証ストアではなく上記の単なるJSONファイルから毎回読み出すため。秘密情報なのでメモリ本文には番号を残さない方針。
+## インストール（リモートGPU PCで実施）
+- 推奨: `uv tool install TotalSegmentator`（グローバルCLI。どのディレクトリからでもコマンド可）。導入済みバージョンは totalsegmentator 2.13.0
+- GPU PCでは **CUDA版PyTorch** が入ることを確認（`python -c "import torch; print(torch.cuda.is_available())"` がTrue）。uvのデフォルトでCPU版torchが入る場合は、CUDA対応torchを別途指定して入れ直す（[[python_rules]] のPyTorch CUDA選択を参照）
+- 入る実行ファイル: TotalSegmentator, totalseg_download_weights, totalseg_set_license など11個
 
-**How to apply:** 追加タスクを使う前提として totalsegmentator 本体のインストールと、上記コマンドでのライセンス設定が必要。番号が必要なときは取得元（登録メール）を参照。
+## モデルDLコマンド（推論不要でDLだけ）
+- 1タスク: `totalseg_download_weights -t <task_name>`（タスク名で指定。整数IDではない）
+- `-t all` は**ライセンスモデルも含めて全部**DLする（CLIのallは commercial を除外しない。総容量が巨大なので非推奨）
+- DL前にライセンス設定が必須（`totalseg_set_license` を先に実行）
+
+## ライセンスタスク全15（commercial_models, map_to_binary.py）
+heartchambers_highres(301,CT) / appendicular_bones(304,CT) / appendicular_bones_mr(855,MR) / tissue_types(481,CT) / tissue_types_mr(925,MR) / tissue_4_types(485,CT) / vertebrae_body(305,CT) / face(303,CT) / face_mr(856,MR) / brain_structures(409) / thigh_shoulder_muscles(857,CT) / thigh_shoulder_muscles_mr(857,MR・**CTと同一ID857を共有=1回のDLで両方分**) / coronary_arteries(509,CT現行) / coronary_arteries_LEGACY(507,CT旧) / aortic_sinuses(920,CT)
+- 注: READMEには brain_aneurysm も載るが、コード上は license gate(show_license_info)が無いのでライセンス対象外。
+- 実質ユニークなDL対象は14モデル（857が共有のため）。
+
+## ローカルPCの中断時点（2026-06-02）
+DL済み（`~/.totalsegmentator/nnunet/results`、計約1.3GB）:
+Dataset301(heart_highres) / Dataset304(appendicular_bones) / Dataset481(tissue) / Dataset485(tissue_4types) / Dataset925(MRI_tissue) ＝ 5モデル完了。vertebrae_body のDL中に中断。
+→ **リモートで全15タスクを最初からDLし直す前提**（ローカル分は流用しない）。各モデルは概ね200MB台〜。
+
+## 再開手順（リモートGPU PC）
+1. `uv tool install TotalSegmentator`（CUDA torch確認）
+2. `totalseg_set_license -l <番号>`
+3. 下記ループで15タスクをDL（PowerShell例。bashなら適宜変換）:
+   tasks = heartchambers_highres, appendicular_bones, appendicular_bones_mr, tissue_types, tissue_types_mr, tissue_4_types, vertebrae_body, face, face_mr, brain_structures, thigh_shoulder_muscles, thigh_shoulder_muscles_mr, coronary_arteries, coronary_arteries_LEGACY, aortic_sinuses
+   各 `totalseg_download_weights -t <task>`
+4. 検証: `~/.totalsegmentator/nnunet/results` に Dataset301/304/305/303/409/481/485/509/507/855/856/857/920/925 が揃うこと
+
+**How to apply:** リモートGPU PCでTotalSegmentatorの追加タスクを使う際の作業再開ポイント。番号秘匿・CUDA torch確認・857共有・allは非推奨が要点。[[python_rules]]
+
