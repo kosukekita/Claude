@@ -3,6 +3,8 @@ settings.local.json
 .credentials.json
 client_secret_*.json
 mcp-needs-auth-cache.json
+.env
+.env.local
 
 # Nested .claude (prevent .claude/.claude)
 .claude/
