@@ -1,61 +1,76 @@
 "use strict";
-// Cross-OS launcher for the tooluniverse-osteo MCP server.
+// Self-contained, cross-OS launcher for the tooluniverse-osteo MCP server.
 //
-// Why this exists: `.mcp.json` cannot branch on OS, and the venv layout
-// differs per machine (Unix: .venv/bin, Windows: .venv/Scripts; home paths
-// differ). A bare `"command": "bash"` also resolves to the System32 WSL stub
-// on Windows (which has no /bin/bash), so we avoid bash entirely. Node is
-// guaranteed present for Claude Code and launches as a real .exe, so this
-// launcher resolves the per-OS `tooluniverse-smcp-stdio` binary at runtime
-// and spawns it directly with raw stdio (the MCP JSON-RPC channel).
+// Why this exists: `.mcp.json` cannot branch on OS, and a bare
+// `"command": "bash"` resolves to the System32 WSL stub on Windows (which has
+// no /bin/bash), killing the server. Node is guaranteed present for Claude
+// Code and launches as a real .exe (no PATHEXT / WSL ambiguity), so we use it
+// to resolve the per-OS venv binary ourselves and spawn it DIRECTLY. There is
+// no bash and no .sh in the chain anymore -- the one OS branch `.mcp.json`
+// cannot express lives here, in this committed launcher.
 //
-// Override the env root by exporting TOOLUNIVERSE_HOME if your venv lives
-// somewhere other than "$HOME/tooluniverse-env". Forward slashes are fine on
-// Windows (Node accepts them) and avoid JS backslash-escape pitfalls.
-//
-// If the venv is not installed on this machine, exit cleanly with a clear
-// message. The server should additionally be left out of this PC's
-// enabledMcpjsonServers (settings.local.json) so /doctor does not flag it.
+// The venv lives under $TOOLUNIVERSE_HOME (default: ~/tooluniverse-env). Its
+// layout differs by OS: .venv/Scripts/*.exe on Windows, .venv/bin/* on POSIX.
+// Override the root with TOOLUNIVERSE_HOME if your env lives elsewhere.
+// Forward slashes are used in Windows paths because Node's fs/child_process
+// accept them and they avoid JS backslash-escape pitfalls.
 const { spawn } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 const os = require("node:os");
 
-const envRoot =
-  process.env.TOOLUNIVERSE_HOME || path.join(os.homedir(), "tooluniverse-env");
-
-// Candidate binary locations, in priority order: Windows venv, Unix venv.
-const candidates = [
-  path.join(envRoot, ".venv", "Scripts", "tooluniverse-smcp-stdio.exe"),
-  path.join(envRoot, ".venv", "bin", "tooluniverse-smcp-stdio"),
-];
-
-const bin = candidates.find((c) => fs.existsSync(c)) || null;
-
-if (!bin) {
-  console.error(
-    "tooluniverse-osteo: could not find tooluniverse-smcp-stdio.\n" +
-      "  Looked under: " +
-      path.join(envRoot, ".venv", "{Scripts,bin}") +
-      "\n" +
-      "  Set TOOLUNIVERSE_HOME or install tooluniverse on this machine,\n" +
-      "  and add 'tooluniverse-osteo' to this PC's enabledMcpjsonServers."
-  );
-  process.exit(127);
-}
-
-// The tools this server exposes. semantic_scholar_search was dropped (not in
-// the installed build); 4 tools load cleanly.
-const includeTools = [
+// Tools to expose. semantic_scholar_search is intentionally omitted: it is not
+// in the installed build (v2.14.5) and including it aborts tool loading.
+const INCLUDE_TOOLS = [
   "PubMed_search_articles",
   "EuropePMC_search_articles",
   "search_clinical_trials",
   "Tool_Finder_Keyword",
 ];
 
+function homeDir() {
+  return (
+    process.env.HOME ||
+    process.env.USERPROFILE ||
+    (process.env.HOMEDRIVE && process.env.HOMEPATH
+      ? process.env.HOMEDRIVE + process.env.HOMEPATH
+      : "")
+  );
+}
+
+function findBinary() {
+  const envRoot =
+    process.env.TOOLUNIVERSE_HOME || path.join(homeDir(), "tooluniverse-env");
+  // Priority: Windows venv, POSIX venv. fs.existsSync picks the one that's real
+  // on this machine, so the same committed config works on every PC.
+  const candidates = [
+    path.join(envRoot, ".venv", "Scripts", "tooluniverse-smcp-stdio.exe"),
+    path.join(envRoot, ".venv", "bin", "tooluniverse-smcp-stdio"),
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return null;
+}
+
+const bin = findBinary();
+
+if (!bin) {
+  const root =
+    process.env.TOOLUNIVERSE_HOME || path.join(homeDir(), "tooluniverse-env");
+  console.error(
+    "tooluniverse-osteo: could not find tooluniverse-smcp-stdio.\n" +
+      "  Looked under: " +
+      path.join(root, ".venv", "{Scripts,bin}") +
+      "\n  Set TOOLUNIVERSE_HOME or install tooluniverse on this machine."
+  );
+  process.exit(127);
+}
+
+// Forward any extra args supplied in .mcp.json after the launcher path.
 const extraArgs = process.argv.slice(2);
 
-const child = spawn(bin, ["--include-tools", ...includeTools, ...extraArgs], {
+const child = spawn(bin, ["--include-tools", ...INCLUDE_TOOLS, ...extraArgs], {
   stdio: "inherit",
   windowsHide: true,
 });
@@ -68,6 +83,9 @@ child.on("error", (err) => {
 });
 
 child.on("exit", (code, signal) => {
-  if (signal) process.exit(1);
+  if (signal) {
+    process.kill(process.pid, signal);
+    return;
+  }
   process.exit(code === null ? 1 : code);
 });
