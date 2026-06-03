@@ -1,0 +1,2 @@
+# Keep launcher scripts LF so they behave identically on Windows and Linux.
+bin/tooluniverse-osteo.js text eol=lf

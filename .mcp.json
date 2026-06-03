@@ -1,9 +1,9 @@
 {
   "mcpServers": {
     "tooluniverse-osteo": {
-      "command": "bash",
+      "command": "node",
       "args": [
-        "bin/tooluniverse-osteo.sh"
+        "bin/tooluniverse-osteo.js"
       ]
     },
     "alphaxiv": {
