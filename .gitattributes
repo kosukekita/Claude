@@ -1,2 +1,5 @@
 # Keep launcher scripts LF so they behave identically on Windows and Linux.
 bin/tooluniverse-osteo.js text eol=lf
+# JSON config files: LF so Windows/Linux share them without CRLF churn.
+settings.json text eol=lf
+.mcp.json text eol=lf

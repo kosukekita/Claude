@@ -1,74 +1,73 @@
 "use strict";
-// Cross-OS bootstrap for the tooluniverse-osteo MCP server.
+// Cross-OS launcher for the tooluniverse-osteo MCP server.
 //
-// Why this exists: `.mcp.json` cannot branch on OS, and a bare
-// `"command": "bash"` resolves to the System32 WSL stub on Windows
-// (which has no /bin/bash), breaking the server. Node is guaranteed to
-// be present for Claude Code and is launched as a real .exe (no PATHEXT
-// or WSL ambiguity), so we use it to launch the CORRECT bash by absolute
-// path: Git Bash on Windows, /bin/bash on Linux/macOS. Locating the venv
-// binary stays in tooluniverse-osteo.sh.
+// Why this exists: `.mcp.json` cannot branch on OS, and the venv layout
+// differs per machine (Unix: .venv/bin, Windows: .venv/Scripts; home paths
+// differ). A bare `"command": "bash"` also resolves to the System32 WSL stub
+// on Windows (which has no /bin/bash), so we avoid bash entirely. Node is
+// guaranteed present for Claude Code and launches as a real .exe, so this
+// launcher resolves the per-OS `tooluniverse-smcp-stdio` binary at runtime
+// and spawns it directly with raw stdio (the MCP JSON-RPC channel).
 //
-// Override the bash path by exporting TU_OSTEO_BASH if your bash lives
-// elsewhere. Forward slashes are used in all Windows paths because Node's
-// fs/child_process accept them and they avoid JS backslash-escape pitfalls.
-const { spawnSync } = require("node:child_process");
+// Override the env root by exporting TOOLUNIVERSE_HOME if your venv lives
+// somewhere other than "$HOME/tooluniverse-env". Forward slashes are fine on
+// Windows (Node accepts them) and avoid JS backslash-escape pitfalls.
+//
+// If the venv is not installed on this machine, exit cleanly with a clear
+// message. The server should additionally be left out of this PC's
+// enabledMcpjsonServers (settings.local.json) so /doctor does not flag it.
+const { spawn } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
+const os = require("node:os");
 
-const launcher = path.join(__dirname, "tooluniverse-osteo.sh");
+const envRoot =
+  process.env.TOOLUNIVERSE_HOME || path.join(os.homedir(), "tooluniverse-env");
 
-function findBash() {
-  if (process.env.TU_OSTEO_BASH) return process.env.TU_OSTEO_BASH;
-  if (process.platform === "win32") {
-    const candidates = [
-      "C:/Program Files/Git/bin/bash.exe",
-      "C:/Program Files/Git/usr/bin/bash.exe",
-      "C:/Program Files (x86)/Git/bin/bash.exe",
-    ];
-    if (process.env.ProgramW6432) {
-      candidates.push(
-        path.join(process.env.ProgramW6432, "Git", "bin", "bash.exe")
-      );
-    }
-    if (process.env.LOCALAPPDATA) {
-      candidates.push(
-        path.join(
-          process.env.LOCALAPPDATA,
-          "Programs",
-          "Git",
-          "bin",
-          "bash.exe"
-        )
-      );
-    }
-    for (const c of candidates) {
-      if (fs.existsSync(c)) return c;
-    }
-    // Last resort: rely on PATH (may hit the WSL stub; documented failure mode).
-    return "bash";
-  }
-  return "/bin/bash";
-}
+// Candidate binary locations, in priority order: Windows venv, Unix venv.
+const candidates = [
+  path.join(envRoot, ".venv", "Scripts", "tooluniverse-smcp-stdio.exe"),
+  path.join(envRoot, ".venv", "bin", "tooluniverse-smcp-stdio"),
+];
 
-const bash = findBash();
+const bin = candidates.find((c) => fs.existsSync(c)) || null;
 
-// Forward any extra args supplied in .mcp.json after the launcher path.
-const extraArgs = process.argv.slice(2);
-
-const result = spawnSync(bash, [launcher, ...extraArgs], {
-  stdio: "inherit",
-  windowsHide: true,
-});
-
-if (result.error) {
+if (!bin) {
   console.error(
-    "tooluniverse-osteo: failed to launch bash (" +
-      bash +
-      "): " +
-      result.error.message
+    "tooluniverse-osteo: could not find tooluniverse-smcp-stdio.\n" +
+      "  Looked under: " +
+      path.join(envRoot, ".venv", "{Scripts,bin}") +
+      "\n" +
+      "  Set TOOLUNIVERSE_HOME or install tooluniverse on this machine,\n" +
+      "  and add 'tooluniverse-osteo' to this PC's enabledMcpjsonServers."
   );
   process.exit(127);
 }
 
-process.exit(result.status === null ? 1 : result.status);
+// The tools this server exposes. semantic_scholar_search was dropped (not in
+// the installed build); 4 tools load cleanly.
+const includeTools = [
+  "PubMed_search_articles",
+  "EuropePMC_search_articles",
+  "search_clinical_trials",
+  "Tool_Finder_Keyword",
+];
+
+const extraArgs = process.argv.slice(2);
+
+const child = spawn(bin, ["--include-tools", ...includeTools, ...extraArgs], {
+  stdio: "inherit",
+  windowsHide: true,
+});
+
+child.on("error", (err) => {
+  console.error(
+    "tooluniverse-osteo: failed to launch (" + bin + "): " + err.message
+  );
+  process.exit(127);
+});
+
+child.on("exit", (code, signal) => {
+  if (signal) process.exit(1);
+  process.exit(code === null ? 1 : code);
+});
