@@ -162,5 +162,6 @@
   "autoUpdatesChannel": "latest",
   "skipDangerousModePermissionPrompt": true,
   "agentPushNotifEnabled": true,
+  "remoteControlAtStartup": true,
   "skipAutoPermissionPrompt": true
 }
