@@ -38,3 +38,14 @@ tasks/
 .last-cleanup
 .last-update-result.json
 settings.json.bak.*
+
+# Exception: cross-PC memory store must be synced (conversation history under
+# projects/ stays ignored, but the memory/ folder inside it is shared).
+# Re-allow each path segment down to the memory files (git won't descend into an
+# ignored parent dir, so every intermediate level must be un-ignored first).
+!projects/
+projects/*
+!projects/c--Users-u8792--claude/
+projects/c--Users-u8792--claude/*
+!projects/c--Users-u8792--claude/memory/
+!projects/c--Users-u8792--claude/memory/**

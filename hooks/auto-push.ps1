@@ -20,7 +20,7 @@ try {
     # git add は新規ファイル（untracked）も含めてステージする
     # 記憶は projects/<...>/memory/ にあり .gitignore で negation 許可済み。
     # 存在しないパスを渡すと git がエラーを返すため、実在するもののみ add する。
-    $addTargets = @("CLAUDE.md", "settings.json", "skills/", "hooks/", "projects/c--Users-u8792--claude/memory/")
+    $addTargets = @(".gitignore", "CLAUDE.md", "settings.json", "skills/", "hooks/", "projects/c--Users-u8792--claude/memory/")
     foreach ($t in $addTargets) {
         if (Test-Path $t) { git add $t 2>$null }
     }
