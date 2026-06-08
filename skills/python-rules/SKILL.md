@@ -51,17 +51,16 @@ uv run pytest tests/ -v
 
 ### グローバルインストール禁止（CRITICAL）
 
-**絶対にグローバルにパッケージをインストールしない。**
+**絶対にグローバルにパッケージをインストールしない。** 常に `uv` を使う。
 
 ```bash
-# 良い例（uv が自動で隔離環境を使用）
 uv run script.py
 uv add pandas
-
-# 悪い例（絶対に実行しない）
-pip install pandas          # グローバルインストール
-sudo pip install pandas     # システムPythonを汚染
 ```
+
+> 素の `pip install` / `python -m pip install` / `sudo pip install` は
+> PreToolUse フック（`hooks/block-dangerous.ps1`）が機械的にブロックする。
+> uv 経由（`uv pip install` / `uv add` / `uv run --with`）と仮想環境内の pip は許可。
 
 ### PyTorch インストール
 
@@ -155,95 +154,20 @@ uv run python -m myproject.main
 
 ---
 
-## Code Style（PEP 8）
+## Code Style
 
-### 基本ルール
-
-- インデント: スペース4つ
-- 行の長さ: 最大79文字（docstringは72文字）
-- インポート順: 標準ライブラリ → サードパーティ → ローカル
-- 関数・変数名: snake_case
-- クラス名: PascalCase
-- 定数: UPPER_CASE
-
-### インポートの書き方
-
-```python
-# 良い例
-import os
-import sys
-from typing import List, Optional
-
-import numpy as np
-import pandas as pd
-
-from myproject.utils import helper
-
-# 悪い例
-from pandas import *  # ワイルドカードインポート
-import pandas, numpy  # 複数インポートを1行に
-```
-
-### 型ヒント（推奨）
-
-```python
-def process_data(
-    data: pd.DataFrame,
-    columns: List[str],
-    threshold: Optional[float] = None
-) -> pd.DataFrame:
-    """データを処理する。
-
-    Args:
-        data: 入力データフレーム
-        columns: 処理対象のカラム名リスト
-        threshold: フィルタリング閾値（省略可）
-
-    Returns:
-        処理済みデータフレーム
-    """
-    ...
-```
+PEP 8 準拠（4スペース・snake_case・PascalCase・UPPER_CASE、インポート順は
+標準→サードパーティ→ローカル）、型ヒント・docstring 付与は標準どおりでよく、
+特記事項なし。プロジェクトに `ruff` 等の設定があればそれに従う。
 
 ---
 
 ## Error Handling
 
-### 基本パターン
+- 広すぎる `except Exception: pass` を避け、具体的な例外をキャッチする
+- 握りつぶさずログを残す（`logging` を使い、必要なら `raise` で再送出）
 
-```python
-# 良い例 - 具体的な例外をキャッチ
-try:
-    result = process_data(df)
-except FileNotFoundError as e:
-    logger.error(f"File not found: {e}")
-    raise
-except ValueError as e:
-    logger.warning(f"Invalid value: {e}")
-    return default_value
-
-# 悪い例 - 広すぎる例外キャッチ
-try:
-    result = process_data(df)
-except Exception:  # 全例外をキャッチは避ける
-    pass  # 無視も避ける
-```
-
-### ロギング
-
-```python
-import logging
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
-logger.info("Processing started")
-logger.warning("Deprecated function used")
-logger.error("Failed to process", exc_info=True)
-```
+これらは一般的な Python の作法どおりで、特記事項なし。
 
 ---
 

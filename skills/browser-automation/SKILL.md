@@ -1,41 +1,41 @@
 ---
 name: browser-automation
 description: >
-  ブラウザ自動化の統合スキル。2つのモードを提供:
-  (1) Playwright モード — 新規ブラウザを起動してE2Eテスト・スクレイピング・フォーム操作、
-  (2) Chrome CDP モード — ライブChromeセッションに接続してデバッグ・既存ログイン活用。
-  Use when user needs browser automation, web testing, form filling, screenshots,
-  data extraction, login automation, live Chrome debugging, or page inspection.
-  wmux 環境では手動ブラウジング（URL閲覧・ページ確認）に `wmux browser` を優先、
-  E2E テスト・スクレイピング・自動化フローは Playwright/CDP モードを使う。
-  Trigger phrases: ブラウザ自動化, E2Eテスト, スクリーンショット, フォーム入力,
-  Webスクレイピング, playwright, ブラウザ操作, ログインテスト, 画面キャプチャ,
-  ログイン自動化, SSO, MFA, browser automation, web testing, login automation,
-  Chrome操作, ライブブラウザ, CDP, DevTools, 開いているページ, タブ操作,
-  live Chrome, inspect page, debug page.
+  Playwright を使ったブラウザ自動化スキル。新規ブラウザを起動して
+  E2Eテスト・スクレイピング・フォーム操作・ログイン状態の保存/再利用を行う。
+  ネットワークモック・トレース・動画録画にも対応。
+  Use when user needs to AUTOMATE a browser from a clean state:
+  E2E testing, scraping with a launched browser, multi-step form automation,
+  saving/restoring login state, network mocking, tracing, or video recording.
+  単に公開URLの本文を読むだけなら標準の WebFetch/WebSearch を使う（このスキルは不要）。
+  既に開いているログイン済み Chrome を操作・検査するだけなら chrome-devtools-mcp を使う。
+  Trigger phrases: ブラウザ自動化, E2Eテスト, スクレイピング, フォーム入力自動化,
+  Webスクレイピング, playwright, ログインテスト, ログイン状態の保存,
+  ネットワークモック, トレース, 動画録画, browser automation, web testing,
+  login automation, scraping, e2e, playwright-cli.
 allowed-tools: Bash(browser-automation:*)
 ---
 
-# Browser Automation
+# Browser Automation (Playwright)
 
-## モード選択ガイド
+新規ブラウザインスタンスをクリーンな状態から起動して自動化する。`playwright-cli` で操作する。
 
-| 観点 | Playwright モード | Chrome CDP モード |
-|------|------------------|------------------|
-| **用途** | E2Eテスト、スクレイピング、自動化 | ライブブラウザ操作、デバッグ |
-| **ブラウザ** | 新規インスタンス起動 | 既に開いているChromeに接続 |
-| **ログイン** | state-save/load で管理 | 既存セッションをそのまま利用 |
-| **コマンド** | `playwright-cli ...` | `node scripts/cdp.mjs ...` |
-| **Node.js 22+** | 不要 | 必要 |
+## いつこのスキルを使うか
 
-**Playwright モードを選ぶとき**: クリーンな状態から自動化したい、CI/CD での E2E テスト、ブラウザ複数同時操作
-**CDP モードを選ぶとき**: 既にログイン済みのページを操作したい、開いているタブを直接検査・操作したい、既存セッションを利用したい
+| やりたいこと | 使うもの |
+|------|---------|
+| 公開ページの本文を読むだけ | **WebFetch / WebSearch（標準）** — このスキル不要 |
+| 取得がブロックされる公開ページ | `https://r.jina.ai/<URL>`（CLAUDE.md のフォールバック） |
+| 既に開いているログイン済み Chrome を操作・検査 | **chrome-devtools-mcp** — このスキル不要 |
+| クリーン起動して E2E テスト・自動化 | **このスキル（Playwright）** |
+| ログイン状態を保存して再利用 | **このスキル（state-save / state-load）** |
+| ネットワークモック・トレース・動画録画 | **このスキル** |
+
+**このスキルを選ぶとき**: クリーンな状態から自動化したい、CI/CD での E2E テスト、ブラウザ複数同時操作、Firefox/WebKit を含むクロスブラウザ、ログイン状態のファイル保存・再利用。
 
 ---
 
-## Playwright モード
-
-### Workflow
+## Workflow
 
 ブラウザ自動化タスクを受けたら、以下のステップで進める:
 
@@ -71,9 +71,9 @@ playwright-cli screenshot
 playwright-cli close
 ```
 
-### Commands
+## Commands
 
-#### Core
+### Core
 
 ```shell
 playwright-cli open
@@ -100,7 +100,7 @@ playwright-cli resize 1920 1080
 playwright-cli close
 ```
 
-#### Navigation
+### Navigation
 
 ```shell
 playwright-cli go-back
@@ -108,7 +108,7 @@ playwright-cli go-forward
 playwright-cli reload
 ```
 
-#### Keyboard
+### Keyboard
 
 ```shell
 playwright-cli press Enter
@@ -117,7 +117,7 @@ playwright-cli keydown Shift
 playwright-cli keyup Shift
 ```
 
-#### Mouse
+### Mouse
 
 ```shell
 playwright-cli mousemove 150 300
@@ -128,7 +128,7 @@ playwright-cli mouseup right
 playwright-cli mousewheel 0 100
 ```
 
-#### Save as
+### Save as
 
 ```shell
 playwright-cli screenshot
@@ -137,7 +137,7 @@ playwright-cli screenshot --filename=page.png
 playwright-cli pdf --filename=page.pdf
 ```
 
-#### Tabs
+### Tabs
 
 ```shell
 playwright-cli tab-list
@@ -148,7 +148,7 @@ playwright-cli tab-close 2
 playwright-cli tab-select 0
 ```
 
-#### Storage
+### Storage
 
 ```shell
 # 状態の保存・復元
@@ -180,7 +180,7 @@ playwright-cli sessionstorage-delete step
 playwright-cli sessionstorage-clear
 ```
 
-#### Network
+### Network
 
 ```shell
 playwright-cli route "**/*.jpg" --status=404
@@ -190,7 +190,7 @@ playwright-cli unroute "**/*.jpg"
 playwright-cli unroute
 ```
 
-#### DevTools
+### DevTools
 
 ```shell
 playwright-cli console
@@ -203,7 +203,7 @@ playwright-cli video-start
 playwright-cli video-stop video.webm
 ```
 
-#### Browser Sessions
+### Browser Sessions
 
 ```shell
 # 名前付きセッション
@@ -217,7 +217,7 @@ playwright-cli close-all
 playwright-cli kill-all
 ```
 
-#### Configuration
+### Configuration
 
 ```shell
 playwright-cli open --browser=chrome
@@ -229,7 +229,7 @@ playwright-cli open --config=my-config.json
 playwright-cli delete-data
 ```
 
-### Universal Login Flow
+## Universal Login Flow
 
 > Source: [login-machine](https://github.com/RichardHruby/login-machine)
 
@@ -256,76 +256,9 @@ playwright-cli close
 
 ---
 
-## Chrome CDP モード
-
-### Prerequisites
-
-1. Chrome でリモートデバッグを有効化: `chrome://inspect/#remote-debugging` → スイッチをオン
-2. Node.js 22+ がインストール済みであること
-3. スクリプトパス: `~/.claude/skills/browser-automation/scripts/cdp.mjs`
-
-### Quick Start
-
-```bash
-# 開いているページを一覧表示
-node ~/.claude/skills/browser-automation/scripts/cdp.mjs list
-
-# 出力例:
-# 6BE827FA  https://example.com  Example Domain
-# A3F2910B  https://github.com   GitHub
-
-# スクリーンショット（<target> は list で確認した一意プレフィックス）
-node ~/.claude/skills/browser-automation/scripts/cdp.mjs shot 6BE827FA
-
-# アクセシビリティツリー確認
-node ~/.claude/skills/browser-automation/scripts/cdp.mjs snap 6BE827FA --compact
-
-# JavaScript 評価
-node ~/.claude/skills/browser-automation/scripts/cdp.mjs eval 6BE827FA "document.title"
-```
-
-### Commands
-
-```bash
-scripts/cdp.mjs list                           # 開いているページ一覧
-scripts/cdp.mjs shot <target> [file]           # スクリーンショット
-scripts/cdp.mjs snap <target> [--compact]      # アクセシビリティツリー
-scripts/cdp.mjs eval <target> <expr>           # JavaScript 評価
-scripts/cdp.mjs html <target> [selector]       # HTML 取得
-scripts/cdp.mjs nav  <target> <url>            # ナビゲーション
-scripts/cdp.mjs net  <target>                  # リソースタイミング
-scripts/cdp.mjs click   <target> <selector>    # CSS セレクタでクリック
-scripts/cdp.mjs clickxy <target> <x> <y>       # 座標クリック（CSS px）
-scripts/cdp.mjs type    <target> <text>        # テキスト入力（クロスオリジン対応）
-scripts/cdp.mjs loadall <target> <sel> [ms]    # 「もっと読む」繰り返しクリック
-scripts/cdp.mjs evalraw <target> <method> [json] # 生 CDP コマンド
-scripts/cdp.mjs open [url]                     # 新しいタブを開く
-scripts/cdp.mjs stop [target]                  # デーモン停止
-```
-
-### Coordinates
-
-`shot` はネイティブ解像度で保存: **画像px = CSS px × DPR**
-
-`clickxy` は **CSS ピクセル** で指定:
-```
-CSS px = スクリーンショット画像px ÷ DPR
-```
-
-`shot` 実行時に DPR が出力される。Retina (DPR=2) の場合は座標を 2 で割る。
-
-### Tips
-
-- ページ構造の確認: `snap --compact` を優先（`html` より高速）
-- クロスオリジン iframe: `click`/`clickxy` でフォーカス後 `type`（`eval` 経由の入力は不可）
-- フォールド下: `eval` でスクロール後に `shot`
-- デーモンは 20 分間のアイドル後に自動終了
-
----
-
 ## Examples
 
-### Playwright: フォーム送信
+### フォーム送信
 
 ```shell
 playwright-cli open https://example.com/form
@@ -337,7 +270,7 @@ playwright-cli snapshot
 playwright-cli close
 ```
 
-### Playwright: ログイン状態の保存・再利用
+### ログイン状態の保存・再利用
 
 ```shell
 # ログインして保存
@@ -354,60 +287,27 @@ playwright-cli state-load auth.json
 playwright-cli goto https://example.com/dashboard
 ```
 
-### CDP: 開いているページのスクリーンショット
-
-```bash
-node scripts/cdp.mjs list
-# → A3F2910B  https://github.com   GitHub
-
-node scripts/cdp.mjs shot A3F2910B github.png
-```
-
-### CDP: フォームに入力して送信
-
-```bash
-node scripts/cdp.mjs list
-# → 6BE827FA  https://example.com/form  Form Page
-
-node scripts/cdp.mjs snap 6BE827FA --compact
-node scripts/cdp.mjs click  6BE827FA "input[name='email']"
-node scripts/cdp.mjs type   6BE827FA "user@example.com"
-node scripts/cdp.mjs click  6BE827FA "button[type='submit']"
-node scripts/cdp.mjs shot   6BE827FA result.png
-```
-
 ---
 
 ## Troubleshooting
 
-### Playwright: ブラウザが起動しない
+### ブラウザが起動しない
 
 ```shell
 playwright-cli install-browser
 playwright-cli kill-all
 ```
 
-### Playwright: 要素が見つからない
+### 要素が見つからない
 
 1. `snapshot` を再実行して最新の ref を取得
 2. ページの読み込み完了を待つ
 3. iframe 内の要素は別途対応
 
-### CDP: Chrome に接続できない
-
-1. `chrome://inspect/#remote-debugging` でリモートデバッグが有効か確認
-2. `node scripts/cdp.mjs list` でページが表示されるか確認
-3. `DevToolsActivePort` が非標準パスの場合: `CDP_PORT_FILE=/path/to/DevToolsActivePort node scripts/cdp.mjs list`
-
-### CDP: 「デバッグを許可」モーダルが表示される
-
-初回接続時のみ表示される。手動で「許可」をクリックすると、以降はデーモンが接続を維持するため再表示されない。
-
 ---
 
 ## References
 
-- `references/chrome-cdp.md` — CDP モード詳細リファレンス
 - `references/request-mocking.md` — リクエストモック
 - `references/running-code.md` — Playwright コード実行
 - `references/session-management.md` — セッション管理

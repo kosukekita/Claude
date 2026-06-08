@@ -18,7 +18,12 @@ try {
 
     # 変更されたファイルをステージング（.claude/ 配下のみ）
     # git add は新規ファイル（untracked）も含めてステージする
-    git add CLAUDE.md settings.json skills/ hooks/ memory/ 2>$null
+    # 記憶は projects/<...>/memory/ にあり .gitignore で negation 許可済み。
+    # 存在しないパスを渡すと git がエラーを返すため、実在するもののみ add する。
+    $addTargets = @("CLAUDE.md", "settings.json", "skills/", "hooks/", "projects/c--Users-u8792--claude/memory/")
+    foreach ($t in $addTargets) {
+        if (Test-Path $t) { git add $t 2>$null }
+    }
 
     # ステージされた変更があるか確認
     $staged = git diff --cached --name-only

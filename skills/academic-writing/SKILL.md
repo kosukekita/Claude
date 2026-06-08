@@ -64,6 +64,14 @@ description: "医学・学術論文の執筆支援。構成（IMRAD）、文体�
 | Results | データの記述、解析結果、数値 | 手法の正当化、考察 |
 | Discussion | 結果の解釈、先行研究との比較、限界 | 新たな結果の提示 |
 
+### Methods–Results の対応（手法なしの結果は御法度）
+
+**Results に登場する解析・アウトカム・感度分析・サブグループ・代替定義は、すべて Methods で事前に設計・定義する**。Methods に対応記述のない解析の結果を Results に突然出すのは御法度（読者は「いつ・なぜその解析をしたか」を追えない）。逆に、Methods で述べた解析は Results で必ず結果を報告する（書きっぱなしにしない）。投稿前に **Methods と Results の解析項目を 1:1 で突き合わせる**。
+
+- NG: Results に「感度分析①②③」「definition 3（定義③）」「サブグループ X」が初出だが、Methods に該当する設計・定義がない。
+- OK: Methods「頑健性確認のため感度分析 A・B・C を行った」→ Results「A・B・C の結果は…」。
+- 対象: 主解析／補足解析／感度分析／サブグループ解析／代替アウトカム・代替定義／追加モデル など、Results で言及する全解析。
+
 ### 各セクションの注意点
 
 - **Introduction**: 広い文脈 → 狭い焦点（funnel 構造）。最終段落で目的・仮説を明示
@@ -72,6 +80,7 @@ description: "医学・学術論文の執筆支援。構成（IMRAD）、文体�
   - Methods に書かない（→ Results）: 具体的なサンプルサイズ（n=448 等）、群ごとの人数（BP 259名, PTH 189名 等）、施設数・施設ごとの登録数、欠測の理由・割合の具体的数値、解析結果から判明した事実
   - NG（Methods に結果が混在）: "有効解析対象: n=448（BP 259, PTH 189）。欠測は主にBMD未測定施設による。"
   - OK: Methods に "12ヶ月時点BMDが未測定の患者は解析から除外した。" → Results に "448名（BP群259名、PTH群189名）が有効解析対象となった。"
+  - **ソフトウェア名は専用パラグラフに一度だけ／関数名は論文に書かない**: 使用パッケージ・ソフトウェア名（version 付き）は「統計解析ソフトウェア（再現性）」の専用パラグラフに一度だけ記載し、各手法パラグラフでは繰り返さない。**具体的な関数名（例: regression_forest(), causal_survival_forest()）は論文本文に一切書かない**。手法は概念で記述し（例: "a regression forest"・"a causal survival forest"）、関数名は共有する解析コード／補遺（supplement）に置く。
 - **Results**: データを先に、解釈は Discussion で。表・図を効果的に使用。**Study flow diagram（participant flow / CONSORT / STROBE diagram）は Results セクションに配置する**（Lancet 系列の標準）。N数・除外数は Methods の段階では未知の情報であり、Methods には配置しない
 - **Discussion**: 主要な発見を最初に述べる。限界は正直に、しかし過度に卑下しない
 - **Outcome / Endpoint の用語**: 「Primary outcome/endpoint」は Secondary outcome が存在する場合にのみ使用する。アウトカムが1つしかない研究では単に「outcome」「endpoint」と記載する。「Primary」と書くと Secondary outcome の記述を読者が期待するため不自然
@@ -364,6 +373,7 @@ Author 2: First Name: Kosuke | Last Name: Ebina
 - [ ] 統計値に 95% CI と P 値が付記されている
 - [ ] 引用は具体的（曖昧な "Studies show" がない）。引用なき一般化がない
 - [ ] Methods に具体的な数値・結果が混在していない（N数、群ごとの人数等は Results に記載）
+- [ ] Methods と Results の解析項目が 1:1 対応している（Results の全解析・感度分析・代替定義が Methods に設計記述あり。手法なしの結果がない）
 - [ ] AI 文体パターン（18種）が除去されている
 - [ ] 見出しがセンテンスケースになっている
 - [ ] ストレート引用符を使用している
@@ -375,6 +385,7 @@ Author 2: First Name: Kosuke | Last Name: Ebina
 - [ ] **AI 研究の場合**: TRIPOD+AI 27 項目チェックリストに準拠している
 - [ ] **AI 研究の場合**: Abstract が TRIPOD+AI for Abstracts 13 項目に準拠している
 - [ ] **LLM 研究の場合**: TRIPOD-LLM チェックリストにも準拠している
+- [ ] ソフトウェア・パッケージ名は専用パラグラフ（統計解析ソフトウェア・再現性）に一度だけ記載。関数名は論文本文に書いていない（手法は概念で記述し、関数名はコード／補遺に置く）
 
 ---
 

@@ -7,8 +7,6 @@
       "Bash(rm settings.json.bak)",
       "Bash(git branch:*)",
       "Bash(python3)",
-      "Bash(pip install:*)",
-      "Bash(python3 -m pip install openpyxl)",
       "Bash(git checkout:*)",
       "Bash(git add:*)",
       "Bash(git commit -m ':*)",
@@ -40,7 +38,6 @@
       "Bash(cmd.exe /c \"where node\")",
       "Bash(pip --version)",
       "Bash(python -m pip --version)",
-      "Bash(python -m pip install playwright openpyxl)",
       "Bash(python -m playwright install chromium)",
       "Bash(npm list:*)",
       "Read(//usr/local/**)",
@@ -87,6 +84,11 @@
           {
             "type": "command",
             "command": "if command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/log-commands.ps1\"; fi",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "if command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/warn-tu-encoding.ps1\"; fi",
             "timeout": 10
           }
         ]

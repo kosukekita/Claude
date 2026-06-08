@@ -18,6 +18,10 @@ ToolUniverse は `tu` CLI で操作する。Windows では cp932 エンコーデ
 PYTHONIOENCODING=utf-8 uvx --from tooluniverse tu <COMMAND>
 ```
 
+> プレフィックスを付け忘れて `tu` を実行すると、PreToolUse フック
+> （`hooks/warn-tu-encoding.ps1`）が警告を出す（ブロックはしない）。
+> 文字化けしたら `PYTHONIOENCODING=utf-8` を付けて再実行する。
+
 | コマンド | 用途 | 例 |
 |---------|------|-----|
 | `tu status` | ツール数・カテゴリ・バージョン表示 | `tu status` |
