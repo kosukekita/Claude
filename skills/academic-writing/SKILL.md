@@ -1,6 +1,6 @@
 ---
 name: academic-writing
-description: "医学・学術論文の執筆支援。構成（IMRAD）、文体、引用形式、AI 生成テキストパターン（18種）の検出・除去を含む。AI 研究時は TRIPOD+AI（27項目）に準拠した報告を支援。投稿先ジャーナルの推薦（JCR IF ベース）にも対応。Use when user writes, edits, or reviews academic manuscripts, or requests humanization of AI-generated text, or asks for journal recommendation. Trigger phrases: 論文, 原稿, manuscript, abstract, humanize, AI文体, 学術英語, IMRAD, 投稿, 論文執筆, アカデミックライティング, 論文校正, academic writing, medical writing, TRIPOD, prediction model, ジャーナル, journal, IF, インパクトファクター, 投稿先, submission."
+description: "医学・学術論文の執筆支援。構成（IMRAD）、文体、引用形式、AI 生成テキストパターン（18種）の検出・除去を含む。AI 研究時は TRIPOD+AI（27項目）に準拠した報告を支援。投稿先ジャーナルの推薦（JCR IF ベース）にも対応。Use when user writes, edits, or reviews academic manuscripts, or requests humanization of AI-generated text, or asks for journal recommendation. Trigger phrases: 論文, 原稿, manuscript, abstract, humanize, AI文体, 学術英語, IMRAD, 投稿, 論文執筆, アカデミックライティング, 論文校正, academic writing, medical writing, TRIPOD, prediction model, ジャーナル, journal, IF, インパクトファクター, 投稿先, submission. Do NOT trigger for モデル構築・欠損値補完・SHAP 等の解析の実装そのもの（use ai-prediction-model）— 本スキルは予測モデル研究の『執筆・報告』のみを担当する。"
 ---
 
 # Academic Writing

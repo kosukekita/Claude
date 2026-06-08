@@ -1,7 +1,7 @@
 # Memory Index
 
 - [feedback_slide_icon_approach.md](feedback_slide_icon_approach.md) — slide-makingでSVGアイコン手書きは失敗する。リファレンスPNGクロップ→base64埋め込みが唯一の確実な方法
-- [project_skill_consolidation.md](project_skill_consolidation.md) — ~/.claude/skills統合（2026-05-31）。achievement+career→cv-profile。重複は同一ツールのみマージ、外部ツール/アーティファクトが違うものは据え置き
+- [project_skill_consolidation.md](project_skill_consolidation.md) — ~/.claude/skills統合（2回:05-31,06-08）。現37スキル。code-reviewer削除/skill-creator→writing-skills統合。標準コマンド重複は削除可、同一ツール×同一成果物のみ統合可、見た目の重複に騙されない
 - [project_totalsegmentator_license.md](project_totalsegmentator_license.md) — TotalSegmentatorアカデミックライセンス取得済＋全15ライセンスタスクのモデルDL。ローカルはGPU無しで中断（5/15完了）、リモートGPU PCで再開予定。番号はconfig.jsonに平文・メモリ非保存
 
 - [project_mcp_path_portability.md](project_mcp_path_portability.md) — .mcp.jsonのstdioサーバーは相対パス禁止、${USERPROFILE}を使う（HOMEはPowerShellで空）

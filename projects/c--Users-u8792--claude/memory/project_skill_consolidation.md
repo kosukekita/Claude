@@ -1,11 +1,27 @@
 ---
 name: project_skill_consolidation
-description: ~/.claude/skills のリファクタリング結果。achievement+career→cv-profileに統合。重複reference 2件を解消。他はトリガー修正のみで据え置き
+description: ~/.claude/skills のリファクタリング結果。2回実施（2026-05-31, 06-08）。現37スキル。code-reviewer削除/skill-creator統合。標準コマンド重複は削除可、同一ツール×同一成果物のみ統合可
 metadata:
   type: project
 ---
 
-# スキル統合（2026-05-31 実施）
+# スキル統合 第2回（2026-06-08 実施）
+
+39→**37スキル**。3つのWorkflow（Hook監査・description監査・統合プラン）を経てユーザー承認の上で実施。
+
+## 実施内容
+- **削除**: `code-reviewer` → 標準スラッシュコマンド `/code-review`（in-Claude差分レビュー、ultraでクラウド多エージェント）と裏ツール（Read/Grep/Glob）も成果物も完全一致のため。**教訓: 標準コマンドと完全重複する自作スキルは削除してよい**。
+- **統合**: `skill-creator` → **`writing-skills`**。両者とも外部ツールゼロ・成果物が同じSKILL.mdで真に重複。skill-creator固有資産（6ステップ手順・3カテゴリ分類・トリガー診断表）を writing-skills の「Authoring Walkthrough」節に移植、patterns.md を writing-skills/skill-patterns.md にコピー、writing-skills description に日本語トリガー語追加。**矛盾点**: skill-creator は「description=WHAT+WHEN」だが writing-skills は「description=WHENのみ（テスト由来の知見）」→ writing-skills を正とした。
+- **境界明示追加（descriptionのみ）**: zotero（検索系research-toolkit/alphaxivと区別）, academic-writing↔ai-prediction-model（TRIPOD: 執筆 vs 解析実装を相互にDo NOT trigger）。
+- **付随修正**: codex-review/gemini-review/test-plan.md の「code-reviewerを使う」案内を「/code-reviewを使う」に変更。CLAUDE.md にスキル推薦ルール追加（タスク開始時に該当スキルを一言提案）。
+
+## 重要な発見
+- 8重複クラスタ27スキルを精査した結果、**ほとんどが「見た目の重複」で実体は別物**だった。安易に統合していたら「Codexでレビュー」等が壊れていた。
+- `requesting-code-review`/`subagent-driven-development` の `superpowers:code-reviewer` 参照は**実在しないエージェント型への願望的記述**（superpowers プラグイン前提）。同梱 code-reviewer.md テンプレートは実在。code-reviewer**スキル**削除とは無関係なので触らない。
+
+---
+
+# スキル統合 第1回（2026-05-31 実施）
 
 `~/.claude/skills`（40スキル）のリファクタリング。13エージェント並列分析＋敵対的検証の結論に基づき実施。
 

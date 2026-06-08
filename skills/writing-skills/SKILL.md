@@ -1,6 +1,6 @@
 ---
 name: writing-skills
-description: Use when creating new skills, editing existing skills, or verifying skills work before deployment
+description: Use when creating new skills, editing existing skills, or verifying skills work before deployment. Trigger phrases include スキルを作成, スキル構築, 新しいスキル, SKILL.md, スキルを設計, スキルを改善, create skill, build skill, design skill, improve skill.
 ---
 
 # Writing Skills
@@ -643,6 +643,43 @@ How future Claude finds your skill:
 6. **Loads example** (only when implementing)
 
 **Optimize for this flow** - put searchable terms early and often.
+
+## Authoring Walkthrough (step-by-step)
+
+TDD規律（上記）が「なぜ・どう堅牢に作るか」なら、ここはゼロから書く実務手順。
+（旧 skill-creator スキルを統合。description の書き方だけは上の CSO 章が正
+— description は「いつ使うか」のみで、ワークフロー要約は書かない。）
+
+### Step 1: ユースケースを定義
+ユーザーと対話して `Use Case / Trigger（ユーザーがどう言うか）/ Steps / Result` を明確化する。
+「2〜3個の具体的なトリガー例」を必ず出す。
+
+### Step 2: カテゴリを特定
+
+| カテゴリ | 用途 | 主な技法 |
+|---------|------|----------|
+| **Document & Asset Creation** | 一貫した高品質出力（資料・コード等） | スタイルガイド埋め込み・テンプレート・品質チェックリスト |
+| **Workflow Automation** | 一貫した方法論が有益なマルチステップ処理 | 検証ゲート・反復改善ループ |
+| **MCP Enhancement** | MCPサーバーのツールアクセス強化 | 複数MCP連携・ドメイン知識・エラーハンドリング |
+
+### Step 3: フロントマター作成
+`name`（kebab-case・英数字とハイフンのみ）と `description`（上の CSO 章に従う＝WHENのみ）。
+フォルダ名も kebab-case、ファイルは必ず `SKILL.md`。XMLアングルブラケット（`< >`）禁止。
+
+### Step 4: 本文 → Step 5: テスト
+本文は具体的・アクション可能に。テストは上の RED-GREEN-REFACTOR と圧力テストに従う。
+
+### Step 6: トリガー診断（デプロイ後）
+
+| 症状 | 種別 | 対策 |
+|------|------|------|
+| 使うべき時にロードされない／手動有効化が必要 | **アンダートリガー** | description に具体トリガー語・症状キーワードを追加 |
+| 無関係なクエリでロードされる／混乱 | **オーバートリガー** | ネガティブtrigger（`Do NOT use for... use X instead`）を追加して限定 |
+
+設計パターンの具体例（Sequential Workflow / Multi-MCP / Iterative Refinement /
+Context-aware Tool Selection / Domain-specific Intelligence）は `skill-patterns.md` を参照。
+
+---
 
 ## The Bottom Line
 

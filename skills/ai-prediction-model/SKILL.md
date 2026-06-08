@@ -1,6 +1,6 @@
 ---
 name: ai-prediction-model
-description: "AI予測モデル開発の全工程をガイド。欠損値補完（FAMD・MICE・MissForest等の比較検証）、特徴量選択、モデル構築、評価（AUROC・Calibration・DCA）、解釈性（SHAP）を体系的に支援。TRIPOD+AI 準拠の報告と連携。Use when user builds prediction models, handles missing data, performs feature engineering, model evaluation, or interpretability analysis. Trigger phrases: 予測モデル, 欠損値, 補完, imputation, FAMD, MICE, MissForest, 特徴量選択, feature selection, モデル構築, AUROC, calibration, SHAP, 機械学習, XGBoost, ランダムフォレスト, ロジスティック回帰, 交差検証, cross-validation, ハイパーパラメータ, AI解析, prediction model, missing data, DCA."
+description: "AI予測モデル開発の全工程をガイド。欠損値補完（FAMD・MICE・MissForest等の比較検証）、特徴量選択、モデル構築、評価（AUROC・Calibration・DCA）、解釈性（SHAP）を体系的に支援。TRIPOD+AI 準拠の報告と連携。Use when user builds prediction models, handles missing data, performs feature engineering, model evaluation, or interpretability analysis. Trigger phrases: 予測モデル, 欠損値, 補完, imputation, FAMD, MICE, MissForest, 特徴量選択, feature selection, モデル構築, AUROC, calibration, SHAP, 機械学習, XGBoost, ランダムフォレスト, ロジスティック回帰, 交差検証, cross-validation, ハイパーパラメータ, AI解析, prediction model, missing data, DCA. Do NOT trigger for 論文・報告書の執筆や TRIPOD+AI チェックリストの記述そのもの（use academic-writing）— 本スキルはモデルの開発・補完・評価・SHAP 解析の実装に使う。"
 ---
 
 # AI Prediction Model Development

@@ -6,7 +6,8 @@ description: >
   Use when: (1) DOI リストから Zotero に文献を登録する, (2) Zotero のコレクション一覧・アイテム一覧を取得する,
   (3) BibTeX/RIS データを Zotero にインポートする, (4) CrossRef API で文献の DOI を検索する,
   (5) REST API でコレクション作成・アイテム追加・タグ管理を行う, (6) グループライブラリを操作する。
-  Triggers: "zotero", "文献登録", "DOI インポート", "コレクション", "論文追加", "文献管理"
+  論文を「検索・取得」するだけなら research-toolkit（PubMed等）/ alphaxiv（arXiv）を使う。本スキルは Zotero ライブラリへの登録・管理・整理に限る。
+  Triggers: "zotero", "文献登録", "DOI インポート", "Zotero コレクション", "論文追加", "文献管理", "ライブラリ整理", "BibTeX エクスポート"
 ---
 
 # Zotero API Skill
