@@ -27,7 +27,7 @@ description: >
 **Codex の使用箇所は3か所のみ：**
 1. Phase 2 — Image Gen で参照画像を生成
 2. Phase 3 Codex フォールバック — 3回連続で改善なしの場合
-3. HTML 完成後の `/codex-review` — コード品質チェック
+3. HTML 完成後の `codex review` CLI — コード品質チェック
 
 **成果物ディレクトリ構造（例）：**
 
@@ -250,9 +250,9 @@ SVGで複雑なアイコンを再現しようとすると形状・太さが必�
 - HTML は Python f-string で全体再構築（正規表現置換は禁止）
 - クロップ画像を確認用に保存してから埋め込む
 
-#### Step 3-5: HTML完成後の codex-review
+#### Step 3-5: HTML完成後の Codex レビュー
 
-視覚的フィードバックループで収束したら、生成した HTML のコード品質を `/codex-review` でチェックする。
+視覚的フィードバックループで収束したら、生成した HTML のコード品質を `codex review` CLI でチェックする。
 
 ```bash
 # 出力ディレクトリで実行
@@ -315,7 +315,7 @@ $pres.Close(); $pptApp.Quit()
 - [ ] カード・矢印・区切り線など全要素が揃っている
 - [ ] フォントが正しく表示されている
 
-**問題があった場合 — `/codex-review` で原因特定と修正：**
+**問題があった場合 — `codex review` CLI で原因特定と修正：**
 
 ```bash
 cd /path/to/output-dir
@@ -394,12 +394,12 @@ HTMLのどの部分が原因か特定し、PPTX変換に対応した修正案を
 
 ### 視覚的フィードバックループ
 - [ ] PASS/FAIL 表を記録し全項目 PASS を確認した
-- [ ] `/codex-review` で CRITICAL/WARNING がないことを確認した
+- [ ] `codex review` CLI で CRITICAL/WARNING がないことを確認した
 
 ### PPTX変換後（方法Bのみ）
 - [ ] PPTX → PNG 化して目視確認した
 - [ ] 全アイコン表示・テキスト・フォントが崩れていない
-- [ ] 問題があれば `/codex-review` で原因特定・修正した
+- [ ] 問題があれば `codex review` CLI で原因特定・修正した
 
 **Iron Law: 1 slide = 1 HTML file. Never combine.**
 
@@ -446,4 +446,3 @@ HTMLのどの部分が原因か特定し、PPTX変換に対応した修正案を
 - `scripts/export_to_pptx.py` — html2pptx.app REST API経由で編集可能 .pptx 出力
 - `assets/slide-base.html` — 1920×1080単一スライドHTML雛形
 - `assets/template.html` — デザインパターンギャラリー（T-01〜T-12）
-- `../codex-review/SKILL.md` — Codex CLI によるコードレビュースキル

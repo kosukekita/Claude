@@ -1,8 +1,22 @@
 ---
 name: project_skill_consolidation
-description: ~/.claude/skills のリファクタリング結果。2回実施（2026-05-31, 06-08）。現37スキル。code-reviewer削除/skill-creator統合。標準コマンド重複は削除可、同一ツール×同一成果物のみ統合可
+description: ~/.claude/skills のリファクタリング結果。2026-05-31/06-08に実施。現36スキル。code-reviewer/codex-review/gemini-review削除、skill-creator統合、codex-consult新設。標準コマンド重複は削除可、同一ツール×同一成果物のみ統合可
 metadata:
   type: project
+---
+
+# レビュースキル整理 + codex-consult新設（2026-06-08 第2回の続き）
+
+37→**36スキル**。ユーザーが「codex-review は会話文脈を理解してClaude補完する役割のはず」と指摘したのが発端。検証(4エージェントWorkflow)の結論:
+
+- **codex-review 削除**: `codex review` CLIサブコマンドは**コード差分のワンショットレビュー専用**。会話履歴を渡す口がCLIに無い（resume/session-id無し）。会話文脈補完は構造上担えない。コードレビューは標準/code-reviewかBash直叩きで代替。
+- **gemini-review 削除**: `cat file | gemini -p ...` の薄いラッパー。論文セカンドオピニオンもBash直叩き（gemini CLI 0.36.0稼働中）で完全代替。ユーザーは論文レビュー知識の退避も不要と判断。
+- **重大な発見**: `codex:rescue`（codexプラグイン）**も会話文脈を渡していない**。thin forwarding wrapperでタスク文字列1本＋cwdのみ転送。`buildTurnInput`が`[{type:text,text:prompt}]`しか組まない。→ **「会話文脈を理解したCodex補完」を自動でやる機構は存在しない**。
+- **codex-consult 新設**: 「会話文脈をClaudeが構造化テンプレ（議論/目標/試したこと/詰まり/対象/求めること）に要約 → `/codex:rescue`に渡す」プロトコルをスキル化。rescue/second-opinion/handoffの3用途。`/codex:rescue`は$ARGUMENTSをそのままcodexに転送するので、Claudeが文脈を埋めれば届く。**運搬役(rescue)は完成済み、足りないのは文脈要約というClaudeの振る舞いだった**。
+- slide-making の codex-review 参照は `codex review` CLI直叩きに統一（元々CLI直叩きしていた）。
+
+**重要教訓**: PowerShellの`Get-Content`表示はcp932で日本語が化けて見えるが、Writeツールは正しくUTF-8保存している。検証はRead(harness)かmojibake(U+FFFD)チェックで行う。`Get-Content`の表示化けに騙されない。
+
 ---
 
 # スキル統合 第2回（2026-06-08 実施）
