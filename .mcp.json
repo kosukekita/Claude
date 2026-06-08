@@ -3,7 +3,7 @@
     "tooluniverse-osteo": {
       "command": "node",
       "args": [
-        "bin/tooluniverse-osteo.js"
+        "${USERPROFILE}/.claude/bin/tooluniverse-osteo.js"
       ]
     },
     "alphaxiv": {
