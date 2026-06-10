@@ -19,10 +19,6 @@ SessionStart 時に `additionalContext` として以下が渡される場合が�
 
 - **Language**: Always respond in Japanese (常に日本語で回答してください).
 
-## Skill Security
-
-スキル追加時は `skill-scanner scan <path> --use-behavioral` を実行し、HIGH/CRITICAL は精査の上で却下（誤検知は許容）。
-
 ## スキル推薦（タスク開始時）
 
 ユーザーが具体的なタスクを依頼したら、本格的に着手する前に **該当しそうなスキルが利用可能スキル一覧にあるか確認し、あれば一言で提案する**。
