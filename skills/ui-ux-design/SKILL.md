@@ -82,6 +82,7 @@ QUALITY CHECKS セクションの MUST 項目を全て確認してから出力�
 - [ ] **レスポンシブ** — 375px / 768px / 1024px / 1440px、本文 min 16px
 - [ ] **インタラクション状態** — hover / focus / active / disabled / loading / error
 - [ ] **`prefers-reduced-motion`** の尊重
+- [ ] **日本語/CJKテキストの折り返し** — 和文は単語境界が無いため、放置すると「マットレ／ス」のように単語途中で改行される。本文に `word-break: auto-phrase; line-break: strict; overflow-wrap: break-word;` を指定し文節で折り返す（auto-phrase 非対応ブラウザは `@supports not` で `word-break: normal` にフォールバック）。短いラベル・ボタンは `word-break: keep-all`。**実機幅（375px）で必ず目視**
 
 ### DEFAULT VISUAL QUALITY（新規設計時の品質基準）
 
@@ -94,6 +95,8 @@ QUALITY CHECKS セクションの MUST 項目を全て確認してから出力�
 - 8px グリッド（8, 16, 24, 32, 48, 64, 96, 128px）
 - セクション間余白: min 80px（モバイル）/ min 120px（デスクトップ）
 - カード内パディング: 24px 以上
+- **画面左右の余白（ガター）: モバイル min 20–24px / デスクトップ 24–32px**。文字・ボタンが画面端ギリギリだと窮屈で安っぽく見える。ヒーロー見出しが大きいほど余白を厚めに
+- **ハマりどころ**: `.hero-inner` 等で `padding: 64px 0`（左右0）を指定すると、親 `.container` の左右 padding を上書きして**テキストが画面端にベタ付き**になる。上下だけ足すなら `padding-top/padding-bottom` を使い、左右ガターを潰さない。**実機で要素の左端 px を測って検証**
 
 **カラー・タイポグラフィ**
 - 使用色は最大5色以内（プライマリ・セカンダリ・背景・テキスト・アクセント）
