@@ -82,7 +82,7 @@ QUALITY CHECKS セクションの MUST 項目を全て確認してから出力�
 - [ ] **レスポンシブ** — 375px / 768px / 1024px / 1440px、本文 min 16px
 - [ ] **インタラクション状態** — hover / focus / active / disabled / loading / error
 - [ ] **`prefers-reduced-motion`** の尊重
-- [ ] **日本語/CJKテキストの折り返し** — 和文は単語境界が無いため、放置すると「マットレ／ス」のように単語途中で改行される。本文に `word-break: auto-phrase; line-break: strict; overflow-wrap: break-word;` を指定し文節で折り返す（auto-phrase 非対応ブラウザは `@supports not` で `word-break: normal` にフォールバック）。短いラベル・ボタンは `word-break: keep-all`。**実機幅（375px）で必ず目視**
+- [ ] **日本語/CJKテキストの折り返し** — 和文は単語境界が無いため、放置すると「マットレ／ス」のように単語途中で改行される。本文に `word-break: auto-phrase; line-break: strict;` を指定し文節で折り返す（auto-phrase 非対応ブラウザは `@supports not` で `word-break: normal` にフォールバック）。**重要: `overflow-wrap` は `normal` にする** — `break-word`/`anywhere` を併用すると「サンプルA」等の英数字混じり語や `<b>`/`<strong>` で囲んだ強調句が単語途中で割れる（auto-phrase が効いていても break-word が優先して割る）。行をまたがせたくない短い強調語は `<strong class="nobr">…</strong>` ＋ `.nobr{white-space:nowrap}` で固定。**検証は実機幅（375px）の目視に加え、`b/strong/h*` 各要素の `getClientRects().length>1`（=2行に割れている短語）を機械検出する**
 
 ### DEFAULT VISUAL QUALITY（新規設計時の品質基準）
 
