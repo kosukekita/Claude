@@ -80,6 +80,10 @@ description: "医学・学術論文の執筆支援。構成（IMRAD）、文体�
   - Methods に書かない（→ Results）: 具体的なサンプルサイズ（n=448 等）、群ごとの人数（BP 259名, PTH 189名 等）、施設数・施設ごとの登録数、欠測の理由・割合の具体的数値、解析結果から判明した事実
   - NG（Methods に結果が混在）: "有効解析対象: n=448（BP 259, PTH 189）。欠測は主にBMD未測定施設による。"
   - OK: Methods に "12ヶ月時点BMDが未測定の患者は解析から除外した。" → Results に "448名（BP群259名、PTH群189名）が有効解析対象となった。"
+  - **除外「基準」は Methods、除外「件数・残存 n」は Results**（同じ除外を1文に混ぜない）。除外基準は事前計画なので Methods、実際に何例除外され何例残ったかは特定データに適用した帰結なので Results（CONSORT/STROBE の participant flow と同じ理屈）。
+    - NG（基準と件数が Methods に同居）: "For E1, 22 patients without a recorded observation period were excluded, yielding 2,586."
+    - OK: Methods に "E1 was analyzed in patients with an available vertebral-fracture observation period."（基準）→ Results の analysis-set 段落に "For E1, 22 patients without a recorded observation period were excluded, leaving 2,586; E2 and E3 retained all 2,608."（件数・残存 n）
+    - 特にアウトカムごとに分母 n が異なる場合（例: E1=2,586 / E2・E3=2,608）、その差は Results の表に出るので、Results 本文の analysis-set 段落で件数差の理由を1文添えると表が自己説明的になる。
   - **ソフトウェア名は専用パラグラフに一度だけ／関数名は論文に書かない**: 使用パッケージ・ソフトウェア名（version 付き）は「統計解析ソフトウェア（再現性）」の専用パラグラフに一度だけ記載し、各手法パラグラフでは繰り返さない。**具体的な関数名（例: regression_forest(), causal_survival_forest()）は論文本文に一切書かない**。手法は概念で記述し（例: "a regression forest"・"a causal survival forest"）、関数名は共有する解析コード／補遺（supplement）に置く。
 - **Results**: データを先に、解釈は Discussion で。表・図を効果的に使用。**Study flow diagram（participant flow / CONSORT / STROBE diagram）は Results セクションに配置する**（Lancet 系列の標準）。N数・除外数は Methods の段階では未知の情報であり、Methods には配置しない
 - **Discussion**: 主要な発見を最初に述べる。限界は正直に、しかし過度に卑下しない
@@ -373,6 +377,7 @@ Author 2: First Name: Kosuke | Last Name: Ebina
 - [ ] 統計値に 95% CI と P 値が付記されている
 - [ ] 引用は具体的（曖昧な "Studies show" がない）。引用なき一般化がない
 - [ ] Methods に具体的な数値・結果が混在していない（N数、群ごとの人数等は Results に記載）
+- [ ] 除外「基準」は Methods、除外「件数・残存 n」は Results に分けて記載（同じ除外を1文に混ぜていない）。アウトカム別に分母 n が異なる場合は Results の analysis-set 段落で件数差の理由を明記
 - [ ] Methods と Results の解析項目が 1:1 対応している（Results の全解析・感度分析・代替定義が Methods に設計記述あり。手法なしの結果がない）
 - [ ] AI 文体パターン（18種）が除去されている
 - [ ] 見出しがセンテンスケースになっている
