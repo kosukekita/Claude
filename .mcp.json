@@ -7,7 +7,7 @@
       ]
     },
     "alphaxiv": {
-      "type": "sse",
+      "type": "http",
       "url": "https://api.alphaxiv.org/mcp/v1"
     }
   }

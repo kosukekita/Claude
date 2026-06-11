@@ -16,6 +16,8 @@ command-log.txt
 .playwright-cli/
 backups/
 cache/
+daemon/
+uploads/
 debug/
 file-history/
 history.jsonl
