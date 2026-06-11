@@ -144,6 +144,7 @@
       }
     ]
   },
+  "enableWorkflows": true,
   "enabledPlugins": {
     "codex@openai-codex": true,
     "chrome-devtools-mcp@claude-plugins-official": true,
@@ -160,10 +161,9 @@
   "alwaysThinkingEnabled": false,
   "effortLevel": "xhigh",
   "ultracode": true,
-  "enableWorkflows": true,
   "autoUpdatesChannel": "latest",
   "skipDangerousModePermissionPrompt": true,
-  "agentPushNotifEnabled": true,
   "remoteControlAtStartup": true,
+  "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true
 }
