@@ -8,4 +8,4 @@
 - [feedback_where_to_place_tips.md](feedback_where_to_place_tips.md) — tips/機能をCLAUDE.md・スキル・どこにも置かないのどれにするかは「実際に発火する文脈」で決める。標準ツールと重複するスキル機能は削る（削除前にgrep確認）
 - [feedback_hook_vs_prose_audit.md](feedback_hook_vs_prose_audit.md) — ルールをHook（機械強制）にするか文章のまま残すかの判断原則。main編集ブロックや整形のグローバルHookは害になる。迷ったら文章寄り
 - [feedback_ps1_hook_ascii_only.md](feedback_ps1_hook_ascii_only.md) — ~/.claudeのフック.ps1に日本語直書きは文字化けで構文破壊→フック全体が死ぬ。ASCII限定＋編集後は構文/挙動テスト必須
-- [feedback_u8792_path_unicode_escape.md](feedback_u8792_path_unicode_escape.md) — パス中の螒がUnicodeエスケープ解釈されC:\Users螒に化けて静かに誤書き込み。ツールのpathは常にフォワードスラッシュ（C:/Users/u8792/...）で書く
+- [feedback_u8792_path_unicode_escape.md](feedback_u8792_path_unicode_escape.md) — パス中の \\u8792 がUnicodeエスケープ解釈され C:\Users螒 に化けて静かに誤書き込み。ツールのpathは常にフォワードスラッシュ（C:/Users/u8792/...）で書く
