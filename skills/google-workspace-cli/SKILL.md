@@ -1,6 +1,6 @@
 ---
 name: google-workspace-cli
-description: "Google Workspace 公式 CLI (gws) を活用した Google Workspace 操作。Gmail、Calendar、Drive、Docs、Sheets、Chat、Tasks など全 Google Workspace API をターミナルから操作。MCP サーバー対応、AIエージェントスキル内蔵。Use when user manages Google Workspace services via CLI: email, calendar, documents, spreadsheets, file management, or task automation. Trigger phrases: Gmail, Google Calendar, Google Drive, Google Docs, Google Sheets, メール送信, 予定確認, ドライブ, スプレッドシート, gws, Google Workspace, カレンダー予定, メール検索."
+description: "Google Workspace 公式 CLI (gws) を活用した Google Workspace 操作。Gmail、Calendar、Drive、Docs、Sheets、Chat、Tasks など全 Google Workspace API をターミナルから操作。MCP サーバー対応、AIエージェントスキル内蔵。Use when user manages Google Workspace services via CLI: email, calendar, documents, spreadsheets, file management, or task automation. 一括処理・スクリプト化・複雑なクエリはこのCLI、単発のメール閲覧/送信や予定確認だけなら claude.ai の Gmail/Calendar/Drive コネクタ（MCP）でも可。Trigger phrases: Gmail, Google Calendar, Google Drive, Google Docs, Google Sheets, メール送信, 予定確認, ドライブ, スプレッドシート, gws, Google Workspace, カレンダー予定, メール検索."
 ---
 
 # Google Workspace CLI (gws)
