@@ -285,7 +285,7 @@ PNG を PowerPoint に貼付する場合：
 Bash ツールからは直接参照できないため、以下で取得すること：
 
 ```bash
-API_KEY=$(python -c "import json; d=json.load(open('C:/Users/kitak/.claude/settings.local.json')); print(d['env']['HTML2PPTX_API_KEY'])")
+API_KEY=$(python -c "import json,os; d=json.load(open(os.path.expanduser('~/.claude/settings.local.json'))); print(d['env']['HTML2PPTX_API_KEY'])")
 uv run --with httpx skills/slide-making/scripts/export_to_pptx.py \
   --input slide-01.html --output slide-01.pptx --api-key "$API_KEY"
 ```
