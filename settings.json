@@ -49,24 +49,17 @@
       "Bash(npm --version)",
       "Bash(npm install:*)",
       "Bash(playwright-cli --version)",
-      "Bash(python -c \"import sys,json;d=json.load\\(sys.stdin\\);print\\(d.get\\('bin',{}\\)\\);print\\(d.get\\('description',''\\)\\)\")",
       "Bash(npm uninstall:*)",
       "Bash(playwright-cli snapshot:*)",
       "Bash(playwright-cli close:*)",
       "Bash(python -c ':*)",
       "WebFetch(domain:doi.org)",
       "Bash(gemini --version)",
-      "Bash(gemini -p \"Say hello\" -m gemini-2.5-pro)",
-      "Bash(gemini -p \"Say OK if you can read this\" -m gemini-2.5-pro)",
-      "Bash(gemini -p \"Say OK if you can read this\" -m gemini-2.5-flash)",
-      "Bash(gemini -p \"Say OK\" -m gemini-3-pro-preview)",
-      "Bash(gemini -p \"Say OK\" -m gemini-3-flash-preview)",
       "Edit(~/.claude/skills/ui-ux-design/**)",
       "Bash(codex --version)",
       "Bash(codex exec:*)",
       "WebFetch(domain:status.openai.com)",
-      "Bash(chmod 600 ~/.ssh/xs575794.key)",
-      "Edit(~/.claude/skills/codex-review/**)"
+      "Bash(chmod 600 ~/.ssh/xs575794.key)"
     ],
     "defaultMode": "auto"
   },
@@ -117,6 +110,11 @@
             "type": "command",
             "command": "command -v powershell >/dev/null 2>&1 && powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/memory-inject.ps1\" || true",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "command -v powershell >/dev/null 2>&1 && powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/memory-sync-codex.ps1\" || true",
+            "timeout": 10
           }
         ]
       }
@@ -125,11 +123,6 @@
       {
         "matcher": "",
         "hooks": [
-          {
-            "type": "command",
-            "command": "command -v powershell >/dev/null 2>&1 && powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/memory-save.ps1\" || true",
-            "timeout": 10
-          },
           {
             "type": "command",
             "command": "command -v powershell >/dev/null 2>&1 && powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/memory-sync-codex.ps1\" || true",

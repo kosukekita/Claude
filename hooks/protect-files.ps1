@@ -18,7 +18,7 @@ try {
     exit 0
 }
 
-# パスを正規化（バックスラッシュをスラッシュに統一）
+# Normalize path separators (backslash -> slash)
 $normalizedPath = $filePath -replace '\\', '/'
 
 $protectedPatterns = @(
@@ -38,7 +38,8 @@ $protectedPatterns = @(
 
 foreach ($pattern in $protectedPatterns) {
     if ($normalizedPath -match $pattern) {
-        Write-Error "Blocked: '$filePath' is a protected file. Explain why this edit is necessary before proceeding."
+        # Write-Error would be swallowed by SilentlyContinue; write stderr directly.
+        [Console]::Error.WriteLine("Blocked: '$filePath' is a protected file. Explain why this edit is necessary before proceeding.")
         exit 2
     }
 }

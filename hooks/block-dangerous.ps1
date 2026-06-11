@@ -1,10 +1,11 @@
 # block-dangerous.ps1
-# Claude Code PreToolUse hook: 危険なコマンドをブロック
-# exit 2 でブロック（Claudeへエラーメッセージを返す）、exit 0 で通過
+# Claude Code PreToolUse hook: block dangerous commands.
+# exit 2 = block (stderr message is shown to Claude), exit 0 = pass.
+# RULE: keep this file ASCII-only (encoding issues have killed hooks before).
 
 $ErrorActionPreference = "SilentlyContinue"
 
-# stdin から JSON を読み取り、コマンドを抽出
+# Read JSON from stdin and extract the command
 $json = $input | Out-String
 $cmd = ""
 try {
@@ -36,7 +37,8 @@ $dangerousPatterns = @(
 
 foreach ($pattern in $dangerousPatterns) {
     if ($cmd -match $pattern) {
-        Write-Error "Blocked: Command '$cmd' matches dangerous pattern '$pattern'. Propose a safer alternative."
+        # Write-Error would be swallowed by SilentlyContinue; write stderr directly.
+        [Console]::Error.WriteLine("Blocked: Command '$cmd' matches dangerous pattern '$pattern'. Propose a safer alternative.")
         exit 2
     }
 }
@@ -46,7 +48,7 @@ foreach ($pattern in $dangerousPatterns) {
 $isUvManaged = $cmd -match "\buv\s+(pip|add|run)\b"
 $isPipInstall = $cmd -match "(^|\s|;|&&|\|)\s*(sudo\s+)?(python[0-9.]*\s+-m\s+)?pip[0-9.]*\s+install\b"
 if ($isPipInstall -and -not $isUvManaged) {
-    Write-Error "Blocked: global 'pip install' is forbidden. Use uv instead: 'uv add <pkg>', 'uv pip install <pkg>', or 'uv run --with <pkg>'. For an isolated env, create one with 'uv venv' and run inside it."
+    [Console]::Error.WriteLine("Blocked: global 'pip install' is forbidden. Use uv instead: 'uv add <pkg>', 'uv pip install <pkg>', or 'uv run --with <pkg>'. For an isolated env, create one with 'uv venv' and run inside it.")
     exit 2
 }
 

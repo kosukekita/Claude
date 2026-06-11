@@ -1,8 +1,22 @@
 ---
 name: project_skill_consolidation
-description: ~/.claude/skills のリファクタリング結果。2026-05-31/06-08に実施。現36スキル。code-reviewer/codex-review/gemini-review削除、skill-creator統合、codex-consult新設。標準コマンド重複は削除可、同一ツール×同一成果物のみ統合可
-metadata:
+description: ~/.claude/skills のリファクタリング履歴。2026-05-31/06-08/06-11に実施（06-11後は32スキル）。ボイラープレート5本削除、superpowers参照除去、code-reviewer/codex-review/gemini-review削除、skill-creator統合、codex-consult新設。標準コマンド重複は削除可、同一ツール×同一成果物のみ統合可
+metadata: 
+  node_type: memory
   type: project
+  originSessionId: 213c11d7-5066-46e7-968c-ac34498cfd29
+---
+
+# スキル統合 第3回（2026-06-11 実施）
+
+37→**32スキル**。5並列監査Workflow＋敵対的検証＋Codexセカンドオピニオン＋ユーザー承認を経て実施。
+
+## 実施内容
+- **削除（ユーザー承認済み）**: `api-designer` / `rag-architect` / `prompt-engineer` / `mcp-developer`（Jeffallanボイラープレート、インポート時から未変更・参照ゼロ。git commit 0069dc3 から復元可能）、`using-superpowers`（強制ゲートが CLAUDE.md の「提案に留める」方針と矛盾。プロセス系優先・スキルは最新版を読む、の2点を CLAUDE.md スキル推薦節に統合）。
+- **据え置き**: `debugging-wizard` は第1回の「ツール/プロセスで役割が違う」裁定を維持して残した（Codexも残す側を推奨）。
+- **superpowers: 名前空間参照を全除去**（8ファイル28箇所、プラグイン未インストールのため）。実在しない `superpowers:code-reviewer` エージェント型は「general-purpose Agent ＋ requesting-code-review/code-reviewer.md テンプレート」方式に書き換え（requesting-code-review/SKILL.md と subagent-driven-development/code-quality-reviewer-prompt.md）。第2回の「触らない」判断はこの時点で更新済み。
+- **ハイジーン**: slide-making/test-output3（3.4MB）git rm、systematic-debugging の上流開発残骸5ファイル削除、kitak ハードコードパス2箇所をポータブル化、mobile-preview-tailscale の実IPをプレースホルダ化。
+
 ---
 
 # レビュースキル整理 + codex-consult新設（2026-06-08 第2回の続き）
@@ -31,7 +45,7 @@ metadata:
 
 ## 重要な発見
 - 8重複クラスタ27スキルを精査した結果、**ほとんどが「見た目の重複」で実体は別物**だった。安易に統合していたら「Codexでレビュー」等が壊れていた。
-- `requesting-code-review`/`subagent-driven-development` の `superpowers:code-reviewer` 参照は**実在しないエージェント型への願望的記述**（superpowers プラグイン前提）。同梱 code-reviewer.md テンプレートは実在。code-reviewer**スキル**削除とは無関係なので触らない。
+- `requesting-code-review`/`subagent-driven-development` の `superpowers:code-reviewer` 参照は**実在しないエージェント型への願望的記述**（superpowers プラグイン前提）。同梱 code-reviewer.md テンプレートは実在。（追記: 第3回 2026-06-11 で general-purpose Agent＋テンプレート方式に書き換え済み）
 
 ---
 
@@ -52,4 +66,4 @@ metadata:
 - `alphaxiv` / `research-toolkit` / `zotero` は別バックエンド
 
 **Why:** 安易なマージは capability loss を招く。重複は「同一ジョブ・同一ツール」のものだけに限定。
-**How to apply:** 今後スキルを追加・整理する際、外部ツールが違う/アーティファクトが違うものは統合せず description のトリガー語で衝突回避する。関連: [[feedback_slide_icon_approach]]
+**How to apply:** 今後スキルを追加・整理する際、外部ツールが違う/アーティファクトが違うものは統合せず description のトリガー語で衝突回避する。（アイコン作成の教訓は skills/slide-making の Step 3-4 に収録済み）

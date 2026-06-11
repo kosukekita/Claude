@@ -1,9 +1,10 @@
 # log-commands.ps1
-# Claude Code PreToolUse hook: Bash コマンドをタイムスタンプ付きでログに記録
+# Claude Code PreToolUse hook: log Bash commands with a timestamp.
+# RULE: keep this file ASCII-only (encoding issues have killed hooks before).
 
 $ErrorActionPreference = "SilentlyContinue"
 
-# stdin から JSON を読み取り、コマンドを抽出
+# Read JSON from stdin and extract the command
 $json = $input | Out-String
 $cmd = ""
 try {

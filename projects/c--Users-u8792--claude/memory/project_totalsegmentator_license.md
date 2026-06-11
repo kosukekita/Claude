@@ -1,8 +1,10 @@
 ---
 name: project_totalsegmentator_license
 description: TotalSegmentatorアカデミックライセンス＋全ライセンスタスクのモデルDL作業。ローカルは中断、リモートGPU PCで再開予定
-metadata:
+metadata: 
+  node_type: memory
   type: project
+  originSessionId: 213c11d7-5066-46e7-968c-ac34498cfd29
 ---
 
 # TotalSegmentator ライセンス & ライセンスタスク・モデルDL
@@ -18,7 +20,7 @@ metadata:
 
 ## インストール（リモートGPU PCで実施）
 - 推奨: `uv tool install TotalSegmentator`（グローバルCLI。どのディレクトリからでもコマンド可）。導入済みバージョンは totalsegmentator 2.13.0
-- GPU PCでは **CUDA版PyTorch** が入ることを確認（`python -c "import torch; print(torch.cuda.is_available())"` がTrue）。uvのデフォルトでCPU版torchが入る場合は、CUDA対応torchを別途指定して入れ直す（[[python_rules]] のPyTorch CUDA選択を参照）
+- GPU PCでは **CUDA版PyTorch** が入ることを確認（`python -c "import torch; print(torch.cuda.is_available())"` がTrue）。uvのデフォルトでCPU版torchが入る場合は、CUDA対応torchを別途指定して入れ直す（python-rules スキルのPyTorch CUDA選択を参照）
 - 入る実行ファイル: TotalSegmentator, totalseg_download_weights, totalseg_set_license など11個
 
 ## モデルDLコマンド（推論不要でDLだけ）
@@ -44,5 +46,5 @@ Dataset301(heart_highres) / Dataset304(appendicular_bones) / Dataset481(tissue) 
    各 `totalseg_download_weights -t <task>`
 4. 検証: `~/.totalsegmentator/nnunet/results` に Dataset301/304/305/303/409/481/485/509/507/855/856/857/920/925 が揃うこと
 
-**How to apply:** リモートGPU PCでTotalSegmentatorの追加タスクを使う際の作業再開ポイント。番号秘匿・CUDA torch確認・857共有・allは非推奨が要点。[[python_rules]]
+**How to apply:** リモートGPU PCでTotalSegmentatorの追加タスクを使う際の作業再開ポイント。番号秘匿・CUDA torch確認・857共有・allは非推奨が要点。（python-rules スキル参照）
 

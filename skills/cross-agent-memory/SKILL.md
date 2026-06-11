@@ -2,7 +2,7 @@
 name: cross-agent-memory
 description: >
   Claude Code と Codex CLI の間およびセッション間で記憶を継続・管理するスキル。
-  ~/.claude/memory/ を共有メモリストアとして扱い、自動フックと連携する。
+  ハーネスの auto-memory ストア（~/.claude/projects/<スラグ>/memory/）を共有メモリとして扱い、自動フックと連携する。
   Use when user says: "覚えておいて", "memorize", "記憶して", "remember this",
   "記憶を確認", "memory status", "記憶を整理", "memory cleanup",
   "Codexに同期", "sync to Codex", "記憶を保存", "forget", "忘れて".
@@ -13,22 +13,41 @@ description: >
 
 Claude Code と Codex CLI の間、そしてセッション間で記憶を効率よく継続させるための管理スキル。
 
+## メモリストアの場所（重要）
+
+グローバル記憶の実体は**ハーネスの auto-memory ディレクトリ**にある。パスはマシンのユーザー名に依存する:
+
+```
+~/.claude/projects/[cC]--Users-<ユーザー名>--claude/memory/
+```
+
+以下、このパスを `<MEM_DIR>` と表記する。PowerShell での解決方法:
+
+```powershell
+$memDir = Get-ChildItem "$env:USERPROFILE\.claude\projects" -Directory |
+  Where-Object { $_.Name -match "^[cC]--Users-$([regex]::Escape($env:USERNAME))--claude$" } |
+  Select-Object -First 1 | ForEach-Object { Join-Path $_.FullName "memory" }
+```
+
+このリポジトリは複数PCでGitHub同期されるため、他PC由来のストア（別ユーザー名のスラグ）が並存することがある。フックは全ストアを注入する。
+
 ## アーキテクチャ概要
 
 ```
-~/.claude/memory/
-├── MEMORY.md        ← インデックス（常にSessionStartで注入される）
-├── AGENTS.md        ← Codex向け自動生成ファイル（編集禁止）
+<MEM_DIR>/
+├── MEMORY.md        ← インデックス（SessionStartで注入される）
 ├── user_*.md        ← ユーザー情報の記憶
 ├── feedback_*.md    ← フィードバック・好みの記憶
 ├── project_*.md     ← プロジェクト情報の記憶
 └── reference_*.md   ← 参照情報の記憶
+
+~/.codex/AGENTS.md   ← Codex向け自動生成ミラー（編集禁止）
 ```
 
 **自動フロー（手動操作不要）:**
-- `SessionStart` → `memory-inject.ps1`: MEMORY.md をコンテキストに自動注入
-- `Stop` → `memory-save.ps1` + `memory-sync-codex.ps1`: 変更をステージング & AGENTS.md を更新
-- Codex: `model_instructions_file` で AGENTS.md を SessionStart 時に自動読み込み
+- `SessionStart` → `memory-inject.ps1`: 全ストアの MEMORY.md＋本文をコンテキストに自動注入
+- `SessionStart`/`Stop` → `memory-sync-codex.ps1`: `~/.codex/AGENTS.md` を再生成（Codex はこの場所を標準で読むため設定不要）
+- `Stop` → `auto-push.ps1`: メモリ変更を含む共有ファイルを自動コミット・プッシュ
 
 ---
 
@@ -81,16 +100,13 @@ Claude Code と Codex CLI の間、そしてセッション間で記憶を効率
 
 ### 手順
 
-1. `~/.claude/memory/MEMORY.md` を読み込む
+1. `<MEM_DIR>/MEMORY.md` を読み込む
 2. メモリファイルの一覧を表示（type別にグループ化）
-3. `AGENTS.md` の最終更新日時を確認してCodex同期状態を報告:
+3. `~/.codex/AGENTS.md` の最終更新日時を確認してCodex同期状態を報告:
    ```
-   powershell -Command "(Get-Item '$HOME/.claude/memory/AGENTS.md').LastWriteTime"
+   powershell -Command "(Get-Item \"$env:USERPROFILE/.codex/AGENTS.md\").LastWriteTime"
    ```
-4. ファイル数・合計サイズを報告:
-   ```
-   powershell -Command "Get-ChildItem '$HOME/.claude/memory/*.md' | Measure-Object -Property Length -Sum | Select-Object Count, Sum"
-   ```
+4. ファイル数・合計サイズを報告（`<MEM_DIR>/*.md` を Measure-Object で集計）
 
 **出力フォーマット:**
 ```
@@ -121,9 +137,9 @@ Claude Code と Codex CLI の間、そしてセッション間で記憶を効率
 
 ### 手順
 
-1. `memory/` 配下のすべての `.md` ファイルを読み込む
+1. `<MEM_DIR>/` 配下のすべての `.md` ファイルを読み込む
 2. 以下の観点でチェック:
-   - **重複**: 同じトピックの記憶が複数存在していないか
+   - **重複**: 同じトピックの記憶が複数存在していないか。スキル・CLAUDE.md に既に記録済みの内容は削除候補
    - **陳腐化**: 日付が古い project 記憶（30日以上経過）
    - **フォーマット不整合**: frontmatter が欠けているか不正
    - **MEMORY.md との不一致**: インデックスに載っていないファイルや、存在しないファイルへのリンク
@@ -143,9 +159,9 @@ Claude Code と Codex CLI の間、そしてセッション間で記憶を効率
    ```
    powershell -ExecutionPolicy Bypass -File "$HOME/.claude/hooks/memory-sync-codex.ps1"
    ```
-2. 生成された `~/.claude/memory/AGENTS.md` の冒頭を確認:
+2. 生成された `~/.codex/AGENTS.md` の冒頭を確認:
    ```
-   powershell -Command "Get-Content '$HOME/.claude/memory/AGENTS.md' -TotalCount 5"
+   powershell -Command "Get-Content \"$env:USERPROFILE/.codex/AGENTS.md\" -TotalCount 5"
    ```
 3. 成功を報告する
 
@@ -161,26 +177,26 @@ Claude Code と Codex CLI の間、そしてセッション間で記憶を効率
 2. ユーザーに確認を取る
 3. ファイルを削除
 4. MEMORY.md インデックスから該当行を削除
-5. Codex に再同期する
+5. 他の記憶ファイルから対象への `[[wikilink]]` 参照を grep して更新
+6. Codex に再同期する
 
 ---
 
 ## トラブルシューティング
 
 ### SessionStart で記憶が注入されない
-- `~/.claude/memory/MEMORY.md` が存在するか確認
+- `<MEM_DIR>/MEMORY.md` が存在するか確認
 - settings.json の SessionStart フックに `memory-inject.ps1` が登録されているか確認
 
 ### Codex が記憶を認識しない
-- `~/.codex/config.toml` に `model_instructions_file` が設定されているか確認:
-  ```toml
-  model_instructions_file = "C:\\Users\\{username}\\.claude\\memory\\AGENTS.md"
-  ```
-- `AGENTS.md` が存在するか確認（Stop フック後に生成される）
-- 手動で sync アクションを実行する
+- `~/.codex/AGENTS.md` が存在するか確認（SessionStart/Stop フックが生成する）
+- 無ければ手動で sync アクションを実行する（Codex は `~/.codex/AGENTS.md` を標準で読むため config.toml の設定は不要）
 
 ### AGENTS.md が生成されない
 - PowerShell で直接実行してエラーを確認:
   ```
   powershell -ExecutionPolicy Bypass -File "$HOME/.claude/hooks/memory-sync-codex.ps1"
   ```
+
+### ツールのパスが化ける（このリポジトリ特有）
+- パス中の `\u` + 16進4桁（例: ユーザー名 u8792）が Unicode エスケープ解釈される既知問題がある。ツールに渡すパスは常にフォワードスラッシュで書く（詳細はグローバル記憶 `feedback_u8792_path_unicode_escape` を参照）

@@ -1,6 +1,7 @@
 # auto-push.ps1
-# Claude Code Stop hook: .claude/ 配下の変更を自動コミット・プッシュ
-# 対象: CLAUDE.md, skills/, hooks/ の変更のみ
+# Claude Code Stop hook: auto-commit and push changes under ~/.claude.
+# Targets: shared config/docs/skills/hooks plus every synced memory store.
+# RULE: keep this file ASCII-only (encoding issues have killed hooks before).
 
 $ErrorActionPreference = "SilentlyContinue"
 $claudeDir = "$env:USERPROFILE\.claude"
@@ -8,28 +9,33 @@ $claudeDir = "$env:USERPROFILE\.claude"
 Push-Location $claudeDir
 
 try {
-    # git リポジトリか確認
+    # Confirm this is a git repository
     $gitCheck = git rev-parse --is-inside-work-tree 2>&1
     if ($gitCheck -ne "true") { exit 0 }
 
-    # リモートが設定されているか確認
+    # Confirm a remote is configured
     $remote = git remote 2>&1
     if (-not $remote) { exit 0 }
 
-    # 変更されたファイルをステージング（.claude/ 配下のみ）
-    # git add は新規ファイル（untracked）も含めてステージする
-    # 記憶は projects/<...>/memory/ にあり .gitignore で negation 許可済み。
-    # 存在しないパスを渡すと git がエラーを返すため、実在するもののみ add する。
-    $addTargets = @(".gitignore", "CLAUDE.md", "settings.json", "skills/", "hooks/", "projects/c--Users-u8792--claude/memory/")
+    # Stage changed files (shared config/docs/skills/hooks + memory stores).
+    # git add also stages new (untracked) files. Memory stores live at
+    # projects/<slug>--claude/memory and are un-ignored by .gitignore; the slug
+    # contains the machine's username, so resolve it dynamically instead of
+    # hardcoding one machine's path. Only add paths that exist (git errors on
+    # missing pathspecs).
+    $memTargets = @(Get-ChildItem "projects" -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -match '^[cC]--Users-.+--claude$' } |
+        ForEach-Object { "projects/$($_.Name)/memory" })
+    $addTargets = @(".gitignore", ".mcp.json", "CLAUDE.md", "settings.json", "skills/", "hooks/") + $memTargets
     foreach ($t in $addTargets) {
         if (Test-Path $t) { git add $t 2>$null }
     }
 
-    # ステージされた変更があるか確認
+    # Anything staged?
     $staged = git diff --cached --name-only
     if (-not $staged) { exit 0 }
 
-    # 変更内容からコミットメッセージを生成
+    # Build a commit message from the staged files
     $files = @($staged -split "`n" | Where-Object { $_ })
     $fileCount = $files.Count
     $firstFile = $files[0] -replace '^\.claude/', ''
