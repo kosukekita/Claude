@@ -90,6 +90,23 @@ def _set_run(run, *, size=BODY_PT, bold=False, color=TEXT, underline=False):
     ea.set("typeface", FONT)
 
 
+def _estimate_lines(text, size_pt, box_w_in):
+    """Rough estimate of how many lines `text` wraps to in a box `box_w_in` wide.
+
+    Used only to push following content down so a long subtitle doesn't overlap
+    the bullets. CJK chars count as ~1 em, ASCII as ~0.55 em. Em width ~= size in
+    points / 72 inches. Deliberately conservative (rounds up).
+    """
+    pt = size_pt.pt if hasattr(size_pt, "pt") else float(size_pt)
+    em_in = pt / 72.0
+    units = 0.0
+    for ch in str(text):
+        units += 0.55 if ord(ch) < 0x3000 else 1.0  # ascii/punct vs CJK/full-width
+    text_w_in = units * em_in
+    import math
+    return max(1, math.ceil(text_w_in / max(box_w_in, 0.1)))
+
+
 def _add_textbox(slide, x, y, w, h, *, anchor=MSO_ANCHOR.TOP):
     tb = slide.shapes.add_textbox(x, y, w, h)
     tf = tb.text_frame
@@ -274,42 +291,51 @@ def _build_slide(prs, spec):
     bg.solid()
     bg.fore_color.rgb = BASE
 
-    y = MARGIN
+    emphasis = spec.get("emphasis")
+    # Content width in inches, used to estimate how many lines a string wraps to.
+    content_w_in = 13.333 - 2 * 0.5
+
     # Title
-    title_tf = _add_textbox(slide, MARGIN, y, CONTENT_W, Inches(1.1))
+    title_tf = _add_textbox(slide, MARGIN, MARGIN, CONTENT_W, Inches(1.2))
     run = title_tf.paragraphs[0].add_run()
     run.text = spec["title"]
     _set_run(run, size=TITLE_PT, bold=True, color=TEXT)
-    _apply_emphasis(title_tf, spec.get("emphasis"))
-    y = Inches(1.5)
+    _apply_emphasis(title_tf, emphasis)
+    y_in = 1.5  # cursor in inches, just below the title
 
-    # Subtitle
+    # Subtitle (emphasis applies here too; advance the cursor by its wrapped height)
     if spec.get("subtitle"):
-        sub_tf = _add_textbox(slide, MARGIN, y, CONTENT_W, Inches(0.7))
+        sub = str(spec["subtitle"])
+        sub_lines = _estimate_lines(sub, HEAD_PT, content_w_in)
+        sub_h = 0.55 * sub_lines + 0.15
+        sub_tf = _add_textbox(slide, MARGIN, Inches(y_in), CONTENT_W, Inches(sub_h))
         run = sub_tf.paragraphs[0].add_run()
-        run.text = spec["subtitle"]
+        run.text = sub
         _set_run(run, size=HEAD_PT, bold=False, color=TEXT)
-        y = Emu(y) + Inches(0.8)
+        _apply_emphasis(sub_tf, emphasis)
+        y_in += sub_h + 0.25
 
-    # Bullets
+    # Bullets (start below whatever the title+subtitle consumed; overridable)
     if spec.get("bullets"):
-        body_tf = _add_textbox(slide, MARGIN, y, CONTENT_W, Inches(4.0))
+        by = spec.get("bullets_y_in", y_in)
+        body_tf = _add_textbox(slide, MARGIN, Inches(by), CONTENT_W, Inches(7.5 - by - 0.6))
         for i, line in enumerate(spec["bullets"]):
             para = body_tf.paragraphs[0] if i == 0 else body_tf.add_paragraph()
-            para.space_after = Pt(12)
+            para.space_after = Pt(14)
             run = para.add_run()
             run.text = "・" + str(line)
             _set_run(run, size=BODY_PT, color=TEXT)
-        _apply_emphasis(body_tf, spec.get("emphasis"))
+        _apply_emphasis(body_tf, emphasis)
+        y_in = by + 0.55 * len(spec["bullets"]) + 0.3
 
     # Body paragraph
     if spec.get("body"):
-        by = Inches(spec.get("_body_y_in", 4.8))
-        body_tf = _add_textbox(slide, MARGIN, by, CONTENT_W, Inches(2.0))
+        by = spec.get("body_y_in", y_in)
+        body_tf = _add_textbox(slide, MARGIN, Inches(by), CONTENT_W, Inches(7.5 - by - 0.6))
         run = body_tf.paragraphs[0].add_run()
         run.text = spec["body"]
         _set_run(run, size=BODY_PT, color=TEXT)
-        _apply_emphasis(body_tf, spec.get("emphasis"))
+        _apply_emphasis(body_tf, emphasis)
 
     # Table
     if spec.get("table"):
