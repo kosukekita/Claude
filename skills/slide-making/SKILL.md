@@ -1,448 +1,112 @@
 ---
 name: slide-making
 description: >
-  1スライド=1HTMLファイル（slide-01.html…）で1920×1080の発表スライドを作成するスキル。
-  Codex の Image Gen で参照画像を生成し、Claude Code が HTML を書いて目視で完全一致するまで
-  フィードバックループで修正する。CSS/JS全インライン、最大3行テキスト、T-01〜T-12テンプレート。
-  Use when user requests HTMLスライド作成, スライドHTML, PowerPoint貼付用スライド,
-  1920x1080 slide, スライドメイキング, slide-making, スライドデザイン, 発表スライド HTML, PNG出力.
-  複数スライドも可（各スライドを個別HTMLにする場合のみ）。
-  Do NOT trigger for: .pptx直接生成（python-pptx等）, 複数スライドを1HTMLにまとめるデッキ（use infographic）,
-  academic poster（use make-poster）.
+  ドラフト（Markdown等のテキスト）を 1920×1080 の発表スライドに変換するスキル。
+  出力は2系統: HTMLパス（1スライド=1HTML→PNG/PDF 派生）と PPTXパス（python-pptx でネイティブ直接生成、HTML不経由）。
+  どちらが欲しいか未指定なら、着手前に必ず確認する。
+  アイコン・図版は Codex の GPT Image（image_gen）でパーツのみ生成し、テキストは常に HTML/python-pptx 側で正確に組む（画像に焼き込まない）。
+  Use when user turns a draft/markdown into presentation slides, or requests
+  スライド作成, HTMLスライド, PPTX/PowerPointスライド, .pptx, 発表スライド, slide deck, 1920x1080 slide, PNG/PDF スライド.
+  Do NOT trigger for: 複数の図を1HTMLにまとめるデッキ（use infographic）, academic poster（use make-poster）.
 ---
 
 # slide-making
 
-## Overview
+ドラフトテキストを発表スライドにする。1920×1080 固定。**GPT Image はパーツ（アイコン・図版）だけ**を作り、
+テキストは HTML か python-pptx 側で正確に組む。
 
-**役割分担：**
+## STEP 0 — 出力形式を必ず確認（最重要）
 
-| フェーズ | 担当 | 内容 |
-|----------|------|------|
-| Phase 1 | Claude Code | 要件確認・テンプレート提案 |
-| Phase 2 | Codex | Image Gen で参照画像を生成するだけ |
-| Phase 3 | Claude Code | HTML 生成 → Playwright スクリーンショット → 目視確認 → CSS 修正ループ |
-| Phase 4 | Claude Code | PPTX 変換・PNG 貼付（オプション） |
+**ユーザーが「HTML」か「PPTX」かを明示していなければ、作業を一切始める前に AskUserQuestion で確認する。**
+PNG・PDF は HTML パスの派生物。両方欲しいと言われた場合のみ両パスを実行する。
 
-**Codex の使用箇所は3か所のみ：**
-1. Phase 2 — Image Gen で参照画像を生成
-2. Phase 3 Codex フォールバック — 3回連続で改善なしの場合
-3. HTML 完成後の `codex review` CLI — コード品質チェック
+| 入力 | 選択 | 主成果物 | 派生 |
+|------|------|----------|------|
+| ドラフトテキスト | **HTMLパス** | `slide-NN.html` | PNG（`render_slide.py`）/ PDF（`--pdf`） |
+| ドラフトテキスト | **PPTXパス** | `deck.pptx`（python-pptx ネイティブ） | （必要なら PNG 目視用） |
 
-**成果物ディレクトリ構造（例）：**
+> **PPTX は HTML を経由しない。** HTML→画像→pptx 貼り付けや外部変換 API は使わない。
+> `scripts/build_pptx.py` で直接 `.pptx` を生成する。
 
-```
-slides/my-deck/
-├── reference-01.png   # Codex Image Gen で生成した参照画像
-├── slide-01.html      # Claude Code が作成した最終 HTML
-├── screenshot-01.png  # Playwright スクリーンショット（確認用）
-├── slide-01.pptx      # html2pptx.app 変換後（方法B時）
-└── pptx-slide-1.png   # PPTX→PNG 変換済み（方法B検証時）
-```
+## 共通の絶対ルール
 
----
+1. **1920×1080 固定**（= 13.333in × 7.5in）。余白 48px（0.5in）。
+2. **テキストは最大3行/スライド・1スライド1メッセージ。**
+3. **表は横罫線のみ**（縦罫線禁止）。
+4. **GPT Image はパーツのみ。** スライド全体を画像化しない／テキスト・数字を画像に焼き込まない
+   （日本語が崩れ・誤り・編集不能になる）。文字は必ず HTML/python-pptx の実テキストで組む。
+5. HTMLパス: 1スライド=1HTML、CSS/JS 全インライン（Google Fonts/Chart.js CDN は例外）。
+   PPTXパス: python-pptx で shape/textbox を直接配置。
 
-## CRITICAL Rules
+## デザインシステム
 
-**以下は絶対ルール。1つでも違反したら出力前に修正する。**
+| 要素 | 値 | px→inch/pt（PPTX用） |
+|------|-----|----------------------|
+| 背景 `--base-color` | `#F9F9F9`（約70%） | スライド全面 |
+| テキスト `--text-color` | `#1A1A1A`（約25%） | 本文・表罫線 |
+| メイン `--main-color` | `#0071BC`（<4%） | 重要強調 |
+| アクセント `--accent-color` | `#FF5050`（<1%） | 警告・ネガティブ |
+| タイトル / 見出し / 本文 | 50 / 35 / 25pt | 同左 |
+| 余白 | 48px | 0.5in |
 
-1. **1スライド = 1HTMLファイル** — 複数スライドを1つのHTMLにまとめることは禁止
-2. **テキスト最大3行** — 箇条書き・本文を合わせて1スライドあたり3行を超えない
-3. **縦罫線禁止** — 表は `border-bottom` のみ使用
-4. **1920×1080 固定** — `html, body { width: 1920px; height: 1080px; overflow: hidden; }` を変更しない
-5. **CSS/JS 全インライン** — 外部ファイルへの分割禁止（Google Fonts CDN・Chart.js CDN は例外）
+フォント: `'Noto Sans JP', 'Meiryo', sans-serif`。**Iron Law: メイン+アクセントの合計 5% 以下。**
+強調は優先順に `.emp-u`（下線）→ `.emp-inv`（反転）→ `.emp-main` → `.emp-accent`。詳細 `references/design-rules.md`。
 
----
+## パーツ生成（GPT Image / theSVG・両パス共通）
 
-## Design System
+アイコン・図版は作業ディレクトリの `parts/` に用意してから埋め込む。**テキストは含めない。**
 
-| 要素 | 値 | CSS 変数 |
-|------|-----|---------|
-| 背景色 | `#F9F9F9` | `--base-color` |
-| テキスト色 | `#1A1A1A` | `--text-color` |
-| メインカラー | `#0071BC` | `--main-color` |
-| アクセントカラー | `#FF5050` | `--accent-color` |
-| タイトル | 50pt | `--font-size-title` |
-| 見出し | 35pt | `--font-size-heading` |
-| 本文 | 25pt | `--font-size-body` |
-| 余白（全辺） | 48px（= 0.5インチ） | `--margin-edge` |
+- **GPT Image（既定）**: Codex 組み込み `image_gen` ツール（`OPENAI_API_KEY` 不要）。
+  透過アイコンはクロマキー背景で生成 → `remove_chroma_key.py` で除去。手順は `references/codex-imagegen-workflow.md`。
+- **theSVG（ベクター）**: ブランド/汎用アイコンは `uv run scripts/fetch_icon.py --slug <name>`。詳細 `references/thesvg-usage.md`。
 
-**フォント**: `'Noto Sans JP', 'Meiryo', sans-serif`（Google Fonts CDN 使用）
+HTMLパスでは `<img src="parts/icon.png">`、PPTXパスでは spec の `images[].path` に相対パスで渡す。
 
-詳細は `references/design-rules.md` を参照。
+## パス A — HTML
 
----
+1. `assets/slide-base.html` を起点に 1スライド=1HTML を執筆（デザインシステムはインライン済み）。テンプレは `references/slide-templates.md`（T-01〜T-12）。
+2. `parts/` のアイコン・図版を `<img>`/CSS で埋め込む。
+3. PNG 化: `uv run scripts/render_slide.py --input slide-01.html --output slide-01.png`
+   （複数は `--input "slides/*.html" --output-dir ./png`）。
+4. PDF 化: `uv run scripts/render_slide.py --input slide-01.html --pdf slide-01.pdf`
+   （複数入力は 1つの結合PDFになる）。
+5. **視覚チェック**: スクショと意図（参照画像があれば併置）を Read で見比べ、改行位置・アイコン・余白・全体縦位置を確認。
+   「ほぼ一致」で完了宣言しない。アイコンサイズが暴れたら `.card-icon svg { width:80px!important }` のように個別指定
+   （グローバルな `svg{width}` 上書きは禁止）。
+6. PowerPoint へ貼るなら: PNG を挿入 → 幅 33.87cm（13.33in）→ 位置 (0,0)。
 
-## Emphasis Hierarchy
+## パス B — PPTX（ネイティブ・HTML不経由）
 
-強調を加える場合は以下の優先順に試みる。メインカラー・アクセントカラーは **最終手段**。
+1. ドラフトを **JSON spec** に構造化（title/subtitle/bullets/body/images/table/emphasis）。スキーマと完全例は `references/pptx-guide.md`。
+2. パーツ（アイコン・図）を `parts/*.png` に生成（上記）。
+3. 生成: `uv run --with python-pptx scripts/build_pptx.py --spec deck.json --out deck.pptx`
+4. **検証**: PowerPoint で開くか、PNG 化して目視（`env -u LD_LIBRARY_PATH soffice --headless --convert-to png --outdir . deck.pptx`）。
+   特に**テーブルが横罫線のみ**・背景色・強調色・パーツ位置を確認。
 
-| 優先度 | クラス | 用途 |
-|--------|--------|------|
-| ①（最優先） | `.emp-u` | 下線 — キーワード・術語初出（1〜2語） |
-| ② | `.emp-inv` | 文字/背景反転 — 最重要数値・指標（1語） |
-| ③ | `.emp-main` | メインカラー — グラフ主系列等（1スライド1〜2語） |
-| ④（最後手段） | `.emp-accent` | アクセントカラー — 警告・ネガティブ（1スライド1語） |
+## よくある失敗
 
-**Iron Law: メインカラー + アクセントカラーの合計使用率を 5% 以下に保つ。**
-
----
-
-## Template Gallery（T-01〜T-12）
-
-| ID | 名称 | 用途 |
-|----|------|------|
-| T-01 | グラフ強調 | 棒グラフ最大値を強調 |
-| T-02 | 範囲強調 | 特定グループをまとめて強調 |
-| T-03 | ステップ表現 | 手順・プロセス（4ステップ） |
-| T-04 | 研究結果テーブル | OR/HR/RR等の統計数値一覧 |
-| T-05 | 要素分解 | 階層ブラケット構造 |
-| T-06 | 強みテーブル | 4項目の強み箇条書き |
-| T-07 | 対比比較 | 2選択肢×4観点 |
-| T-08 | 因果図 | 原因→結果パネル |
-| T-09 | 仕様比較表（行強調） | 特定行（観点）を訴求 |
-| T-10 | 仕様比較表（列強調） | 特定列（製品）を推薦 |
-| T-11 | ロードマップ | 時系列フェーズ計画 |
-| T-12 | 文章｜図解 | 左テキスト+右図解 2列 |
-
-完成例: `assets/template.html` をブラウザで開いて確認。
-HTMLスニペット: `references/slide-templates.md` を参照。
-
----
-
-## Workflow
-
-### Phase 1 — 要件確認 & テンプレート提案（Claude Code）
-
-1. スライド枚数・各スライドのタイトルとキーメッセージを確認
-2. 出力ディレクトリを決定（例: `~/slides/my-deck/`）
-3. T-01〜T-12 から最適テンプレートを選んでユーザーに提案・承認を得る
-4. 承認後に Phase 2 へ
-
-**ユーザー確認ポイント：** テンプレート選定後・最終PNG/PPTX完成後の2回。
-
----
-
-### Phase 2 — Codex で Image Gen（参照画像生成のみ）
-
-**Codex の役割はここだけ。HTML は書かせない。参照画像はレイアウト・雰囲気用であり、最終テキストは HTML 側で正確に再現する。**
-
-```bash
-codex exec \
-  --dangerously-bypass-approvals-and-sandbox \
-  --cd "{出力ディレクトリ}" \
-  "/goal 参照デザイン画像を image_gen で生成してください。
-
-## タスク
-image_gen ツールを使って以下のプロンプトで画像を生成し、
-reference-{スライド番号}.png として {出力ディレクトリ} に保存してください。
-
-プロンプト:
-'Professional Japanese business consulting presentation slide,
-McKinsey BCG style, white background #F9F9F9, blue accent #0071BC,
-{テンプレート種別: 例 4-step process flow / bar chart / comparison table} layout,
-minimal clean design, 16:9 widescreen 1920x1080,
-bold Noto Sans JP typography, high quality, no watermark,
-{コンテンツの補足: 例 Step 1: 現状分析, Step 2: PoC設計...}'
-
-## 完了条件
-- reference-{番号}.png が {出力ディレクトリ} に存在すること
-- ファイルサイズを報告すること
-- HTML は作成しないこと"
-```
-
-> ⚠️ `--dangerously-bypass-approvals-and-sandbox` はサンドボックスを完全に無効化する。
-> ユーザー由来のコンテンツをプロンプトに含める場合は **信頼できるコンテンツのみ**渡すこと。
-
----
-
-### Phase 3 — HTML生成 + 視覚的フィードバックループ（Claude Code が全て担当）
-
-**このフェーズは Claude Code が自律的に実行する。Codex は3連続失敗時のフォールバックのみ。**
-
-#### Step 3-1: HTML 初版作成
-
-`assets/slide-base.html` を基に、参照画像のデザイン言語（色・レイアウト・余白・カード構造）を
-忠実に再現した HTML を `{出力ディレクトリ}/slide-{番号}.html` として作成する。
-
-#### Step 3-2: Playwright でスクリーンショット取得
-
-```python
-# uv run --with playwright python - で実行
-import asyncio
-from playwright.async_api import async_playwright
-
-async def screenshot(html_path: str, out_path: str):
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(args=['--no-sandbox'])
-        page = await browser.new_page(viewport={'width': 1920, 'height': 1080})
-        await page.goto(f'file:///{html_path}')
-        await page.wait_for_timeout(2500)  # Google Fonts 読み込み待ち
-        await page.screenshot(path=out_path, full_page=False)
-        await browser.close()
-
-asyncio.run(screenshot('{html_path}', '{out_path}'))
-```
-
-Windows では `file:///C:/...` 形式でパスを渡すこと。
-
-#### Step 3-3: 視覚的フィードバックループ（全項目 PASS になるまで繰り返す）
-
-**判定は目視のみ。**
-
-スクリーンショットと参照画像を Read ツールで並べて表示し、以下を1項目ずつ確認する：
-
-各ループの終わりに以下の PASS/FAIL 表を必ず記録する。
-**1項目でも FAIL があれば次フェーズに進んではならない。**
-
-| 項目 | 判定 | 差異の具体的記述 |
-|------|------|-----------------|
-| アイコン①種類・形・太さ | PASS/FAIL | |
-| アイコン②種類・形・太さ | PASS/FAIL | |
-| アイコン③種類・形・太さ | PASS/FAIL | |
-| アイコン④種類・形・太さ | PASS/FAIL | |
-| テキスト・改行位置 | PASS/FAIL | |
-| 番号バッジ | PASS/FAIL | |
-| カード幅・高さ・余白 | PASS/FAIL | |
-| 矢印形状 | PASS/FAIL | |
-| 全体縦位置 | PASS/FAIL | |
-
-**禁止事項：**
-- 「ほぼ一致」「十分近い」「雰囲気は合っている」という理由での完了宣言
-- チェックリストを記録せずに完了と判断する
-
-**修正サイクル：**
-1. PASS/FAIL 表を記録する（全項目）
-2. FAIL 項目を1つ選んで修正する
-3. Playwright で再スクリーンショット
-4. 再度目視確認 → 改善していなければ **必ず revert** して別のアプローチを試みる
-5. 全項目 PASS になるまで繰り返す
-
-**目視で一致とみなしてよい差異（許容）：**
-- フォント周辺の微細なアンチエイリアス差（Image Gen ラスター vs ブラウザレンダリング）
-- Google Fonts のカーニング差による1〜2px程度のテキスト位置ズレ
-
-**注意 — CSS の SVG サイズ上書き罠：**
-```css
-/* グローバルに svg { width:100%; } を設定するとアイコンサイズが制御不能になる */
-.card-icon svg { width: 80px !important; height: 80px !important; }
-```
-
-**Codexフォールバック（3修正連続で改善なし時）：**
-```
-/goal 参照画像（reference-01.png）とスクリーンショット（screenshot-01.png）を見比べて、
-HTMLを参照画像に完全一致させてください。
-現在の差異: {具体的な差異のリスト}
-修正後はPlaywrightでスクリーンショットを撮り、目視で確認してください。
-```
-
-#### Step 3-4: アイコンが3回修正しても改善しない場合 — リファレンスPNGクロップ方式
-
-SVGで複雑なアイコンを再現しようとすると形状・太さが必ず乖離する。これは原理的な限界。
-
-**解決策：リファレンスPNGからアイコン領域を直接クロップして base64 埋め込みする。**
-
-詳細手順・コードは `references/png-crop-icon.md` を参照。
-
-要点：
-- クロップ座標は PIL で `ref.size` 確認後、目視で推定
-- 白余白は `trim_whitespace()` で除去してからbase64化
-- HTML は Python f-string で全体再構築（正規表現置換は禁止）
-- クロップ画像を確認用に保存してから埋め込む
-
-#### Step 3-5: HTML完成後の Codex レビュー
-
-視覚的フィードバックループで収束したら、生成した HTML のコード品質を `codex review` CLI でチェックする。
-
-```bash
-# 出力ディレクトリで実行
-cd /path/to/output-dir
-codex --dangerously-bypass-approvals-and-sandbox review "slide-01.html をレビューしてください：
-- インラインSVGアイコンがPPTX変換時に消えるリスクがないか
-- CSS変数（--main-color等）の使い方に問題がないか
-- 1920×1080固定・overflow:hidden が守られているか
-- グローバルな svg { width/height } でアイコンサイズが壊れるリスクがないか
-- PPTX変換を想定した場合の改善点
-日本語で回答してください。"
-```
-
-CRITICAL/WARNING が出た場合は修正してから次フェーズへ進む。
-
----
-
-### Phase 4 — PPTX 変換（オプション）
-
-#### 方法 A: PNG 貼付（デザイン完全保持）
-
-PNG を PowerPoint に貼付する場合：
-1. 「挿入」→「画像」→「このデバイスから」で PNG を選択
-2. 「書式」→「サイズ」で幅 `33.87cm`（13.33インチ）に設定
-3. 位置を左上 `(0, 0)` に合わせる
-
-#### 方法 B: html2pptx.app で編集可能 .pptx に変換
-
-`HTML2PPTX_API_KEY` は `~/.claude/settings.local.json` の `env` ブロックに設定済み。
-Bash ツールからは直接参照できないため、以下で取得すること：
-
-```bash
-API_KEY=$(python -c "import json,os; d=json.load(open(os.path.expanduser('~/.claude/settings.local.json'))); print(d['env']['HTML2PPTX_API_KEY'])")
-uv run --with httpx skills/slide-making/scripts/export_to_pptx.py \
-  --input slide-01.html --output slide-01.pptx --api-key "$API_KEY"
-```
-
-> ⚠️ export_to_pptx.py の `client.stream()` が 400 エラーになる場合は、
-> ジョブが返す `downloadUrl` を `curl -o output.pptx` で直接ダウンロードすること。
-
-詳細は `references/html2pptx-guide.md` を参照。
-
-#### PPTX変換後の必須検証
-
-PPTX → PNG 化して目視で確認する（PowerShell COM）：
-
-```powershell
-$pptxPath = "$env:USERPROFILE\path\to\slide-01.pptx"
-$outPng   = "$env:USERPROFILE\path\to\pptx-slide-1.png"
-$pptApp   = New-Object -ComObject PowerPoint.Application
-$pptApp.Visible = 1
-$pres = $pptApp.Presentations.Open($pptxPath, 0, 0, 0)
-$pres.Slides[1].Export($outPng, "PNG", 1920, 1080)
-$pres.Close(); $pptApp.Quit()
-```
-
-**目視チェック項目（PNG を HTML と並べて確認）：**
-- [ ] 全アイコンが表示されている（インラインSVGは消えることがある）
-- [ ] テキストの改行位置が崩れていない
-- [ ] カード・矢印・区切り線など全要素が揃っている
-- [ ] フォントが正しく表示されている
-
-**問題があった場合 — `codex review` CLI で原因特定と修正：**
-
-```bash
-cd /path/to/output-dir
-codex --dangerously-bypass-approvals-and-sandbox review "slide-01.html で以下のPPTX変換後の問題が発生しました：{問題の詳細}
-HTMLのどの部分が原因か特定し、PPTX変換に対応した修正案を提示してください。
-特にインラインSVG・フォント埋め込み・外部リソース参照の観点で見てください。
-インラインSVGが消える場合は base64 data URI の img タグへの変換方法も示してください。
-日本語で回答してください。"
-```
-
-レビュー指摘を反映してHTMLを修正し、再度PPTX変換→目視確認を繰り返す。
-
----
-
-## HTML の基本構造（ベーステンプレート）
-
-`assets/slide-base.html` を出発点として使う。詳細は該当ファイルを参照。
-
-```html
-<!doctype html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --base-color: #F9F9F9; --text-color: #1A1A1A;
-      --main-color: #0071BC; --accent-color: #FF5050;
-      --font-size-title: 50pt; --font-size-heading: 35pt; --font-size-body: 25pt;
-      --margin-edge: 48px;
-    }
-    html, body {
-      width: 1920px; height: 1080px; overflow: hidden; margin: 0;
-      background: var(--base-color); color: var(--text-color);
-      font-family: 'Noto Sans JP', 'Meiryo', sans-serif;
-    }
-    .emp-u   { text-decoration: underline; text-underline-offset: 0.15em; }
-    .emp-inv { background: var(--text-color); color: var(--base-color); padding: 0 0.2em; }
-    .emp-main   { color: var(--main-color); font-weight: 700; }
-    .emp-accent { color: var(--accent-color); font-weight: 700; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: none; border-bottom: 1px solid var(--text-color); padding: 0.4em 0.6em; }
-    thead th { border-bottom-width: 2px; font-weight: 700; }
-  </style>
-</head>
-<body>
-  <section class="slide" style="
-    box-sizing:border-box; width:1920px; height:1080px; padding:48px;
-    display:flex; flex-direction:column; position:relative;
-  ">
-    <!-- コンテンツをここに -->
-    <div style="position:absolute;bottom:48px;right:48px;font-size:18pt;opacity:0.4;">1</div>
-  </section>
-</body>
-</html>
-```
-
----
-
-## Verification Checklist
-
-### 技術（CRITICAL Rules）
-- [ ] `html, body` が `1920px × 1080px; overflow: hidden` 固定
-- [ ] CSS/JS が全てインライン（Google Fonts CDN は除く）
-- [ ] 表に縦罫線がない（`border-bottom` のみ）
-- [ ] 1スライド = 1HTMLファイル
-
-### デザイン
-- [ ] 背景 `#F9F9F9`・テキスト `#1A1A1A`・余白 48px 以上
-- [ ] フォントサイズ: タイトル 50pt / 見出し 35pt / 本文 25pt
-- [ ] メインカラー + アクセントカラーの合計使用率が 5% 以下
-
-### 内容
-- [ ] テキストが1スライドあたり最大3行
-- [ ] 1スライド1メッセージ・データは図表で視覚化
-
-### 視覚的フィードバックループ
-- [ ] PASS/FAIL 表を記録し全項目 PASS を確認した
-- [ ] `codex review` CLI で CRITICAL/WARNING がないことを確認した
-
-### PPTX変換後（方法Bのみ）
-- [ ] PPTX → PNG 化して目視確認した
-- [ ] 全アイコン表示・テキスト・フォントが崩れていない
-- [ ] 問題があれば `codex review` CLI で原因特定・修正した
-
-**Iron Law: 1 slide = 1 HTML file. Never combine.**
-
----
-
-## Common Mistakes
-
-| ミス | 修正 |
+| 失敗 | 対策 |
 |------|------|
-| 視覚的フィードバックループを省略する | 目視で全項目 PASS になるまで必ずループを継続する |
-| 修正後に改善していないのに次の修正に進む | 改善していなければ即 Revert して別のアプローチを試みる |
-| 3回連続で改善なしでもループを続ける | Codex フォールバックに切り替える |
-| Codex に HTML を書かせる | HTML は Claude Code が書く。Codex は Image Gen・フォールバック・レビューのみ |
-| `svg { width:100% }` でグローバル設定 | 特定コンテナには `!important` で個別上書きする |
-| インラインSVGのままPPTX変換する | base64 data URI の `img` タグに変換する |
-| SVGでアイコンを手書きし続ける | 3回失敗したらリファレンスPNGクロップ方式に切り替える（Step 3-4参照） |
-| base64 img を正規表現で置換する | Python f-string で HTML 全体を再構築する |
-| クロップ画像の白余白をトリミングしない | `trim_whitespace()` で除去してからbase64化する |
-| `settings.local.json` の env をシェルから直接参照 | `python -c "import json; ..."` で明示的に取得する |
+| HTML か PPTX か聞かずに勝手に決める | STEP 0 で必ず確認 |
+| PPTX を HTML 経由で作る（変換API・スクショ貼付） | `build_pptx.py` でネイティブ生成 |
+| スライド全体を画像生成／テキストを画像に焼く | GPT Image はパーツのみ。文字は実テキスト |
+| 古い `gpt-5.5` 参照・`OPENAI_API_KEY` 前提 | 組み込み `image_gen`（key不要）。`references/codex-imagegen-workflow.md` |
+| 表に縦罫線が出る | HTML: `border-bottom` のみ。PPTX: `build_pptx.py` が自動で横罫線のみ |
+| グローバル `svg{width}` でアイコン暴走 | 個別に `width/height` 指定 |
+| 「ほぼ一致」で完了 | 視覚チェックを記録し全項目一致まで継続 |
 
----
+## 前提ツール
 
-## Prerequisites（依存関係）
+- Playwright（PNG/PDF）: 初回 `uv run playwright install chromium`
+- python-pptx（PPTX）: `uv run --with python-pptx` で自動導入
+- Codex CLI 0.132.0（GPT Image、組み込み `image_gen`）
+- LibreOffice（任意・PPTX目視用）: `env -u LD_LIBRARY_PATH soffice ...`
 
-| ツール | 用途 | インストール |
-|--------|------|-------------|
-| Playwright | スクリーンショット取得 | `uv run playwright install chromium` |
-| Pillow + numpy | PNG クロップ・比較 | `uv add pillow numpy` |
-| PowerPoint（COM） | PPTX → PNG 変換（方法B検証） | Windows 標準 |
-| `HTML2PPTX_API_KEY` | html2pptx.app API | `~/.claude/settings.local.json` の `env` に設定済み |
+## ファイル
 
----
-
-## References
-
-- `references/design-rules.md` — 色/フォント/余白/強調の詳細リファレンス
-- `references/slide-templates.md` — T-01〜T-12 HTMLスニペット集
-- `references/thesvg-usage.md` — アイコン取得・recolor・ライセンス
-- `references/png-crop-icon.md` — リファレンスPNGクロップ方式の詳細手順・コード
-- `references/html2pptx-guide.md` — HTML→PPTX変換ガイド（インラインSVG非対応の注意事項含む）
-- `references/powerpoint-handoff.md` — HTML→PNG→PowerPoint 貼付の完全手順
-- `scripts/fetch_icon.py` — theSVG CDN取得＋キャッシュ
-- `scripts/render_slide.py` — Playwright経由でPNG化
-- `scripts/export_to_pptx.py` — html2pptx.app REST API経由で編集可能 .pptx 出力
-- `assets/slide-base.html` — 1920×1080単一スライドHTML雛形
-- `assets/template.html` — デザインパターンギャラリー（T-01〜T-12）
+- `scripts/render_slide.py` — HTML→PNG / `--pdf` で PDF（Playwright, `uv run`, cross-OS）
+- `scripts/build_pptx.py` — JSON spec → ネイティブ `.pptx`（python-pptx）
+- `scripts/fetch_icon.py` — theSVG アイコン取得
+- `assets/slide-base.html` — HTML 起点テンプレ / `assets/template.html` — T-01〜T-12 完成例ギャラリー
+- `references/design-rules.md` — デザインシステム / `slide-templates.md` — HTMLスニペット / `thesvg-usage.md` — アイコン
+- `references/codex-imagegen-workflow.md` — GPT Image パーツ生成 / `pptx-guide.md` — PPTX spec とガイド

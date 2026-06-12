@@ -98,23 +98,85 @@ def _add_textbox(slide, x, y, w, h, *, anchor=MSO_ANCHOR.TOP):
     return tf
 
 
+def _emphasis_lookup(text, emphasis):
+    """Return the first emphasis spec whose token equals `text`, else None."""
+    for emp in emphasis:
+        if emp.get("text", "") == text:
+            return emp
+    return None
+
+
+def _split_on_tokens(text, tokens):
+    """Split `text` into segments, keeping emphasis tokens as their own pieces.
+
+    Longest tokens first so overlapping tokens resolve to the longer match.
+    Returns a list of substrings; a substring equal to a token is an emphasis
+    segment, everything else is plain. Adjacent plain text stays merged.
+    """
+    if not tokens:
+        return [text]
+    pieces = [text]
+    for tok in sorted(tokens, key=len, reverse=True):
+        if not tok:
+            continue
+        nxt = []
+        for piece in pieces:
+            if piece in tokens:  # already an emphasis segment, don't re-split
+                nxt.append(piece)
+                continue
+            start = 0
+            while True:
+                idx = piece.find(tok, start)
+                if idx == -1:
+                    nxt.append(piece[start:])
+                    break
+                if idx > start:
+                    nxt.append(piece[start:idx])
+                nxt.append(tok)
+                start = idx + len(tok)
+        pieces = [p for p in nxt if p != ""]
+    return pieces
+
+
 def _apply_emphasis(tf, emphasis):
-    """Recolor/underline runs whose text contains an emphasis token."""
+    """Recolor ONLY the emphasized tokens (not the whole run), like an HTML span.
+
+    python-pptx has no intra-run formatting, so each paragraph is rebuilt:
+    its full text is split on the emphasis tokens, and each segment becomes its
+    own run — plain runs keep the base style, token runs get the emphasis color.
+    """
     if not emphasis:
         return
+    tokens = [e.get("text", "") for e in emphasis if e.get("text")]
     for para in tf.paragraphs:
-        for run in para.runs:
-            for emp in emphasis:
-                token = emp.get("text", "")
-                if token and token in run.text:
-                    kind = emp.get("kind", "main")
-                    if kind in EMPHASIS:
-                        run.font.color.rgb = EMPHASIS[kind]
-                        run.font.bold = True
-                    elif kind == "underline":
-                        run.font.underline = True
-                    elif kind == "invert":
-                        run.font.bold = True  # inversion needs a shape; bold as proxy
+        full = "".join(r.text for r in para.runs)
+        if not full or not any(tok in full for tok in tokens):
+            continue
+        # capture the paragraph's base style from its first run
+        base = para.runs[0]
+        base_size = base.font.size
+        base_bold = base.font.bold
+        base_color = base.font.color.rgb if base.font.color and base.font.color.type is not None else TEXT
+        # clear existing runs
+        for r in list(para.runs):
+            r._r.getparent().remove(r._r)
+        for seg in _split_on_tokens(full, tokens):
+            run = para.add_run()
+            run.text = seg
+            emp = _emphasis_lookup(seg, emphasis)
+            if emp is None:
+                _set_run(run, size=base_size or BODY_PT, bold=bool(base_bold), color=base_color)
+            else:
+                kind = emp.get("kind", "main")
+                if kind in EMPHASIS:
+                    _set_run(run, size=base_size or BODY_PT, bold=True, color=EMPHASIS[kind])
+                elif kind == "underline":
+                    _set_run(run, size=base_size or BODY_PT, bold=bool(base_bold),
+                             color=base_color, underline=True)
+                elif kind == "invert":  # no run-level inversion; bold proxy
+                    _set_run(run, size=base_size or BODY_PT, bold=True, color=base_color)
+                else:
+                    _set_run(run, size=base_size or BODY_PT, bold=bool(base_bold), color=base_color)
 
 
 def _bottom_border_only(cell, width_pt=1.0, color="1A1A1A"):
