@@ -17,6 +17,21 @@ SessionStart 時に `additionalContext` として以下が渡される場合が�
 
 **保存基準**: ユーザーの好み・繰り返されるパターン・重要な設計決定・バグの原因と解決策・プロジェクト固有の情報。一般的な技術情報は保存しない。
 
+## 記憶の保存先（cwd で決定論的に振り分ける）
+
+記憶には2種類あり、**現在の作業ディレクトリ（cwd）で保存先が自動的に決まる**。判断で迷わず、下の規則に機械的に従う。
+
+1. **グローバル記憶（プロジェクト横断の知見）** — 環境・ツール・ワークフロー・複数プロジェクトに効く学び。
+   - cwd が `~/.claude` 配下のとき → ハーネスの auto-memory（`~/.claude/projects/<このリポジトリのスラグ [cC]--Users-* または -*--claude>/memory/`）に保存。`~/.claude` git で全PC同期される。
+   - 他プロジェクトで作業中でも「横断的にグローバルに残したい」と明示判断した知見だけは、ここへ書く。
+
+2. **プロジェクト固有の記憶** — 特定の研究/開発プロジェクトに閉じた決定・設計・バグ等。
+   - cwd が pCloud 配下（Linux: `/home/<user>/pCloudDrive/...`、Windows: `P:\...` 等）のプロジェクトのとき → ハーネスの auto-memory には書かず、**そのプロジェクトルート直下の `./.claude-memory/` に保存する**（`MEMORY.md` 索引＋1事実=1ファイル、形式は `cross-agent-memory` スキルと同一、保存先ディレクトリだけ `./.claude-memory/` に読み替える）。
+   - 理由: ハーネスの auto-memory は cwd の絶対パスから決まるスラグに紐づき、OS（Win/Linux）でスラグが変わるため**同じプロジェクトでも片方の記憶を他方が読めない**。pCloud は実ファイルを全PCに同期するので、プロジェクトフォルダ内に置けばどのPCからでも同じ記憶を読み書きでき、かつ公開リポジトリ（`~/.claude` GitHub）にも載らない。
+   - `./.claude-memory/` の自動ロードは SessionStart フック `memory-inject-project.sh` が機構的に行う（cwd 直下を読んで `additionalContext` に注入）。新規プロジェクトで `.claude-memory/` を初めて作るときは `~/.claude/bin/setup-project-memory.sh` を使う（そのプロジェクトが git リポなら `.gitignore` に `/.claude-memory/` を自動追記し、自前リポへの混入も防ぐ）。git リポでなくても手で `.claude-memory/` を作ってよい。
+
+> 上記により、`## Cross-Agent Memory` 2 の「auto-memory に保存」はグローバル記憶（cwd が `~/.claude`）のときの規則であり、pCloud プロジェクトで作業中は `./.claude-memory/` が保存先になる。
+
 - **Language**: Always respond in Japanese (常に日本語で回答してください).
 
 ## スキル推薦（タスク開始時）

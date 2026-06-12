@@ -113,6 +113,11 @@
           },
           {
             "type": "command",
+            "command": "command -v bash >/dev/null 2>&1 && bash \"$HOME/.claude/hooks/memory-inject-project.sh\" || true",
+            "timeout": 15
+          },
+          {
+            "type": "command",
             "command": "command -v powershell >/dev/null 2>&1 && powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/memory-sync-codex.ps1\" || true",
             "timeout": 10
           }
