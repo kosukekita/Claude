@@ -54,3 +54,12 @@ projects/*
 projects/[cC]--Users-*--claude/*
 !projects/[cC]--Users-*--claude/memory/
 !projects/[cC]--Users-*--claude/memory/**
+# Linux/macOS global store: cwd ~/.claude -> slug "-home-<user>--claude" (Linux)
+# or "-Users-<user>--claude" (macOS). The trailing "--claude" is the discriminator:
+# only the global ~/.claude store ends in it; pCloud PROJECT slugs (e.g.
+# -home-kita-pCloudDrive-Code-Research-RA) do not, so they stay ignored and never
+# leak research memory to the public repo. Leading -* keeps it portable per user.
+!projects/-*--claude/
+projects/-*--claude/*
+!projects/-*--claude/memory/
+!projects/-*--claude/memory/**

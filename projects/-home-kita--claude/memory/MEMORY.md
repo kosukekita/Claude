@@ -1,0 +1,2 @@
+- [MCP cross-PC & .claude.json race](mcp-cross-pc-and-claude-json-race.md) — .mcp.json shared Win+Linux; approval clobbered by concurrent claude processes
+- [alphaXiv MCP needs type:http](alphaxiv-mcp-streamable-http.md) — alphaXiv must be Streamable HTTP not sse; sse hangs 30s; auth-vs-transport tell

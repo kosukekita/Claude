@@ -103,7 +103,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "command -v powershell >/dev/null 2>&1 && powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/auto-pull.ps1\" || true",
+            "command": "if command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/auto-pull.ps1\"; else bash \"$HOME/.claude/hooks/auto-pull.sh\"; fi",
             "timeout": 30
           },
           {
@@ -130,7 +130,7 @@
           },
           {
             "type": "command",
-            "command": "command -v powershell >/dev/null 2>&1 && powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/auto-push.ps1\" || true",
+            "command": "if command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/auto-push.ps1\"; else bash \"$HOME/.claude/hooks/auto-push.sh\"; fi",
             "timeout": 30
           }
         ]
