@@ -36,7 +36,15 @@ Spec schema (JSON):
       },
       "emphasis": [                           // optional, recolors matching runs
         {"text": "1.4倍", "kind": "accent"}   // kind: main|accent|underline|invert
-      ]
+      ],
+      "cards": {                              // optional: N equal columns, each a
+        "y_in": 2.2, "h_in": 3.6,             // white rounded card (icon/label/note
+        "items": [                            // stacked). Auto-spaced edge-to-edge.
+          {"icon": "parts/loop.png", "label": "自律実行", "note": "調査 → 編集 → テスト"}
+          // icon & note optional; label recommended. Use this (not bullets+images)
+          // for grouped 3-column "card" layouts so each icon pairs with its label.
+        ]
+      }
     }
   ]
 }
@@ -56,6 +64,7 @@ from pptx import Presentation
 from pptx.util import Inches, Pt, Emu
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
+from pptx.enum.shapes import MSO_SHAPE
 from pptx.oxml.ns import qn
 
 # --- Design system (mirrors references/design-rules.md) ----------------------
@@ -223,6 +232,81 @@ def _bottom_border_only(cell, width_pt=1.0, color="1A1A1A"):
     tcPr.append(lnB)
 
 
+def _add_cards(slide, spec, spec_dir):
+    """Render N equal-width cards in a row, each a white rounded rectangle with a
+    top MAIN accent bar and an icon/label/note stack — the python-pptx equivalent
+    of the HTML .cards/.card flex layout, so each icon pairs with its own label.
+
+    Auto-spacing: cards fill MARGIN..(W-MARGIN) with a fixed gap, x computed from
+    count (mirrors flexbox; python-pptx only has absolute coords).
+    """
+    items = spec.get("items", [])
+    n = len(items)
+    if n == 0:
+        return
+    y = Inches(spec.get("y_in", 2.2))
+    h = Inches(spec.get("h_in", 3.6))
+    gap = Inches(0.5)
+    total_w = SLIDE_W - 2 * MARGIN
+    card_w = Emu(int((total_w - gap * (n - 1)) / n))
+
+    for i, item in enumerate(items):
+        x = Emu(MARGIN + i * (card_w + gap))
+        # Card body: white rounded rectangle with a soft shadow.
+        card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, x, y, card_w, h)
+        card.fill.solid()
+        card.fill.fore_color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+        card.line.color.rgb = RGBColor(0xEC, 0xEC, 0xEC)
+        card.line.width = Pt(0.75)
+        card.shadow.inherit = False
+        if card.text_frame:  # the auto-shape has a text frame; keep it empty
+            card.text_frame.text = ""
+        # Top accent bar (MAIN), like HTML's border-top:6px solid --main.
+        bar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, x, y, card_w, Pt(6))
+        bar.fill.solid()
+        bar.fill.fore_color.rgb = MAIN
+        bar.line.fill.background()
+        bar.shadow.inherit = False
+
+        pad = Inches(0.3)
+        cur_y = Emu(y) + Inches(0.35)
+
+        # Icon (centered)
+        icon_rel = item.get("icon")
+        if icon_rel:
+            ip = (spec_dir / icon_rel).resolve()
+            if ip.is_file():
+                iw = Inches(1.1)
+                ix = Emu(x) + Emu(int((card_w - iw) / 2))
+                slide.shapes.add_picture(str(ip), ix, cur_y, width=iw)
+                cur_y = cur_y + iw + Inches(0.2)
+
+        # Label (centered, bold, heading size)
+        if item.get("label"):
+            lt = slide.shapes.add_textbox(Emu(x) + pad, cur_y,
+                                          Emu(card_w) - 2 * pad, Inches(0.8))
+            lt.text_frame.word_wrap = True
+            p = lt.text_frame.paragraphs[0]
+            p.alignment = PP_ALIGN.CENTER
+            r = p.add_run()
+            r.text = str(item["label"])
+            _set_run(r, size=HEAD_PT, bold=True, color=TEXT)
+            cur_y = cur_y + Inches(0.85)
+
+        # Note (centered, body size, secondary color). Small side padding so a
+        # short phrase like "調査 → 編集 → テスト" fits on one line within the card.
+        if item.get("note"):
+            npad = Inches(0.1)
+            nt = slide.shapes.add_textbox(Emu(x) + npad, cur_y,
+                                          Emu(card_w) - 2 * npad, Inches(1.0))
+            nt.text_frame.word_wrap = True
+            p = nt.text_frame.paragraphs[0]
+            p.alignment = PP_ALIGN.CENTER
+            r = p.add_run()
+            r.text = str(item["note"])
+            _set_run(r, size=BODY_PT, color=RGBColor(0x33, 0x33, 0x33))
+
+
 def _clear_table_style(table):
     """Set the table to the 'No Style, No Grid' built-in so default grid lines
     don't fight our per-cell bottom borders."""
@@ -285,7 +369,7 @@ def _add_table(slide, spec):
         r += 1
 
 
-def _build_slide(prs, spec):
+def _build_slide(prs, spec, spec_dir):
     slide = prs.slides.add_slide(prs.slide_layouts[6])  # 6 = blank
     bg = slide.background.fill
     bg.solid()
@@ -341,6 +425,10 @@ def _build_slide(prs, spec):
     if spec.get("table"):
         _add_table(slide, spec["table"])
 
+    # Cards (grouped icon+label+note columns — the .cards/.card equivalent)
+    if spec.get("cards"):
+        _add_cards(slide, spec["cards"], spec_dir)
+
     # Images (GPT-Image / theSVG parts) — placed directly, never via HTML
     for img in spec.get("images", []):
         path = img["_resolved"]
@@ -380,14 +468,19 @@ def main():
         sys.exit(1)
 
     # Resolve + validate image paths up front (fail fast with a clear message).
+    def _check(rel, si):
+        p = (spec_dir / rel).resolve()
+        if not p.is_file():
+            print(f"[build_pptx] ERROR: slide {si} image not found: {p}", file=sys.stderr)
+            sys.exit(1)
+        return p
+
     for si, spec in enumerate(slides, 1):
         for img in spec.get("images", []):
-            p = (spec_dir / img["path"]).resolve()
-            if not p.is_file():
-                print(f"[build_pptx] ERROR: slide {si} image not found: {p}",
-                      file=sys.stderr)
-                sys.exit(1)
-            img["_resolved"] = p
+            img["_resolved"] = _check(img["path"], si)
+        for item in spec.get("cards", {}).get("items", []):
+            if item.get("icon"):
+                _check(item["icon"], si)  # card icons resolved again in _add_cards
 
     prs = Presentation()
     prs.slide_width = SLIDE_W
@@ -396,7 +489,7 @@ def main():
         if "title" not in spec:
             print("[build_pptx] ERROR: every slide needs a 'title'.", file=sys.stderr)
             sys.exit(1)
-        _build_slide(prs, spec)
+        _build_slide(prs, spec, spec_dir)
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
