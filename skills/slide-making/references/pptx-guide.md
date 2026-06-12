@@ -52,9 +52,34 @@ cat deck.json | uv run --with python-pptx scripts/build_pptx.py --spec - --out d
 | `page_number` | | 右下のページ番号（18pt） |
 | `images[]` | | `path`/`x_in`/`y_in`/`w_in`（`h_in` 省略でアスペクト比保持） |
 | `table` | | `headers`/`rows`/位置・サイズ(inch)/`emphasize_row`(1始まり) |
+| `cards` | | 横並びカード（アイコン+ラベル+補足を1セット）。下記「カード型レイアウト」参照 |
 | `emphasis[]` | | `text` を含む run を色付け。`kind`: `main`／`accent`／`underline`／`invert` |
 
 座標系は**インチ**（スライドは 13.333in × 7.5in = 1920×1080px、余白 0.5in = 48px）。
+
+---
+
+## カード型レイアウト（構造化スライドはこれを使う）
+
+「アイコン＋ラベル＋補足」を概念ごとに1セットにして横並びにする**カード**は、`bullets`+`images`
+を個別配置するより**必ず `cards` を使う**。`bullets`+`images` だと「アイコンの行」と「文字の行」が
+分離して対応が読めない（＝失敗パターン）。`cards` はアイコン→ラベル→補足を1列に縦スタックし、
+N枚を余白込みで自動等間隔配置する（HTML の `.cards`/`.card` flex 相当）。白背景・角丸・上辺の青ライン・
+影は自動。補足は1行に収まるよう自動縮小される。
+
+```json
+"cards": {
+  "y_in": 2.6, "h_in": 3.6,          // カード帯の上端と高さ（任意・既定 2.2/3.6）
+  "items": [
+    {"icon": "parts/loop.png",    "label": "自律実行",   "note": "調査 → 編集 → テスト"},
+    {"icon": "parts/hub.png",     "label": "ツール連携", "note": "Bash・Git・MCP"},
+    {"icon": "parts/screens.png", "label": "マルチ環境", "note": "CLI・IDE・Web"}
+  ]
+}
+```
+
+`icon`/`note` は任意、`label` 推奨。アイコンは `parts/*.png`（GPT Image/theSVG）の相対パス。
+2〜4枚が適切（多すぎると窮屈）。`title`/`subtitle` と併用でき、カードは指定 `y_in` に置かれる。
 
 ---
 

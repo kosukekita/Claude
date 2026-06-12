@@ -244,9 +244,15 @@ def _add_cards(slide, spec, spec_dir):
     n = len(items)
     if n == 0:
         return
+    # Cards are a single horizontal row; beyond ~6 they get unreadably narrow.
+    if n > 6:
+        print(f"[build_pptx] ERROR: cards.items has {n}; max 6 fit in one row. "
+              "Split across slides or use bullets.", file=sys.stderr)
+        sys.exit(1)
     y = Inches(spec.get("y_in", 2.2))
     h = Inches(spec.get("h_in", 3.6))
-    gap = Inches(0.5)
+    # Shrink the gap for many cards so card_w never collapses to <= 0.
+    gap = Inches(0.5 if n <= 3 else 0.3)
     total_w = SLIDE_W - 2 * MARGIN
     card_w = Emu(int((total_w - gap * (n - 1)) / n))
 
@@ -281,30 +287,39 @@ def _add_cards(slide, spec, spec_dir):
                 slide.shapes.add_picture(str(ip), ix, cur_y, width=iw)
                 cur_y = cur_y + iw + Inches(0.2)
 
-        # Label (centered, bold, heading size)
+        # Label (centered, bold, heading size; shrink to stay on one line)
         if item.get("label"):
-            lt = slide.shapes.add_textbox(Emu(x) + pad, cur_y,
-                                          Emu(card_w) - 2 * pad, Inches(0.8))
-            lt.text_frame.word_wrap = True
+            label = str(item["label"])
+            card_w_in = card_w / 914400
+            label_pt = HEAD_PT.pt
+            while label_pt > 18 and _estimate_lines(label, Pt(label_pt), card_w_in - 0.2) > 1:
+                label_pt -= 1
+            lt = slide.shapes.add_textbox(Emu(x), cur_y, Emu(card_w), Inches(0.8))
+            lt.text_frame.word_wrap = False
             p = lt.text_frame.paragraphs[0]
             p.alignment = PP_ALIGN.CENTER
             r = p.add_run()
-            r.text = str(item["label"])
-            _set_run(r, size=HEAD_PT, bold=True, color=TEXT)
+            r.text = label
+            _set_run(r, size=Pt(label_pt), bold=True, color=TEXT)
             cur_y = cur_y + Inches(0.85)
 
-        # Note (centered, body size, secondary color). Small side padding so a
-        # short phrase like "調査 → 編集 → テスト" fits on one line within the card.
+        # Note (centered, secondary color). Keep it to ONE line (no wrap, like the
+        # HTML .note white-space:nowrap): estimate width and shrink the font if a
+        # long phrase wouldn't fit the card, rather than wrapping awkwardly.
         if item.get("note"):
-            npad = Inches(0.1)
-            nt = slide.shapes.add_textbox(Emu(x) + npad, cur_y,
-                                          Emu(card_w) - 2 * npad, Inches(1.0))
-            nt.text_frame.word_wrap = True
+            note = str(item["note"])
+            card_w_in = card_w / 914400
+            note_pt = BODY_PT.pt
+            # shrink until the estimated line width fits within the card (with pad)
+            while note_pt > 14 and _estimate_lines(note, Pt(note_pt), card_w_in - 0.2) > 1:
+                note_pt -= 1
+            nt = slide.shapes.add_textbox(Emu(x), cur_y, Emu(card_w), Inches(0.9))
+            nt.text_frame.word_wrap = False
             p = nt.text_frame.paragraphs[0]
             p.alignment = PP_ALIGN.CENTER
             r = p.add_run()
-            r.text = str(item["note"])
-            _set_run(r, size=BODY_PT, color=RGBColor(0x33, 0x33, 0x33))
+            r.text = note
+            _set_run(r, size=Pt(note_pt), color=RGBColor(0x33, 0x33, 0x33))
 
 
 def _clear_table_style(table):

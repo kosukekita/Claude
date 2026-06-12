@@ -93,7 +93,8 @@ HTMLパスでは `<img src="parts/icon.png">`、PPTXパスでは spec の `image
 
 ## パス B — PPTX（ネイティブ・HTML不経由）
 
-1. ドラフトを **JSON spec** に構造化（title/subtitle/bullets/body/images/table/emphasis）。スキーマと完全例は `references/pptx-guide.md`。
+1. ドラフトを **JSON spec** に構造化（title/subtitle/bullets/body/images/table/**cards**/emphasis）。スキーマと完全例は `references/pptx-guide.md`。
+   - **アイコン＋ラベルを概念ごとにまとめる構造化レイアウト（3カラム等）は必ず `cards` を使う**（`bullets`+`images` の個別配置はアイコンと文字が分離して対応が読めない）。`cards` がカード枠・縦スタック・等間隔を自動化する。
 2. パーツ（アイコン・図）を `parts/*.png` に生成（上記）。
 3. 生成: `uv run --with python-pptx scripts/build_pptx.py --spec deck.json --out deck.pptx`
 4. **検証**: PowerPoint で開くか、PNG 化して目視（`env -u LD_LIBRARY_PATH soffice --headless --convert-to png --outdir . deck.pptx`）。
