@@ -104,6 +104,8 @@ HTMLパスでは `<img src="parts/icon.png">`、PPTXパスでは spec の `image
 | 失敗 | 対策 |
 |------|------|
 | HTML か PPTX か聞かずに勝手に決める | STEP 0 で必ず確認 |
+| 箇条書きが長い文（説明文）になる | 要点のみ抽出し単語・数字・アイコンで視覚化（「コンテンツ設計」） |
+| アイコンを意味なく隅に置く | 語の意味と対応させて配置。ページ番号/セリフ/「ご清聴」は既定で描かない |
 | PPTX を HTML 経由で作る（変換API・スクショ貼付） | `build_pptx.py` でネイティブ生成 |
 | スライド全体を画像生成／テキストを画像に焼く | GPT Image はパーツのみ。文字は実テキスト |
 | 古い `gpt-5.5` 参照・`OPENAI_API_KEY` 前提 | 組み込み `image_gen`（key不要）。`references/codex-imagegen-workflow.md` |

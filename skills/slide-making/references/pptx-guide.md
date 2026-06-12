@@ -28,7 +28,6 @@ cat deck.json | uv run --with python-pptx scripts/build_pptx.py --spec - --out d
       "title": "現状の課題",
       "subtitle": "2025 Q2 レビュー",
       "bullets": ["新規顧客の獲得コストが上昇", "解約率が前年比1.4倍に悪化"],
-      "page_number": 3,
       "images": [
         {"path": "parts/icon-cost.png", "x_in": 1.0, "y_in": 4.2, "w_in": 1.2}
       ],

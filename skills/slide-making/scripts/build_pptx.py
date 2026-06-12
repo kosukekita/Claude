@@ -23,7 +23,7 @@ Spec schema (JSON):
       "subtitle": "2025 Q2 レビュー",         // optional, under the title
       "bullets": ["コスト上昇", "解約率増"],   // optional, "・" prepended
       "body": "段落テキスト",                 // optional, plain paragraph
-      "page_number": 3,                       // optional, bottom-right
+      "page_number": 3,                       // optional, bottom-right; OFF by default (omit to hide)
       "images": [                             // optional GPT-Image/theSVG parts
         {"path": "parts/icon.png", "x_in": 1.0, "y_in": 3.2, "w_in": 1.2}
         // omit h_in to preserve aspect ratio
