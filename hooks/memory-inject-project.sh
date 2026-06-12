@@ -50,7 +50,10 @@ esac
 # --- Build the injected context ----------------------------------------------
 # Mirror memory-inject.ps1: emit the MEMORY.md index, then each linked body with
 # its YAML frontmatter stripped. Cap total size to stay friendly to context.
-char_limit=6000
+# Project memories can be large (deploy logs etc.), so allow more than the global
+# store and ALWAYS include at least the first body even if it alone exceeds the
+# cap (otherwise a single big first file would inject nothing).
+char_limit=12000
 emitted=0
 bodies=""
 
@@ -75,13 +78,15 @@ while IFS= read -r rel; do
     name="$(basename "$rel" .md)"
     snippet="### $name
 $body"
-    emitted=$((emitted + ${#snippet}))
-    [ "$emitted" -gt "$char_limit" ] && break
+    # Append first, THEN check the cap, so at least one body always lands even
+    # if it alone exceeds char_limit. Stop adding more once we're over budget.
     bodies="$bodies
 
 ---
 
 $snippet"
+    emitted=$((emitted + ${#snippet}))
+    [ "$emitted" -gt "$char_limit" ] && break
 done <<EOF
 $links
 EOF
