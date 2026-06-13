@@ -1,10 +1,29 @@
 ---
 name: project_skill_consolidation
-description: ~/.claude/skills のリファクタリング履歴。2026-05-31/06-08/06-11に実施（06-11後は32スキル）。ボイラープレート5本削除、superpowers参照除去、code-reviewer/codex-review/gemini-review削除、skill-creator統合、codex-consult新設。標準コマンド重複は削除可、同一ツール×同一成果物のみ統合可
+description: ~/.claude/skills のリファクタリング履歴。2026-05-31/06-08/06-11/06-13に実施。ボイラープレート5本削除、superpowers参照除去、code-reviewer/codex-review/gemini-review削除、skill-creator統合、codex-consult新設、Swiss-modernismをui-ux-designに統合。標準コマンド重複は削除可、同一ツール×同一成果物のみ統合可、外部リポのreferenceは原則移植＋固有ツール汎用化
 metadata: 
   node_type: memory
   type: project
   originSessionId: 213c11d7-5066-46e7-968c-ac34498cfd29
+---
+
+# ui-ux-design に Swiss-modernism を統合（2026-06-13 実施）
+
+GitHub `alexmcdonnell-airtable/hyperagent-public-skills`（Airtable/Hyperagent公開スキル集・JSON形式・全12スキル）の UI/UX 系を `ui-ux-design` に統合。`/writing-skills` の RED-GREEN-REFACTOR を遵守して実施。
+
+## 判断
+- 全12スキル精査の結果、UI/UX（Web画面設計）に**直結するのは2つだけ**: `vignelli-canon-design-system`（Vignelli規律＋トークン生成器）/ `muller-brockmann-grid-systems`（Müllerグリッド＋検証可能Web実装＋Puppeteerハーネス）。残りは別領域（video系4・OOH広告・data-viz・造園・Kanban）で対象外。
+- **統合形態**: 既存 references 6本は全て補完関係で**全保持・削除ゼロ**（ユーザー指示「補完できるものだけ残し置換」を精査した結果、置換される古い断片は無かった）。新規 `references/swiss-modernism.md` に2スキルを1本化＋ `scripts/`（vignelli_system.py / grid_tokens.py / verify_grid.js）を実ファイル同梱。SKILL.md は導線のみ最小追加（frontmatter desc / TASK ROUTING行 / Step2注記 / INDUSTRY DEFAULTS 3行 / REFERENCES）。
+- **デザインスキルの集約はしない**: slide-making / infographic / make-poster は成果物・ツール・トリガーが根本的に異なる（第1回の据え置き判断を踏襲）。「ui-ux領域内の新旧知見を1つに集約」が正解で「跨るデザインスキルを1つに」ではない。
+
+## 固有要素の汎用化（外部リポ統合の型）
+- スクリプト3点は**ネットワーク/認証不要の決定論ツール**でHyperagent非依存→そのまま採用。本文の `PublishWebpage`/`PublishFilePublicly`/`SearchImages`/`GPT Image 2`/`Veo` 参照のみ汎用表現に置換。Helvetica→Liberation Sansフォールバック・Calibri/Noto ドリフト罠は**普遍知見として保持**。
+- **実機修正**: 両 python が出力の em dash 等を Windows cp932 stdout でエンコードできず UnicodeEncodeError でクラッシュ → 冒頭に `sys.stdout/stderr.reconfigure(encoding="utf-8")`（try/except、Linux/Mac無害）を追加。`grep -F` で `--cols:` 等ハイフン始まり文字列は `grep -F -- "..."` と `--` が要る。
+
+## 教訓
+- **Readツール/PowerShellに渡すパスのバックスラッシュが `螒` に化ける現象**が頻発（`C:\Users螒` → `C:\Users螒`）。ハーネスは正しいパスに解決してくれるが、Readは**相対パス（cwd基準）なら確実**。/tmp等cwd外はプロジェクト配下にコピーしてからRead。削除は `rm -rf` がフックでブロックされるので `find DIR -type f -delete && rmdir DIR`。
+- RED検証（skill無しでサブエージェント）で「optical alignment/0px検証/2サイズ規律/color as identifier」が出ないことを確認→GREEN（reference込み）で全項目○に転換、を実測してから完了とした。
+
 ---
 
 # スキル統合 第3回（2026-06-11 実施）

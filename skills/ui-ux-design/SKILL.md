@@ -1,6 +1,6 @@
 ---
 name: ui-ux-design
-description: "Web/mobile UI の設計・実装・レビュー・改善で使用する。ランディングページ、ダッシュボード、デザインシステム、レスポンシブUI、ボタン・モーダル・フォーム等のコンポーネント実装に対応し、視覚階層・余白・色・タイポグラフィ・状態設計・アクセシビリティを補助する。React/Next.js/Tailwind/Vue/Svelte/HTML および Nothing 系UI参照に対応。67スタイル、96カラーパレット、59フォントペアリング、95+デザインシステム参照、60コンポーネントパターン収録。Use when user requests UI/UX work: design, build, create, implement, review, fix, improve web/mobile interfaces or UI components. Trigger phrases: ランディングページ, ダッシュボード, UI設計, フロントエンド, React, Tailwind, デザインシステム, カラーパレット, レスポンシブ, website, landing page, portfolio, SaaS, e-commerce, コンポーネント, accordion, modal, datepicker, drawer, button, tabs, dialog, form, tooltip, card, table, widget, Nothing style, Nothing design, monochrome industrial, モノクロ, きれい, デザイン感度, LP, UI作成. File types: .html, .tsx, .jsx, .vue, .svelte."
+description: "Web/mobile UI の設計・実装・レビュー・改善で使用する。ランディングページ、ダッシュボード、デザインシステム、レスポンシブUI、ボタン・モーダル・フォーム等のコンポーネント実装に対応し、視覚階層・余白・色・タイポグラフィ・状態設計・アクセシビリティを補助する。React/Next.js/Tailwind/Vue/Svelte/HTML および Nothing 系UI参照に対応。67スタイル、96カラーパレット、59フォントペアリング、95+デザインシステム参照、60コンポーネントパターン収録。Use when user requests UI/UX work: design, build, create, implement, review, fix, improve web/mobile interfaces or UI components. Trigger phrases: ランディングページ, ダッシュボード, UI設計, フロントエンド, React, Tailwind, デザインシステム, カラーパレット, レスポンシブ, website, landing page, portfolio, SaaS, e-commerce, コンポーネント, accordion, modal, datepicker, drawer, button, tabs, dialog, form, tooltip, card, table, widget, Nothing style, Nothing design, monochrome industrial, モノクロ, きれい, デザイン感度, LP, UI作成, Swiss design, International Typographic Style, グリッドシステム, grid system, editorial, magazine layout, 雑誌風, Vignelli, Müller-Brockmann, ミュラー・ブロックマン, wayfinding, サイン計画, グリッド検証, baseline grid. File types: .html, .tsx, .jsx, .vue, .svelte."
 ---
 
 # UI/UX Design Intelligence
@@ -34,6 +34,7 @@ description: "Web/mobile UI の設計・実装・レビュー・改善で使用�
 | **新規ページ / LP / Dashboard** | 「作って」「設計して」「作成して」 | 要件分析 → デザインシステム定義 → 実装 → 品質チェック |
 | **既存UI の修正 / レビュー** | 「直して」「改善して」「レビューして」「このUIを」 | 問題特定 → 最小修正 → 品質チェック |
 | **コンポーネント実装** | 特定コンポーネント名（modal, button, form 等） | references 参照 → アクセシビリティ確認 → 実装 |
+| **Swiss / editorial / グリッド駆動 / identity** | 「Swiss design」「International Typographic Style」「雑誌風」「グリッドシステム」「Vignelli」「Müller-Brockmann」「グリッドが乗ってるか検証して」「wayfinding/サイン」 | `references/swiss-modernism.md` の規律に従う → `scripts/` でトークン/scaffold 生成 → `verify_grid.js` で 0px 検証 |
 | **デザインシステム提案のみ** | 「デザインの方向性を」「色を決めて」 | DESIGN SYSTEM FORMAT で出力、コード生成不要 |
 
 ### 既存UI修正時の追加ルール
@@ -63,6 +64,8 @@ description: "Web/mobile UI の設計・実装・レビュー・改善で使用�
 5. **Key Effects** — アニメーション・インタラクション
 
 > **Nothing Style 選択時**（RULE PRECEDENCE 3 が適用）：`references/nothing-design.md` の完全なトークン・コンポーネント仕様に従う。通常の Colors/Typography 選択をスキップし、Nothing トークンシステムをそのまま適用する。
+>
+> **Swiss-modernism / International Typographic Style / editorial・magazine / Vignelli / Müller-Brockmann 選択時**（RULE PRECEDENCE 3 が適用）：`references/swiss-modernism.md` の規律に従う。原色1アクセント＋グロテスク書体＋flush-left＋厳格なグリッドを採用し、`scripts/vignelli_system.py`（トークン）/`scripts/grid_tokens.py`（グリッド scaffold）を使い、Web 実装は **subgrid bands・baseline ロック・display type の optical alignment** を実装したうえで `scripts/verify_grid.js` で 0px 遵守を検証する（「グリッドが乗っているか検証したい」要求の本命）。
 
 ### Step 3: 実装
 - デザイン方向に基づいてコードを生成
@@ -171,7 +174,9 @@ hover: scale-up、active: scale-down、disabled: opacity-50、loading: pulse/spi
 | Fintech | Glassmorphism, Minimalism, Dark Mode | Inter / IBM Plex | AI purple/pink gradients |
 | E-commerce | Flat Design, 3D Product Preview, Bento Grid | DM Sans / Poppins | 情報過多、CTA不明確 |
 | Beauty / Wellness | Soft UI, Organic Biophilic | Cormorant Garamond / Montserrat | ネオン色、ダークモード |
-| Portfolio / Creative | Motion-Driven, Brutalism | Space Grotesk / Syne | ジェネリックテンプレート感 |
+| Portfolio / Creative | Motion-Driven, Brutalism, **Swiss-modernism** | Space Grotesk / Syne / Helvetica | ジェネリックテンプレート感 |
+| Editorial / Publishing / News | **Swiss / International Typographic Style（Müller-Brockmann grid）** | Inter / Helvetica Now / Archivo ＋ mono | 装飾過多、justified本文、グリッド無視、warm-cream "Claude look" |
+| Identity / Branding / Wayfinding | **Vignelli Canon（color as identifier）** | Helvetica（＋Bodoni/Garamond/Futura/Times の6基本書体） | 2サイズ超、新奇書体、装飾的な色 |
 | Education | Claymorphism, Inclusive Design | Nunito / Quicksand | 複雑なナビゲーション、小フォント |
 | Gaming | Cyberpunk, 3D Hyperrealism, HUD | Rajdhani / Orbitron | 退屈なレイアウト |
 | Developer Tools / Hardware | **Nothing / Monochrome Industrial** | Doto / Space Grotesk / Space Mono | Gradients, shadows, skeleton loaders |
@@ -232,8 +237,15 @@ AVOID:       [anti-patterns for this project]
 - `references/components.md` — 60コンポーネントパターン（セマンティックHTML、ARIA、キーボードナビ、複雑度）
 - `references/design-systems.md` — 95+プロダクションデザインシステム（スタック別索引、Best-in-Class一覧）
 - `references/nothing-design.md` — Nothing Design System 完全仕様（哲学、トークン、コンポーネント、プラットフォーム対応）
+- `references/swiss-modernism.md` — Swiss / International Typographic Style 完全仕様（Vignelli Canon の規律＋Müller-Brockmann のモジュラーグリッド。subgrid bands・baseline ロック・optical alignment・0px グリッド検証まで）
 - `references/vibe-coding.md` — AI UI生成のベストプラクティス（スケッチ優先、スクショ活用、ムードボード等）
+
+### SCRIPTS（`references/swiss-modernism.md` から使用）
+
+- `scripts/vignelli_system.py` — Vignelli Canon トークン生成（CSS/SCSS/JSON、原色パレット・2サイズスケール・5グリッド・罫・鉄道サイン）。ネットワーク/認証不要
+- `scripts/grid_tokens.py` — Müller-Brockmann グリッド scaffold 生成（単一真実源の :root トークン、subgrid bands、グリッドオーバーレイ、optical-alignment JS、`--scaffold` で完結HTML）
+- `scripts/verify_grid.js` — Puppeteer グリッド検証（列遵守・オーバーレイ一致・baseline・optical ink を複数幅で 0px assert）。Env: `CHROME`, `PUP`
 
 ---
 
-> Source: [ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) v2.2 をベースに Hallmark 原則を統合。
+> Source: [ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) v2.2 をベースに Hallmark 原則を統合。Swiss-modernism（Vignelli Canon / Müller-Brockmann）は [hyperagent-public-skills](https://github.com/alexmcdonnell-airtable/hyperagent-public-skills) より統合（固有ツール参照は汎用化）。
