@@ -28,3 +28,10 @@
 | 24 | Yuji | Nozaki | Department of Hematology and Rheumatology, Kindai University School of Medicine | | 0000-0003-2810-1519 | YN has received speaker fees from Astellas Pharma, Asahi Kasei Pharma, Eisai, Eli Lilly, AstraZeneca, and Tanabe Pharma. |
 | 25 | Daisuke | Tomita | Department of Hematology and Rheumatology, Kindai University School of Medicine | | | |
 | 26 | Wataru | Yamamoto | Department of Health Information Management, Kurashiki Sweet Hospital | | | |
+| 27 | Yukari | Uemura | Center for Clinical Sciences, Japan Institute for Health Security |  |  |  |
+| 28 | Yasuhiro | Takeuchi | Department of Endocrinology and Metabolism, Toranomon Hospital | Okinaka Memorial Institute for Medical Research, Tokyo |  |  |
+| 29 | Sakae | Tanaka | Department of Orthopaedic Surgery, The University of Tokyo Hospital |  |  |  |
+| 30 | Shiro | Tanaka | Department of Clinical Biostatistics, Kyoto University Graduate School of Medicine |  |  |  |
+| 31 | Hiroshi | Hagino | Department of Rehabilitation, Sanin Rosai Hospital |  |  |  |
+| 32 | Satoshi | Mori | Seirei Hamamatsu General Hospital |  |  |  |
+| 33 | Satoshi | Soen | Soen Orthopaedics, Osteoporosis and Rheumatology Clinic |  |  |  |
