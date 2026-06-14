@@ -12,6 +12,22 @@ $claudeDir   = "$env:USERPROFILE\.claude"
 $projectsDir = "$claudeDir\projects"
 $sessionsDir = "$claudeDir\sessions"
 
+# Truncate a string to at most $max UTF-16 code units WITHOUT splitting a
+# surrogate pair. PowerShell strings are UTF-16; chars >= U+10000 (emoji, some
+# CJK like U+20BB7) are a high+low surrogate pair. A naive Substring(0,$max) can
+# stop between the two halves, leaving a lone high surrogate. That serializes to
+# invalid JSON and the API rejects the whole request:
+#   "invalid high surrogate in string". Drop a trailing lone high surrogate.
+function Limit-Text([string]$s, [int]$max) {
+    if ($null -eq $s -or $s.Length -le $max) { return $s }
+    $cut = $s.Substring(0, $max)
+    $last = [int][char]$cut[$cut.Length - 1]
+    if ($last -ge 0xD800 -and $last -le 0xDBFF) {
+        $cut = $cut.Substring(0, $cut.Length - 1)  # trailing high surrogate -> drop it
+    }
+    return $cut
+}
+
 # --- Localized strings (ASCII fallbacks if the JSON is missing) --------------
 $strMemoryHeader     = "## Memory (from previous sessions)"
 $strSessionLogHeader = "## Previous session log (please summarize and save)"
@@ -118,14 +134,14 @@ if ($prevSessionFile) {
                                ForEach-Object { ($_.text -replace '(?s)<[^>]+>.*?</[^>]+>', '').Trim() } |
                                Where-Object { $_ })
                     if ($texts) {
-                        $t = ($texts -join ' ').Substring(0, [Math]::Min(200, ($texts -join ' ').Length))
+                        $t = Limit-Text ($texts -join ' ') 200
                         $allTurns += "User: $t"
                     }
                 }
                 elseif ($obj.type -eq "assistant") {
                     $texts = @($obj.message.content | Where-Object { $_.type -eq "text" } | ForEach-Object { $_.text })
                     if ($texts) {
-                        $t = ($texts -join ' ').Substring(0, [Math]::Min(200, ($texts -join ' ').Length))
+                        $t = Limit-Text ($texts -join ' ') 200
                         $allTurns += "Assistant: $t"
                     }
                 }
