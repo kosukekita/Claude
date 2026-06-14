@@ -149,6 +149,7 @@ if (-not $combined) { exit 0 }
 
 $output = @{
     hookSpecificOutput = @{
+        hookEventName     = "SessionStart"
         additionalContext = $combined
     }
 } | ConvertTo-Json -Compress -Depth 5
