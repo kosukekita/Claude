@@ -4,6 +4,10 @@
 **スライド全体やテキストは生成しない**（日本語テキストは焼き込むと崩れる）。テキストは必ず
 HTML / python-pptx 側で正確に組む。
 
+> **位置づけ（重要）**: アイコンは**まず theSVG（`fetch_icon.py`）を試し、無いとき（HTTP 404 で非ゼロ終了）にだけ**ここの GPT Image を使う。
+> ブランド/技術ロゴ・汎用装飾アイコンは theSVG が高確率で揃う。GPT Image は**独自イラスト・抽象概念のピクトグラム**など theSVG に無いパーツ用のフォールバック。
+> 順序の全体像は `SKILL.md`「パーツ生成」、theSVG 側は `references/thesvg-usage.md`。
+
 ---
 
 ## 前提（現行・2026-06 時点）
@@ -78,9 +82,9 @@ OPENAI_API_KEY=... python "$CODEX_HOME_DIR/skills/.system/imagegen/scripts/image
 
 ---
 
-## ベクターアイコンで足りる場合（GPT Image を使わない選択肢）
+## 先に theSVG を試す（第一候補・GPT Image を使う前に）
 
-ブランドロゴや汎用ラインアイコンは、生成より `scripts/fetch_icon.py`（theSVG CDN）が速く確実:
+GPT 生成に入る前に、必ず `scripts/fetch_icon.py`（theSVG CDN）を試す。ブランドロゴや汎用ラインアイコンは生成より速く確実で、ここで揃えば GPT Image は不要:
 ```bash
 uv run scripts/fetch_icon.py --slug github --variant default          # ブランドは原色保持
 uv run scripts/fetch_icon.py --slug arrow-right --variant mono --recolor  # 装飾は currentColor 化

@@ -4,7 +4,7 @@ description: >
   ドラフト（Markdown等のテキスト）を 1920×1080 の発表スライドに変換するスキル。
   出力は2系統: HTMLパス（1スライド=1HTML→PNG/PDF 派生）と PPTXパス（python-pptx でネイティブ直接生成、HTML不経由）。
   どちらが欲しいか未指定なら、着手前に必ず確認する。
-  アイコン・図版は Codex の GPT Image（image_gen）でパーツのみ生成し、テキストは常に HTML/python-pptx 側で正確に組む（画像に焼き込まない）。
+  アイコン・図版はまず theSVG から取得し、無ければ Codex の GPT Image（image_gen）でパーツのみ生成する。テキストは常に HTML/python-pptx 側で正確に組む（画像に焼き込まない）。
   Use when user turns a draft/markdown into presentation slides, or requests
   スライド作成, HTMLスライド, PPTX/PowerPointスライド, .pptx, 発表スライド, slide deck, 1920x1080 slide, PNG/PDF スライド.
   Do NOT trigger for: 複数の図を1HTMLにまとめるデッキ（use infographic）, academic poster（use make-poster）.
@@ -87,15 +87,20 @@ AskUserQuestion で構成・構造・グラフ形式を合意してから** HTML
 フォント: `'Noto Sans JP', 'Meiryo', sans-serif`。**Iron Law: メイン+アクセントの合計 5% 以下。**
 強調は優先順に `.emp-u`（下線）→ `.emp-inv`（反転）→ `.emp-main` → `.emp-accent`。詳細 `references/design-rules.md`。
 
-## パーツ生成（GPT Image / theSVG・両パス共通）
+## パーツ生成（theSVG → GPT Image の自動チェーン・両パス共通）
 
-アイコン・図版は作業ディレクトリの `parts/` に用意してから埋め込む。**テキストは含めない。**
+アイコンが必要と判断したら、**確認を待たず次の順に自動で取りに行く**（パーツのみ・**テキストは含めない**）。
+作業ディレクトリの `parts/` に集めてから埋め込む。
 
-- **GPT Image（既定）**: Codex 組み込み `image_gen` ツール（`OPENAI_API_KEY` 不要）。
-  透過アイコンはクロマキー背景で生成 → `remove_chroma_key.py` で除去。手順は `references/codex-imagegen-workflow.md`。
-- **theSVG（ベクター）**: ブランド/汎用アイコンは `uv run scripts/fetch_icon.py --slug <name>`。詳細 `references/thesvg-usage.md`。
+1. **まず theSVG を試す（既定の第一候補）**: `uv run scripts/fetch_icon.py --slug <name> --variant <v>`。
+   ブランド/技術ロゴ・汎用装飾アイコン（矢印・チェック・DB 等）はほぼここで揃う。slug 推定は `references/thesvg-usage.md` の「よく使う slug」と manifest（`icons.json`）を当てる。
+2. **theSVG に無ければ GPT Image で作る（フォールバック）**: `fetch_icon.py` が **HTTP 404 → 非ゼロ終了**したら（＝そのアイコンが theSVG に無い）、
+   Codex 組み込み `image_gen` でその場で生成する（`OPENAI_API_KEY` 不要）。手順・透過処理は `references/codex-imagegen-workflow.md`。
 
-HTMLパスでは `<img src="parts/icon.png">`、PPTXパスでは spec の `images[].path` に相対パスで渡す。
+> **判定基準**: theSVG はブランドアイコン主体。会社/技術ロゴ→theSVG が高確率で在る。独自イラスト・抽象概念のピクトグラム→無いことが多く GPT Image 行き。
+> **安全弁**: GPT 生成は `--dangerously-bypass-approvals-and-sandbox` を伴う。プロンプトに含めるのは**信頼できる内容のみ**。ライセンス改変禁止（AWS Architecture=CC BY-ND 等）は theSVG 側の注意に従う。
+
+HTMLパスでは `<img src="parts/icon.png">`（theSVG は `.svg` も可）、PPTXパスでは spec の `images[].path` に相対パスで渡す（SVG は PNG 化してから）。
 
 ## パス A — HTML
 
@@ -134,6 +139,7 @@ HTMLパスでは `<img src="parts/icon.png">`、PPTXパスでは spec の `image
 | アイコンを意味なく隅に置く | 語の意味と対応させて配置。ページ番号/セリフ/「ご清聴」は既定で描かない |
 | PPTX を HTML 経由で作る（変換API・スクショ貼付） | `build_pptx.py` でネイティブ生成 |
 | スライド全体を画像生成／テキストを画像に焼く | GPT Image はパーツのみ。文字は実テキスト |
+| theSVG を試さずいきなり GPT 生成 | まず `fetch_icon.py`。404（非ゼロ終了）で初めて GPT Image にフォールバック |
 | 古い `gpt-5.5` 参照・`OPENAI_API_KEY` 前提 | 組み込み `image_gen`（key不要）。`references/codex-imagegen-workflow.md` |
 | 表に縦罫線が出る | HTML: `border-bottom` のみ。PPTX: `build_pptx.py` が自動で横罫線のみ |
 | グローバル `svg{width}` でアイコン暴走 | 個別に `width/height` 指定 |
