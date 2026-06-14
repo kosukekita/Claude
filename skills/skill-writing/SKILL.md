@@ -1,5 +1,5 @@
 ---
-name: writing-skills
+name: skill-writing
 description: Use when creating new skills, editing existing skills, or verifying skills work before deployment. Trigger phrases include スキルを作成, スキル構築, 新しいスキル, SKILL.md, スキルを設計, スキルを改善, create skill, build skill, design skill, improve skill.
 ---
 
