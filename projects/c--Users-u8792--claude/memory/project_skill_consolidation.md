@@ -41,7 +41,7 @@ GitHub `alexmcdonnell-airtable/hyperagent-public-skills`（Airtable/Hyperagent�
 - **実機修正**: 両 python が出力の em dash 等を Windows cp932 stdout でエンコードできず UnicodeEncodeError でクラッシュ → 冒頭に `sys.stdout/stderr.reconfigure(encoding="utf-8")`（try/except、Linux/Mac無害）を追加。`grep -F` で `--cols:` 等ハイフン始まり文字列は `grep -F -- "..."` と `--` が要る。
 
 ## 教訓
-- **Readツール/PowerShellに渡すパスのバックスラッシュが `螒` に化ける現象**が頻発（`C:\Users螒` → `C:\Users螒`）。ハーネスは正しいパスに解決してくれるが、Readは**相対パス（cwd基準）なら確実**。/tmp等cwd外はプロジェクト配下にコピーしてからRead。削除は `rm -rf` がフックでブロックされるので `find DIR -type f -delete && rmdir DIR`。
+- **Readツール/PowerShellに渡すパスのバックスラッシュが化け漢字(U+8792)に化ける現象**が頻発（ユーザー名 u8792 を含むバックスラッシュ絶対パスがUnicodeエスケープ解釈される。詳細は [[feedback-u8792-path-unicode-escape]]）。ハーネスは正しいパスに解決してくれるが、Readは**相対パス（cwd基準）なら確実**。/tmp等cwd外はプロジェクト配下にコピーしてからRead。削除は `rm -rf` がフックでブロックされるので `find DIR -type f -delete && rmdir DIR`。
 - RED検証（skill無しでサブエージェント）で「optical alignment/0px検証/2サイズ規律/color as identifier」が出ないことを確認→GREEN（reference込み）で全項目○に転換、を実測してから完了とした。
 
 ---
