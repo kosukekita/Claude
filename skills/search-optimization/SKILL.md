@@ -1,11 +1,33 @@
 ---
-name: seo
-description: "SEO/GEO統合スキル。テクニカルSEO、オンページ、コンテンツ、構造化データ、CWV、E-E-A-T、GEO（AI検索最適化）、競合比較、hreflang、画像最適化、プログラマティックSEO、GSC分析。Trigger: SEO, 検索順位, キーワード, 構造化データ, JSON-LD, Core Web Vitals, AI Overviews, GEO, Perplexity, comparison page, programmatic SEO, Search Console, GSC, CTR, インプレッション."
+name: search-optimization
+description: "SEO/LLMO/GEO/AIO 統合スキル（検索最適化の全体）。SEO=Google上位表示の土台、LLMO/GEO=対話型AI（ChatGPT/Claude/Gemini/Perplexity）に引用される積み増し、AIO=Google AI概要対策。テクニカルSEO、オンページ、コンテンツ、構造化データ、CWV、E-E-A-T、サイテーション（言及）、競合比較、hreflang、画像最適化、プログラマティックSEO、GSC分析。Trigger: SEO, LLMO, GEO, AIO, 検索順位, キーワード, 構造化データ, JSON-LD, Core Web Vitals, AI Overviews, AI検索, 生成エンジン最適化, ChatGPT, Perplexity, Gemini, サイテーション, 引用される, comparison page, programmatic SEO, Search Console, GSC, CTR, インプレッション, E-E-A-T, llms.txt."
 ---
 
-# SEO / GEO Optimization
+# Search Optimization — SEO / LLMO / GEO / AIO
 
-> 詳細な実装例は `references/` を参照: `schema-examples.md`, `html-patterns.md`, `gsc-setup.md`, `report-templates.md`, `keyword-research-api.md`
+> 詳細な実装例は `references/` を参照: `schema-examples.md`, `html-patterns.md`, `gsc-setup.md`, `report-templates.md`, `keyword-research-api.md`, `llmo-geo-aio.md`
+
+## 4つの用語の整理（最初にここを揃える）
+
+SEO・LLMO・GEO・AIO はゴール（顧客に選ばれる）は同じだが、選ばれる経路と打ち手が違う。混同すると AI 時代のサイト運用で遠回りになる。
+
+| 用語 | 何の最適化か | 役割 | 主な対象 |
+|------|------------|------|---------|
+| **SEO** | Google 検索で上位表示 | **土台**（必須・今も有効） | Google 検索結果 |
+| **LLMO** | 対話型 AI に社名/サービスを引用させる | SEO の上に**積み増す** | ChatGPT, Claude, Gemini, Perplexity, Felo |
+| **GEO** | 生成エンジン最適化。**LLMO とほぼ同義**（用語としては GEO が主流化） | LLMO と同じ | 生成 AI 全般 |
+| **AIO** | Google 検索上部の「AI による概要」に入る | **SEO と強く関連・LLMO とは別物** | Google AI Overviews / AI Mode |
+
+**核心の関係**: `SEO（土台）→ その上に LLMO/GEO を積む → 業種で強弱をつける`。
+
+- **SEO ができていないと LLMO も積み上がらない**。AI（ChatGPT/Perplexity 等）は結局ネット上の文章を読みに来るので、Google に見つけてもらえないサイトは AI にもほぼ見つからない。
+- **「SEO はもう古い、これからは LLMO だけ」は誤り**。SEO はすべての基礎。
+- ただし **「SEO で上位＝AI に引用される」とは限らない**（→ 下の「LLMO/GEO」セクションの海外データ参照）。それぞれの引用ロジックを意識した追加施策が要る。
+- 海外の最先端を一言でいうと「**言及されること＝サイテーション**」。アナログ/デジタル問わず社名・サービス・商品名が各所で言及される状態を作るのが今の最重要ポイント。
+
+> たとえ話: **SEO は食べログの評価を取りに行く作業**、**LLMO はミシュランガイドに掲載される作業**。ChatGPT/Perplexity は「独自基準で選別し、ニーズに合う2〜3店を推薦するミシュランの調査員」のように振る舞う。
+
+→ LLMO/GEO/AIO の詳細（海外データ・3施策・Google 公式見解・業種別優先順位・よくある勘違い）は `references/llmo-geo-aio.md`
 
 ## 監査ワークフロー
 
@@ -144,19 +166,36 @@ Discovery → 競合分析（Top 5） → アーキテクチャ設計 → コン
 
 ---
 
-## AI 検索最適化（GEO）
+## LLMO / GEO（AI に引用される最適化）
 
-### Key Facts (Feb 2026)
-- AI Overviews: 1.5B users/month, 50%+クエリカバー
-- Brand mentions correlate 3× more than backlinks with AI visibility
-- Only 11% of domains cited by both ChatGPT and Google AI Overviews
+> LLMO＝大規模言語モデル最適化、GEO＝生成エンジン最適化。両者はほぼ同義。SEO の上に積み増す施策。詳細・出典は `references/llmo-geo-aio.md`
 
-### GEO 5 Criteria
+### なぜ必要か（消費者行動の変化）
+- Gartner 予測: **2026年までに従来型検索エンジンのトラフィックが 25% 減少**（出典: Gartner プレスリリース 2024-02-19）。代わりに ChatGPT/Perplexity 等の AI 検索が急増。
+
+### 「SEO で上位＝AI に引用される」とは限らない（海外データ 3つ）
+1. **Google 内の AI 機能同士でも引用元の重複は 13.7%** — AI Overviews と AI Mode で引用ドメインの 8割超が異なる（Position Digital, 2026-04）。
+2. **AI ごとに最大引用源が違う** — ChatGPT=Wikipedia(7.8%)、Google AI Overviews=Reddit(2.2%)、Perplexity=Reddit(6.6%)。ChatGPT は「整理された百科事典型」、AIO/Perplexity は「人の口コミ」を重視。
+3. **Google AI Mode の引用元の 88% はオーガニック検索の上位圏外**（Position Digital, 2026-04）。Google 1位＝AI Mode 引用 ではない。
+
+→ つまり SEO で上位でも ChatGPT/Perplexity に引用されないことは普通にある。引用ロジックを意識した追加施策が要る。
+
+### LLMO で必要な3つ（SEO を土台に積む）
+1. **「質問と答え」をはっきり書く** — 「料金は？」「他社と何が違う？」「対応エリアは？」への回答を見出し＋本文で **1〜3行で完結**させる（AI が答えを抜き出せる形に）。
+2. **「誰が書いたか」を明確に（E-E-A-T）** — 代表者・顔写真・経歴・資格。スカスカだと AI は信用できない情報源と判断。Person schema で構造化。
+3. **サイト外で「言及される」場所を作る（サイテーション）** — Google ビジネスプロフィール口コミ、業界ポータル紹介、SNS 言及。第三者言及が引用の近道。自サイトで自賛するだけでは不可。
+
+### GEO 5 Criteria（採点フレーム）
 1. **Citability (25%)** — 134-167語の自己完結ブロック、最初の40-60語で直接回答
 2. **Structural Readability (20%)** — H1→H2→H3、質問ベース見出し、短段落、テーブル/リスト
 3. **Multi-Modal (15%)** — テキスト+画像/動画/インフォグラフィック（156%高選択率）
 4. **Authority & Brand (20%)** — 著者バイライン、公開日、引用元、Wikipedia/Reddit/YouTube存在
 5. **Technical Accessibility (20%)** — SSR必須（AIクローラーはJS非実行）、robots.txt、llms.txt
+
+### Key Facts (Feb 2026)
+- AI Overviews: 1.5B users/month, 50%+クエリカバー
+- Brand mentions correlate 3× more than backlinks with AI visibility
+- Only 11% of domains cited by both ChatGPT and Google AI Overviews
 
 ### AI Crawler
 Allow: GPTBot, OAI-SearchBot, ClaudeBot, PerplexityBot. Block CCBot/training crawlers if desired.
@@ -168,6 +207,22 @@ Allow: GPTBot, OAI-SearchBot, ClaudeBot, PerplexityBot. Block CCBot/training cra
 
 ### Quick Wins
 "What is [topic]?" 定義（60語内）、134-167語ブロック、質問H2/H3、統計+出典、Person schema、llms.txt作成
+
+### 業種別の優先順位（実務）
+- **地方スモールビジネス（整体・士業・飲食・美容など）**: まず **SEO + MEO**（Google ビジネスプロフィール＋質問形コンテンツ）。LLMO は後。
+- **全国商圏の SaaS・コンサル**: 「業界×悩み」の質問形コンテンツ＋E-E-A-T。LLMO の恩恵が最大の層（競合も強い）。
+- **医療・士業など信頼が命**: **E-E-A-T 最優先**（代表者・有資格者情報を厚く）。
+- ※全業種が LLMO をやるべきとは限らない。SEO/MEO で取れる売上が残る業種も多い。
+
+### AIO（Google AI Overview Optimization）
+- Google 検索上部の「AI による概要」に入る工夫。**SEO と強く関連、LLMO とは別物**。
+- **Google 公式見解（2026-05）**: 「AEO/GEO 向けの特別な最適化はない。生成AI検索向け最適化＝検索体験全体への最適化＝SEO」と宣言。
+- **ただし注意**: この宣言は **Google の AIO/AI Mode に限定**。ChatGPT/Perplexity/Claude は Google とは別ルートでサイトを読むため、それらに引用されるには別の打ち手（LLMO）が必要。Google 公式見解に振り回されて施策を欠落させない。
+
+### よくある勘違い 3つ
+1. **「AI で作ったサイトだから LLMO は効いている」** — 作り方と LLMO 対策は別物。中身が整っていなければ効かない。
+2. **「LLMO のためにキーワードを詰め込めばいい」** — 詰め込みは逆効果。AI は「人が読んで自然な文章」を評価する。
+3. **「LLMO をやれば SEO はいらない」** — SEO はすべての基礎。
 
 ---
 
