@@ -153,5 +153,14 @@ $output = @{
     }
 } | ConvertTo-Json -Compress -Depth 5
 
-Write-Output $output
+# Write UTF-8 bytes straight to the stdout stream. Do NOT use Write-Output here:
+# under -File with a redirected/piped stdout, PowerShell encodes pipeline output
+# using the system ANSI code page (cp932 on JP Windows), so the Japanese
+# additionalContext gets emitted as Shift_JIS and Claude Code (which reads stdout
+# as UTF-8) shows mojibake (e.g. user name -> garbled kanji). Byte-level write
+# bypasses console/ACP encoding entirely and is deterministic across machines.
+$bytes  = [System.Text.Encoding]::UTF8.GetBytes($output)
+$stdout = [System.Console]::OpenStandardOutput()
+$stdout.Write($bytes, 0, $bytes.Length)
+$stdout.Flush()
 exit 0
