@@ -101,16 +101,39 @@ $index_content
 $bodies"
 
 # --- Output as SessionStart additionalContext --------------------------------
-if command -v jq >/dev/null 2>&1; then
-    jq -nc --arg ctx "$context" \
-        '{hookSpecificOutput:{hookEventName:"SessionStart",additionalContext:$ctx}}'
-elif command -v python3 >/dev/null 2>&1; then
-    python3 -c 'import sys,json; ctx=sys.stdin.read();
-print(json.dumps({"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":ctx}}))' <<PYEOF
+# CRITICAL: sanitize before output. On Windows the bash/awk/grep/sed text pipeline
+# above can split multibyte UTF-8 under a non-UTF-8 locale, producing LONE
+# surrogates (and the mojibake kanji U+8792). If those reach additionalContext,
+# Claude Code's request body becomes invalid JSON and EVERY turn fails with
+# "400 ... invalid high surrogate". So we ALWAYS route the final context through
+# python3, which both JSON-encodes it AND strips lone surrogates / U+8792.
+# A valid surrogate PAIR (real emoji/astral char) is preserved.
+# jq is intentionally NOT used for output anymore: it cannot strip lone surrogates.
+if command -v python3 >/dev/null 2>&1; then
+    python3 -c '
+import sys, json
+ctx = sys.stdin.buffer.read().decode("utf-8", "surrogatepass")
+out = []
+i, n = 0, len(ctx)
+while i < n:
+    cp = ord(ctx[i])
+    if cp == 0x8792:               # mojibake kanji -> drop
+        i += 1; continue
+    if 0xD800 <= cp <= 0xDBFF:     # high surrogate
+        if i + 1 < n and 0xDC00 <= ord(ctx[i+1]) <= 0xDFFF:
+            out.append(ctx[i]); out.append(ctx[i+1]); i += 2; continue
+        i += 1; continue            # lone high -> drop
+    if 0xDC00 <= cp <= 0xDFFF:     # lone low -> drop
+        i += 1; continue
+    out.append(ctx[i]); i += 1
+clean = "".join(out)
+sys.stdout.write(json.dumps({"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":clean}}))
+' <<PYEOF
 $context
 PYEOF
 else
-    # Last resort: plain stdout is also injected as context for SessionStart.
+    # No python3: fall back to plain stdout. Cannot strip surrogates here, but a
+    # non-UTF-8 bash without python3 is unlikely; this keeps the hook functional.
     printf '%s\n' "$context"
 fi
 

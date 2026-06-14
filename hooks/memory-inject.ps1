@@ -28,6 +28,39 @@ function Limit-Text([string]$s, [int]$max) {
     return $cut
 }
 
+# Strip characters that serialize to invalid JSON / poison the request body.
+# Two kinds are removed (both seen in real corrupted transcripts on JP Windows):
+#   1. LONE surrogates - a high (U+D800..U+DBFF) not followed by a low, or a low
+#      (U+DC00..U+DFFF) not preceded by a high. These come from old CP932-mojibake
+#      and from naive truncation. A VALID high+low pair (real emoji/astral char)
+#      is kept intact.
+#   2. U+8792 - the mojibake kanji produced when the username "u8792" gets
+#      Unicode-escape-mangled. It is a valid BMP char but is a known poison marker
+#      here, and re-injecting it keeps the corruption loop alive.
+# Runs on the final additionalContext string right before output, so it protects
+# regardless of which upstream path produced the bad chars.
+function Remove-BadChars([string]$s) {
+    if ([string]::IsNullOrEmpty($s)) { return $s }
+    $sb  = New-Object System.Text.StringBuilder $s.Length
+    $len = $s.Length
+    for ($i = 0; $i -lt $len; $i++) {
+        $cp = [int][char]$s[$i]
+        if ($cp -eq 0x8792) { continue }                      # drop mojibake kanji
+        if ($cp -ge 0xD800 -and $cp -le 0xDBFF) {             # high surrogate
+            if ($i + 1 -lt $len) {
+                $next = [int][char]$s[$i + 1]
+                if ($next -ge 0xDC00 -and $next -le 0xDFFF) {  # valid pair: keep both
+                    [void]$sb.Append($s[$i]); [void]$sb.Append($s[$i + 1]); $i++; continue
+                }
+            }
+            continue                                          # lone high: drop
+        }
+        if ($cp -ge 0xDC00 -and $cp -le 0xDFFF) { continue }  # lone low: drop
+        [void]$sb.Append($s[$i])
+    }
+    return $sb.ToString()
+}
+
 # --- Localized strings (ASCII fallbacks if the JSON is missing) --------------
 $strMemoryHeader     = "## Memory (from previous sessions)"
 $strSessionLogHeader = "## Previous session log (please summarize and save)"
@@ -162,6 +195,12 @@ if ($prevSessionFile) {
 # --- Output -------------------------------------------------------------------
 $combined = ($memoryContext + $sessionLogContext).Trim()
 if (-not $combined) { exit 0 }
+
+# Final safety net: strip lone surrogates / mojibake before this string becomes
+# additionalContext. Without this, a corrupted transcript (lone U+DCxx etc.) is
+# re-injected every SessionStart and the API rejects the whole request with
+# "400 ... invalid high surrogate". This protects all projects unconditionally.
+$combined = Remove-BadChars $combined
 
 $output = @{
     hookSpecificOutput = @{
