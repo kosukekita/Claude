@@ -29,9 +29,15 @@ Task tool (general-purpose):
     ## Your Job
 
     Once you're clear on requirements:
-    1. Implement exactly what the task specifies
-    2. Write tests (following TDD if task says to)
-    3. Verify implementation works
+    1. **Use test-driven-development.** Write a failing test FIRST, watch it
+       fail for the expected reason, then write minimal code to pass. No
+       production code without a failing test first. This is REQUIRED for any
+       feature, bugfix, refactor, or behavior change — it is NOT conditional
+       on the task description mentioning TDD. The only exception is an
+       explicit human-approved TDD exception (throwaway prototype, generated
+       code, config); if you believe an exception applies, ASK before skipping.
+    2. Implement exactly what the task specifies (nothing more — YAGNI)
+    3. Verify implementation works (all tests pass, output pristine)
     4. Commit your work
     5. Self-review (see below)
     6. Report back
@@ -62,8 +68,9 @@ Task tool (general-purpose):
 
     **Testing:**
     - Do tests actually verify behavior (not just mock behavior)?
-    - Did I follow TDD if required?
-    - Are tests comprehensive?
+    - Did I write the test FIRST and watch it fail before implementing?
+      (Tests written after the code pass immediately and prove nothing.)
+    - Are tests comprehensive (edge cases, error paths)?
 
     If you find issues during self-review, fix them now before reporting.
 
@@ -71,6 +78,10 @@ Task tool (general-purpose):
 
     When done, report:
     - What you implemented
+    - **TDD evidence:** for each new behavior, the failing test you wrote, the
+      command output showing it failed for the expected reason (RED), and the
+      command output showing it passing after implementation (GREEN). If you
+      skipped TDD, state which human-approved exception applied.
     - What you tested and test results
     - Files changed
     - Self-review findings (if any)

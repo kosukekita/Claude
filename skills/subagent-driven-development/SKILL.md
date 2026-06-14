@@ -1,6 +1,6 @@
 ---
 name: subagent-driven-development
-description: Use when executing an implementation plan in the CURRENT session, fully automated via a fresh subagent per task with two-stage spec-then-quality review (no human-in-the-loop). For batched execution in a separate session with human review between batches, use executing-plans instead.
+description: Use when executing an implementation plan in the CURRENT session with mostly independent tasks and no human checkpoint between tasks. For batched execution in a separate session with human review between batches, use executing-plans instead.
 ---
 
 # Subagent-Driven Development
@@ -235,8 +235,12 @@ Done!
 - **requesting-code-review** - Code review template for reviewer subagents
 - **finishing-a-development-branch** - Complete development after all tasks
 
-**Subagents should use:**
-- **test-driven-development** - Subagents follow TDD for each task
+**REQUIRED SUB-SKILL for implementer subagents:**
+- **test-driven-development** - Each implementer subagent MUST follow TDD
+  (test first, watch it fail, minimal code) for every feature/bugfix/refactor.
+  This is enforced in `implementer-prompt.md` (test-first is required, not
+  conditional) and checked in `code-quality-reviewer-prompt.md` (reviewer
+  verifies RED-before-GREEN evidence, not just that tests exist).
 
 **Alternative workflow:**
 - **executing-plans** - Use for parallel session instead of same-session execution
