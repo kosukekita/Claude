@@ -2,7 +2,7 @@
 
 | Order | First Name | Last Name | Affiliation 1 | Affiliation 2 | ORCID | COI | Email |
 |------:|-----------|-----------|---------------|---------------|-------|------------|
-| 1 | Kosuke | Kita | Department of Artificial Intelligence in Diagnostic Radiology, The University of Osaka Graduate School of Medicine | | | |
+| 1 | Kosuke | Kita | Department of Artificial Intelligence in Diagnostic Radiology, The University of Osaka Graduate School of Medicine | | 0000-0002-5825-3348 | |
 | 2 | Kosuke | Ebina | Department of Orthopaedic Surgery, The University of Osaka Graduate School of Medicine | Department of Sports Medical Biomechanics, The University of Osaka Graduate School of Medicine | 0000-0002-2426-1024 | KE has received research grants from Asahi Kasei and Teijin Pharma, and speaker fees from AbbVie, Amgen, Argenx, Asahi Kasei, Astellas, Ayumi, Bristol-Myers Squibb, Chugai, Daiichi Sankyo, Eisai, Eli Lilly, Janssen, Mitsubishi Tanabe, Ono Pharmaceutical, Pfizer, Sanofi, Taisho, Teijin Pharma, and UCB Japan. | k-ebina@ort.med.osaka-u.ac.jp |
 | 3 | Yuki | Etani | Department of Sports Medical Biomechanics, The University of Osaka Graduate School of Medicine | | | YE has received a research grant from Eli Lilly. |
 | 4 | Takaaki | Noguchi | Department of Orthopaedic Surgery, The University of Osaka Graduate School of Medicine | | 0000-0001-9938-6780 | |
