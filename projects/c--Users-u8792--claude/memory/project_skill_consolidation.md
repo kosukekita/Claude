@@ -1,10 +1,30 @@
 ---
 name: project_skill_consolidation
-description: ~/.claude/skills のリファクタリング履歴。2026-05-31/06-08/06-11/06-13に実施。ボイラープレート5本削除、superpowers参照除去、code-reviewer/codex-review/gemini-review削除、skill-creator統合、codex-consult新設、Swiss-modernismをui-ux-designに統合。標準コマンド重複は削除可、同一ツール×同一成果物のみ統合可、外部リポのreferenceは原則移植＋固有ツール汎用化
+description: ~/.claude/skills のリファクタリング履歴。2026-05-31/06-08/06-11/06-13/06-14に実施。ボイラープレート5本削除、superpowers参照除去、skill-creator統合、codex-consult新設、Swiss-modernismをui-ux-designに統合、writing-skills→skill-writingリネーム。方針: 標準コマンド重複は削除可・同一ツール×同一成果物のみ統合可・別レイヤー/依存関係のものは統合せず「依存契約の明示＋RED/GREEN実測」で締める・descriptionにworkflow要約を書かない
 metadata: 
   node_type: memory
   type: project
   originSessionId: 213c11d7-5066-46e7-968c-ac34498cfd29
+---
+
+# 「統合より分離＋依存契約の明示」+ 契約は実装レベルでRED/GREEN検証する（2026-06-14 実施）
+
+ユーザー「subagent-driven-development と test-driven-development は似ているので統合すべきか？」への対応。**統合しない**と結論（Codexセカンドオピニオンも一致）。第1回の据え置き方針（別ジョブはマージしない）の新事例だが、**新しい学びは「分離を維持するなら依存契約がプロンプト実装レベルで効いているかを実測せよ」**。
+
+## 判断
+- 2つは**レイヤーが違う**: subagent-driven=オーケストレーション（実装SA→spec→quality の2段レビュー進行管理）、TDD=1振る舞いの規律（RED-GREEN-REFACTOR）。粒度が2-3段違い、TDD は subagent-driven が**内部で呼ぶ部品**（親子関係＝対等な重複ではない）。TDD は手動実装/executing-plans/他スキル(skill-writing の REQUIRED BACKGROUND)から広く参照される基礎規律で、特定オーケストレーションに畳むと取り出せなくなる→統合は capability loss。
+- **Codex が突いた見落とし**: 「TDD を内部利用」と本文(SKILL.md Integration)は謳うのに、実際の `implementer-prompt.md` は `Write tests (following TDD if task says to)` と**条件付き**で委譲が弱い。本文の約束とプロンプト実装が食い違っていた。
+
+## 実測（skill-writing の RED-GREEN を実走して契約を締めた）
+- **RED**: 補強前プロンプトでサブエージェント観測 → `if task says to` をガード句と解釈し **(B)後追いテスト**を選択（TDD本文が最も警告する passing-immediately）。spec/quality レビューも TDD 証跡を検査せず、ゲート不在。
+- **GREEN**（4ファイル編集）: ① implementer-prompt を「TDD必須・NOT conditional on the task description」に+RED/GREEN証跡の報告義務化、② code-quality-reviewer に「テストが後追いでないか」証跡チェック追加、③ SKILL.md Integration を `REQUIRED SUB-SKILL` に強化、④ description の workflow要約（`fresh subagent per task with two-stage...`）を除去。同一条件で再観測→**(A)テストファースト**に転換、本人が「条件付きではないと明記され抜け穴が閉じた」と明言。
+
+## 教訓
+- **「似ている2スキルを統合すべき？」への正解は多くの場合 No。** レイヤー（オーケストレーション vs 規律）や依存関係（一方が他方を内部利用）を確認する。共通の語感（`-driven-development`）や「両方とも品質重視」は統合理由にならない。
+- **分離維持の代わりにやるべきは「依存契約の明示と実測」**: 本文が「Xを使う」と謳うだけでは、実際にSAへ渡るプロンプトが条件付き/任意だと効かない。プロンプト実物を読み、RED(契約なし)→GREEN(契約あり)でサブエージェントの挙動が変わることを観測してから完了とする。
+- **description に workflow を書かない**（skill-writing の警告＝本文が読まれずショートカットされ取りこぼす）。「いつ使うか」の区別に要る最小情報（同/別セッション・人間チェック有無）だけ残し、手順の中身は削る。第2回の「writing-skills は description=WHENのみ」と同根。
+- 編集はコミットせず**自動コミット&pushシステム**に委ねた（ユーザー指示A）。`~/.claude` は自動発火で拾われる。
+
 ---
 
 # ui-ux-design に Swiss-modernism を統合（2026-06-13 実施）

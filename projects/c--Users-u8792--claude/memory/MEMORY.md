@@ -1,7 +1,7 @@
 # Memory Index
 
 - [feedback_slide_icon_approach.md](feedback_slide_icon_approach.md) — slide-makingでSVGアイコン手書きは失敗する。リファレンスPNGクロップ→base64埋め込みが唯一の確実な方法
-- [project_skill_consolidation.md](project_skill_consolidation.md) — ~/.claude/skills統合履歴（〜2026-06-13）。achievement+career→cv-profile、Swiss-modernism(Vignelli/Müller)→ui-ux-design統合。重複は同一ツールのみマージ、外部ツール/アーティファクトが違うものは据え置き、外部リポのreferenceは原則移植＋固有ツール汎用化
+- [project_skill_consolidation.md](project_skill_consolidation.md) — ~/.claude/skills統合履歴（〜2026-06-14）。achievement+career→cv-profile、Swiss-modernism→ui-ux-design、writing-skills→skill-writingリネーム。方針: 重複は同一ツールのみマージ、別レイヤー/依存関係（例 subagent-driven⊃TDD）は統合せず「依存契約の明示＋RED/GREEN実測」で締める、descriptionにworkflow要約を書かない
 - [project_totalsegmentator_license.md](project_totalsegmentator_license.md) — TotalSegmentatorアカデミックライセンス取得済＋全15ライセンスタスクのモデルDL。ローカルはGPU無しで中断（5/15完了）、リモートGPU PCで再開予定。番号はconfig.jsonに平文・メモリ非保存
 
 - [project_tooluniverse_mcp_wsl_fix.md](project_tooluniverse_mcp_wsl_fix.md) — tooluniverse-osteo MCP起動失敗。081a23bはメッセージと実体が食い違い未修正→Nodeランチャーがvenvバイナリを直接spawn(bash/.sh完全排除)で恒久修正。commit 53e5674
