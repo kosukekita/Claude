@@ -8,3 +8,4 @@
 - [project_remote_control_default.md](project_remote_control_default.md) — Remote Control起動時デフォルト有効化。公式永続キー無し→PowerShell profileで `function claude {claude.cmd --remote-control @args}`。脱出口claude-plain
 - [project_grok_media_skill.md](project_grok_media_skill.md) — grok-mediaスキル作成。公式Grok Build CLIにX Premium+ OAuthで委譲し画像/動画生成（サブスク枠・APIキー不要）。実機事実: ツール名image_gen/image_to_video、t2v専用無し、出力は~/.grok/sessions配下、loginは実ターミナルで
 - [feedback_powershell_hook_utf8_stdout.md](feedback_powershell_hook_utf8_stdout.md) — WindowsのPowerShellフックが日本語をstdoutに返すと文字化け（u8792→螒、記憶→龍L���）。原因はACP=932でWrite-OutputがShift_JIS出力。UTF-8バイト直書き(OpenStandardOutput)で解決。memory-inject.ps1のみ該当、commit a044da7でpush済
+- [feedback_surrogate_in_grep_pollutes_api_body.md](feedback_surrogate_in_grep_pollutes_api_body.md) — サロゲート範囲をGrep正規表現に渡す/会話に生出力すると孤立サロゲートが会話コンテキストに焼き付き、毎ターン API 400 invalid high surrogate が再発。ディスクは健全でファイル修正では直らず /clear のみ。U+XXXX表記を使い検出はファイル経由で実行する
