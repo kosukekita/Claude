@@ -53,6 +53,11 @@ Codex は会話を知らないので、次のテンプレートを **Claude が�
 要約したプロンプトを `/codex:rescue` の引数にして実行する。`/codex:rescue` が
 運搬・セッション継続（--resume/--fresh）・モデル選択を担う。
 
+**プロンプトは必ず `/codex:rescue` の引数として全文渡す（stdin 依存にしない）。**
+ランナー（codex-companion.mjs）の `readStdinIfPiped()` は `fs.readFileSync(0)` で stdin を
+同期ブロッキング読みするため、引数を空にして stdin から入力を期待すると**無限ハング**する。
+Step 2 の構造化プロンプトは長くても1本の引数文字列に収め、空委譲はしない。
+
 ```
 /codex:rescue <Step 2 で組んだ構造化プロンプト>
 ```
@@ -62,9 +67,19 @@ Codex は会話を知らないので、次のテンプレートを **Claude が�
 - 重い設計批判なら `--effort high`、素早い一次見解なら無指定（既定）。
 - 結果は Codex の出力をそのまま提示し、必要なら Claude が会話の文脈に統合・補足する。
 
-> 代替: `/codex:rescue` を使わず Claude が直接 `codex exec`（`resume --last` でセッション継続、
-> stdin に `<context>...会話要約...</context>` ブロックを追記）で渡すこともできる。
-> rescue コマンドが使えない環境ではこちら。
+#### 重い委譲は最初から background で（120秒タイムアウト回避）
+
+`--effort high` や、レビュー／実装委譲のように Codex が**数分かかる**見込みのものは、
+**foreground で投げない**。foreground 実行は親 Bash ツールの既定 120 秒タイムアウトに当たり、
+途中切れ（不完全な出力）や「no output」になる（実体はセッションに残るが回収に手間がかかる）。
+
+→ 重い委譲は計画的に **background 実行**にし、`/codex:status` で進捗、`/codex:result` で最終結果を回収する。
+素早い一次見解（短い second-opinion 等）だけ foreground でよい。目安: 「3 分以内で返ると確信できるか？
+否なら background」。
+
+> 代替: `/codex:rescue` を使わず Claude が直接 `codex exec` で渡すこともできる（rescue が使えない環境）。
+> その場合も**プロンプトは引数で渡す**。stdin に流すなら必ずヒアドキュメント等で実体を与え、
+> 空 stdin にしない（同上のハング回避）。
 
 ## Examples
 
@@ -99,6 +114,25 @@ Actions:
 
 ### 会話の文脈が Codex に伝わっていない出力が返る
 Step 2 のテンプレートの記入が薄い。議論・試したこと・詰まり・求めることを具体的に書き直して再実行する。
+
+### 委譲が途中で切れる / ハングする / no output で返る
+原因はほぼ**ランナーの呼び出し方**で、Codex が生成したコマンド（`rg | Select-Object` 等。Codex の
+サンドボックスは Windows では PowerShell/cmd で動くので混成でも動く）ではない。確認順:
+
+1. **foreground で重い委譲を投げていないか** → 親 Bash の 120 秒で切れる。`--effort high`/長尺は background へ（Step 3）。
+2. **プロンプトを引数で渡したか** → 空委譲＋stdin 待ちで `readStdinIfPiped()` が無限ハング。必ず引数で全文渡す。
+3. **`--background` と stdin を同時に使っていないか** → detached（stdio:"ignore"）で stdin が無いのに読むと確実にハング。
+
+「no output」でも Codex 本文は残っていることが多い:
+`~/.codex/sessions/<年>/<月>/<日>/rollout-*.jsonl` を新しい順に数本見て、`role=assistant` の
+**最長メッセージ**を拾う（短い断片は思考/ツール段階）。抽出結果は**コンソールに print せず**
+UTF-8 でファイルに書き出して Read で開く（cp932 化け回避）。詳細 → [[feedback_codex_review_output_via_session_jsonl]]。
+
+### コマンドが「クォート未閉」でハングする（全角クォート混入）
+貼り付け／転記したコマンドに全角ダブルクォート `“ ”`（U+201C/U+201D）が混じると、bash も PowerShell も
+クォートとして認識せず**未閉扱いで入力待ちハング**になる。Codex 自身はこれを生成しない（実コマンドは
+ASCII クォート）。**コマンドは必ず ASCII の `"` / `'` に正規化**してから実行・転記する。日本語パスやログを
+扱う際は cp932 化けと併発しやすい → [[feedback_u8792_path_unicode_escape]]。
 
 ### 機密を含む情報を渡してよいか
 Codex への委譲は**外部送信**。機密・個人情報・要ログインのデータを含む場合は、渡す前にユーザーへ確認する。
