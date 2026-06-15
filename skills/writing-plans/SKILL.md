@@ -26,6 +26,15 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 - "Run the tests and make sure they pass" - step
 - "Commit" - step
 
+## Task Shape: Tracer-Bullet Vertical Slices
+
+タスクへの分解は**トレーサーバレット縦割り**を単位にする（mattpocock/skills の `to-issues` から）:
+
+- **各タスクは全レイヤーを縦に貫く** — schema → API → UI → test を端から端まで通し、それ単独でデモ・検証できる。「API層を全部」のような横割りにしない。**薄い縦割りを多数 ＞ 厚い縦割りを少数。**
+- **各タスクに HITL / AFK タグを付ける** — `[HITL]`（アーキ/設計判断で人間が必要）か `[AFK]`（サブエージェントが無人で完遂可能）。**AFK に倒す**のを基本とする。これにより「このタスクはサブエージェントに丸投げできるか」が各タスクの一級の属性になり、subagent-driven-development / executing-plans への引き渡しが綺麗になる。
+- **依存順に並べる**（ブロッカーを先に）ので "Blocked by" が実在のタスクを参照できる。
+- **タスク記述に行番号や揮発しやすい詳細を埋め込みすぎない** — インターフェース/契約/受け入れ基準（チェックボックス）で書くと、着手までに時間が空いても古びない（`triage` の brief 規律より）。コード自体は本プラン内に完全形で置く（下記）が、「どこを触るか」の参照は古びる前提で扱う。
+
 ## Plan Document Header
 
 **Every plan MUST start with this header:**

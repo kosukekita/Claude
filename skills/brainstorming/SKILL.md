@@ -94,3 +94,12 @@ digraph brainstorming {
 - **Explore alternatives** - Always propose 2-3 approaches before settling
 - **Incremental validation** - Present design, get approval before moving on
 - **Be flexible** - Go back and clarify when something doesn't make sense
+
+## Interrogation Discipline (grill 規律)
+
+質問フェーズを「設計ツリーの深さ優先探索」として運用する（mattpocock/skills の `grill-me` から）:
+
+- **依存順に枝を降りる** — フラットなチェックリストではなく、決定の依存関係を1つずつ解決しながら設計ツリーの各枝を降りる。先に決めるべき決定を先に問う。
+- **各問いに自分の推奨回答を添える** — ユーザーが白紙から考えるのではなく「確認/却下」で答えられるようにする（面接疲れを減らす）。Plan Mode では AskUserQuestion で推奨選択肢を先頭に置く（CLAUDE.md の「実装前の理解度確認」とも整合）。
+- **コードベースで答えられる問いは自分で答える** — 検証可能な事項はユーザーに聞かず、ファイル/コミット/コードを調べて答える。事実と食い違う主張を見つけたら指摘する。
+- **曖昧な用語を1つの正規語に絞る** — 「Customer か User か？」のように過負荷な語を challenge し、プロジェクトの語彙に揃える。
