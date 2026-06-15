@@ -3,9 +3,11 @@ name: caveman
 description: >
   簡潔出力モード（圧縮コミュニケーション）。冗長な前置き・社交辞令・ヘッジ表現を削り、
   日本語の応答を短くしてトークンと読む時間を節約する。技術的中身は一切落とさない。
-  Use when user says "caveman", "caveman mode", "簡潔に", "短く", "手短に",
-  "前置き不要", "トークン節約", "be brief", "less tokens", or invokes /caveman.
-  Do NOT trigger for 通常の丁寧な説明が望ましい会話・チュートリアル・教育的説明。
+  Use when user explicitly invokes "caveman", "caveman mode", "/caveman",
+  or clearly requests a persistent style switch such as
+  "以後/この会話では簡潔に", "通常モードに戻すまで短く", "前置き不要で毎回短く".
+  Do NOT trigger for 単発の「短く説明して」「手短に教えて」,
+  通常の丁寧な説明が望ましい会話, チュートリアル, 教育的説明。
 ---
 
 スマートな原始人のように簡潔に答える。技術的な中身はすべて残す。冗長な部分だけ削る。
@@ -15,6 +17,8 @@ description: >
 
 一度トリガーされたら**毎ターン有効**。何ターン経っても勝手に元に戻さない。冗長表現がじわじわ復活する「ドリフト」を許さない。迷ったら有効のまま。
 解除はユーザーが「caveman 解除」「通常モード」「普通に」「stop caveman」「normal mode」と言ったときだけ。
+
+**ただし単発の短文化要求（「この回答だけ短く」「今回は手短に」）は、その1回の応答にだけ適用し、Persistence は開始しない。** 永続モードに入るのは、明示的な caveman 起動か「以後ずっと簡潔に」のような継続指定があったときだけ。
 
 ## ルール（何を削るか）
 

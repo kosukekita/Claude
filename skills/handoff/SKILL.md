@@ -6,7 +6,8 @@ description: >
   恒久的な事実の保存ではなく、一回限り・目的特化の続行用ドキュメントを作る点が cross-agent-memory と異なる。
   Use when user says "引き継ぎ", "ハンドオフ", "handoff", "次のセッションに渡す",
   "別エージェントに続きを", "コンテキストが切れそう", "新しい会話に引き継ぐ".
-  Do NOT trigger for 恒久的な学び・好み・設計決定の永続化（use cross-agent-memory）.
+  Do NOT trigger for 単なる「覚えておいて」や、恒久的な学び・好み・設計決定の永続化（use cross-agent-memory）。
+  両方が必要なら handoff を作成したうえで、非自明で再利用価値のある事項だけ cross-agent-memory に別途保存する。
 ---
 
 # Handoff
@@ -15,13 +16,12 @@ description: >
 
 ## 保存先（OS の一時ディレクトリ — リポジトリには絶対に置かない）
 
-ワークスペース／git リポジトリには置かない。OS の一時ディレクトリに保存する:
+ワークスペース／git リポジトリには置かない。OS の一時ディレクトリに保存する。実パスの解決は各 shell に任せてよいが、**ツール引数（Write/Read 等）へ渡すときは必ずフォワードスラッシュの正規形**にする:
 
-- **Windows (PowerShell):** `$env:TEMP\handoff-<topic>.md`
-- **Windows (Git Bash):** `$TMPDIR` が無ければ `/c/Users/u8792/AppData/Local/Temp/handoff-<topic>.md`
+- **Windows:** `C:/Users/u8792/AppData/Local/Temp/handoff-<topic>.md`
 - **Linux / Mac:** `${TMPDIR:-/tmp}/handoff-<topic>.md`
 
-> パスをツール引数に書くときは**必ずフォワードスラッシュ**（`C:/Users/u8792/...`）。バックスラッシュは `\U` 等が Unicode エスケープ扱いになり別の場所を指す。
+> Git Bash の `/c/...` や PowerShell の `\` 区切り（`$env:TEMP\...`）は、**そのままツール引数に使わず**フォワードスラッシュへ正規化してから渡す。バックスラッシュは `\U`（= `\u` + 続く文字）が Unicode エスケープ扱いになり、静かに別の場所を指す既知バグがある。
 
 これは「スクラッチ .md をリポに散らかさない」という既存方針の補強でもある。
 

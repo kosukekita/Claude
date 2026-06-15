@@ -28,12 +28,12 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 
 ## Task Shape: Tracer-Bullet Vertical Slices
 
-タスクへの分解は**トレーサーバレット縦割り**を単位にする（mattpocock/skills の `to-issues` から）:
+タスクへの分解は**トレーサーバレット縦割り**を単位にする（mattpocock/skills の `to-issues` から）。**階層を明確にする**: ここでの `task` は「単独でデモ可能な縦切り1本」を指し、各 task の**内部**を上の `## Bite-Sized Task Granularity` に従って 2〜5 分の `step` に分解する（task ⊃ step）。
 
 - **各タスクは全レイヤーを縦に貫く** — schema → API → UI → test を端から端まで通し、それ単独でデモ・検証できる。「API層を全部」のような横割りにしない。**薄い縦割りを多数 ＞ 厚い縦割りを少数。**
 - **各タスクに HITL / AFK タグを付ける** — `[HITL]`（アーキ/設計判断で人間が必要）か `[AFK]`（サブエージェントが無人で完遂可能）。**AFK に倒す**のを基本とする。これにより「このタスクはサブエージェントに丸投げできるか」が各タスクの一級の属性になり、subagent-driven-development / executing-plans への引き渡しが綺麗になる。
 - **依存順に並べる**（ブロッカーを先に）ので "Blocked by" が実在のタスクを参照できる。
-- **タスク記述に行番号や揮発しやすい詳細を埋め込みすぎない** — インターフェース/契約/受け入れ基準（チェックボックス）で書くと、着手までに時間が空いても古びない（`triage` の brief 規律より）。コード自体は本プラン内に完全形で置く（下記）が、「どこを触るか」の参照は古びる前提で扱う。
+- **アンカーはファイルパス＋シンボル名/契約/受け入れ基準、行番号は補助**（`triage` の brief 規律より）。下の `## Remember` の "Exact file paths always" は維持する — **ファイルパスは必須**。一方で**行番号は揮発しやすい補助情報**として扱い、安定していて有用なときだけ添える。インターフェース/契約/受け入れ基準（チェックボックス）で書けば、着手まで時間が空いても古びない。コード自体は本プラン内に完全形で置く（下記 Task Structure）。
 
 ## Plan Document Header
 
@@ -60,7 +60,7 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 
 **Files:**
 - Create: `exact/path/to/file.py`
-- Modify: `exact/path/to/existing.py:123-145`
+- Modify: `exact/path/to/existing.py` (anchor: `def validate_export(...)`; 行番号は任意・補助)
 - Test: `tests/exact/path/to/test.py`
 
 **Step 1: Write the failing test**

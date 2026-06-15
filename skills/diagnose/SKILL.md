@@ -4,11 +4,11 @@ description: >
   難しいバグ・性能リグレッションのための規律ある診断ループ。
   核心は「速く・決定論的で・エージェントが回せる pass/fail のフィードバックループを最優先で作る」こと。
   フィードバックループ構築 → 再現 → 仮説（3-5個・反証可能） → 計測 → 修正＋回帰テスト → 後始末・事後分析。
-  Use when user says "diagnose this" / "debug this" / "原因を調べて" / "診断して",
-  reports a bug, says something is broken/throwing/failing / "壊れた" / "落ちる" / "失敗する",
-  or describes a performance regression / "遅くなった" / "性能が落ちた".
-  既存の systematic-debugging（根本原因が分かるまで修正をブロックする規律）と debugging-wizard（デバッガ・プロファイラ等のツール）の
-  「あいだ」を埋める = フィードバックループ工学。プロセス系を先に適用する場合は systematic-debugging を先に通す。
+  Use when the request is 原因調査 or 性能回帰調査 and the missing piece is a reproducible feedback loop.
+  Examples: "原因を調べて", "診断して", "再現させたい", "失敗条件を固定したい", "遅くなった原因を切りたい".
+  If the primary need is 根本原因の確定を修正より先に強制する規律, use systematic-debugging first.
+  If the primary need is デバッガ/プロファイラ/トレース等のツール選定や操作, use debugging-wizard instead.
+  Do NOT trigger for 単なるツール操作質問 or 一般的な "debug this" だけで再現対象がない相談。
 ---
 
 # Diagnose

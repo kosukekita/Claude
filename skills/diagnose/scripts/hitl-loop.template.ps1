@@ -1,4 +1,4 @@
-# Human-in-the-loop reproduction loop (Windows native PowerShell).
+﻿# Human-in-the-loop reproduction loop (Windows native PowerShell).
 # Linux / Mac / Git Bash / WSL では hitl-loop.template.sh を使うこと。
 #
 # このファイルをコピーし、下の手順を編集して実行する。
@@ -16,17 +16,21 @@
 
 $ErrorActionPreference = 'Stop'
 
-# UTF-8 出力（cp932 文字化け回避）
+# UTF-8 出力（cp932 文字化け回避）。日本語プロンプトを ACP=932 端末で化けさせないため残す。
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
+# Read-Host はプロンプト文字列末尾に自動で ": " を足すため、プロンプトは Write-Host -NoNewline で出し、
+# Read-Host は引数なしで呼ぶ（"    > : " のような不自然な表示を防ぐ）。
 function Step([string]$Instruction) {
     Write-Host "`n>>> $Instruction"
-    Read-Host "    [完了したら Enter]" | Out-Null
+    Write-Host -NoNewline "    [完了したら Enter] "
+    Read-Host | Out-Null
 }
 
 function Capture([string]$Name, [string]$Question) {
     Write-Host "`n>>> $Question"
-    $answer = Read-Host "    > "
+    Write-Host -NoNewline "    > "
+    $answer = Read-Host
     Set-Variable -Name $Name -Value $answer -Scope Script
 }
 
