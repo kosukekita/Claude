@@ -26,6 +26,7 @@ description: "医学・学術論文の執筆支援。構成（IMRAD）、文体�
 1. IMRAD 構造に従っているか確認
 2. AI 文体パターン（18種）をスキャン
 3. 統計表記・引用形式をチェック
+4. Results は一文ずつ over/under-claim チェックリストを適用（下記「Results 特有の over/under-claim 検出チェックリスト」）
 
 ### Step 3: 執筆・修正
 
@@ -61,7 +62,7 @@ description: "医学・学術論文の執筆支援。構成（IMRAD）、文体�
 |-----------|------------|------------|
 | Introduction | 背景、先行研究、研究の目的 | 自データの結果 |
 | Methods | 基準、定義、手法、解析計画 | 具体的な数値・結果 |
-| Results | データの記述、解析結果、数値 | 手法の正当化、考察 |
+| Results | データの記述、解析結果、数値 | 手法の正当化、考察、臨床的意義づけ、探索的所見の確証化、因果的言い換え |
 | Discussion | 結果の解釈、先行研究との比較、限界 | 新たな結果の提示 |
 
 ### Methods–Results の対応（手法なしの結果は御法度）
@@ -88,6 +89,30 @@ description: "医学・学術論文の執筆支援。構成（IMRAD）、文体�
 - **Results**: データを先に、解釈は Discussion で。表・図を効果的に使用。**Study flow diagram（participant flow / CONSORT / STROBE diagram）は Results セクションに配置する**（Lancet 系列の標準）。N数・除外数は Methods の段階では未知の情報であり、Methods には配置しない
 - **Discussion**: 主要な発見を最初に述べる。限界は正直に、しかし過度に卑下しない
 - **Outcome / Endpoint の用語**: 「Primary outcome/endpoint」は Secondary outcome が存在する場合にのみ使用する。アウトカムが1つしかない研究では単に「outcome」「endpoint」と記載する。「Primary」と書くと Secondary outcome の記述を読者が期待するため不自然
+
+### Results 特有の over/under-claim 検出チェックリスト
+
+Results は結果を淡々と記述し、過大主張（over-claim）も過小評価（under-claim）も排除する。**各文について、対応する統計出力を 1 つ特定できない文、または Discussion に属する評価語（clinical importance / negligible / determinant / demonstrated など）を含む文は書き換える**。境界ルール表・AI 文体 18 パターンは文体・レトリックを扱うが、ここは統計用語の意味論（推定量 → 言語表現の対応）を扱う。Results を一文ずつ次の基準で点検する。
+
+- **探索的に選ばれた最良群の効果を確証的に書かない（winner's curse）**
+  - NG: `The top CATE quartile demonstrated a statistically significant extension in fracture-free survival.`
+  - OK: `In the quartile with the largest estimated CATE, the observed difference was ...; this subgroup was identified exploratorily from the same data.`
+- **variable importance / SHAP / feature ranking を effect modifier・determinant と言い換えない**（予測寄与は効果修飾の証明ではない）
+  - NG: `... were important determinants of HTE and acted as patient-classifying factors.`
+  - OK: `... ranked highly in variable importance; this ranking alone does not establish effect modification.`
+- **非有意な相互作用・群差を「効果あり」「より有効」と書かない**
+  - NG: `PTH was more effective in patients without hypertension.`（交互作用が非有意なのに）
+  - OK: `The interaction term was not significant; the data did not show that the effect differed by hypertension status.`
+- **回帰係数・相互作用係数を因果的に言い換えない**
+  - NG: `The coefficient indicated that hypertension reduced the benefit of PTH.`
+  - OK: `The fitted interaction coefficient was negative, corresponding to a lower estimated treatment effect under the model.`
+- **非有意・不精確を「no effect」「random error の範囲」「clinically negligible」と断定しない**
+  - NG: `The effect was clinically negligible and within the range of random error.`
+  - OK: `The estimate was ... (95% CI ...); clinical importance is not assessed in Results.`
+- **統計的有意を臨床的意義・真の効果の証明に昇格させない**
+  - NG: `A statistically significant benefit was demonstrated.`
+  - OK: `A difference was estimated, with a 95% CI excluding the null.`
+- **association / estimate / rank と effect modification / mechanism / causation を分ける**（後者は Discussion）
 
 ---
 
@@ -151,6 +176,7 @@ description: "医学・学術論文の執筆支援。構成（IMRAD）、文体�
 ## AI 文体除去（Humanizer）
 
 AI 生成テキストに共通する 18 パターンを 4 カテゴリに分類。
+（18 パターンは文体の問題を扱う。Results の統計的 over/under-claim は別掲「Results 特有の over/under-claim 検出チェックリスト」で判定する。）
 詳細な検出キーワード・Before/After 例は `references/humanizer-patterns.md` を参照。
 
 ### パターン概要
@@ -397,6 +423,7 @@ Author 2: First Name: Kosuke | Last Name: Ebina
 - [ ] Methods に具体的な数値・結果が混在していない（N数、群ごとの人数等は Results に記載）
 - [ ] 除外「基準」は Methods、除外「件数・残存 n」は Results に分けて記載（同じ除外を1文に混ぜていない）。アウトカム別に分母 n が異なる場合は Results の analysis-set 段落で件数差の理由を明記
 - [ ] Methods と Results の解析項目が 1:1 対応している（Results の全解析・感度分析・代替定義が Methods に設計記述あり。手法なしの結果がない）
+- [ ] Results の各文が over/under-claim チェックリストを通過している（探索的最良群の確証化、variable importance の effect modifier 化、非有意の効果あり化、係数の因果的言い換えがない）
 - [ ] AI 文体パターン（18種）が除去されている
 - [ ] 見出しがセンテンスケースになっている
 - [ ] ストレート引用符を使用している
