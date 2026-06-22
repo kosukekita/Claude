@@ -328,6 +328,22 @@ def _decision(backend: str, spec: dict, why: list[str], *,
     }
 
 
+def _force_single_offload(ext: dict, spec: dict) -> dict:
+    """When the user passes --offload, never route to local-multi (which only
+    prints torchrun instructions and does NOT generate). Collapse any local
+    decision to single-GPU diffusers offload so the clip actually renders."""
+    ext = dict(ext)
+    ext["backend"] = "local-offload"
+    ext["multigpu"] = False
+    ext["offload"] = True
+    ext.setdefault("device", "cuda:0")
+    if spec.get("vram_fp8_gb"):
+        ext["precision"] = "fp8"
+    ext["why"] = "user --offload -> forced single-GPU diffusers offload " \
+                 "(skip local-multi torchrun); " + ext.get("why", "")
+    return ext
+
+
 def select_backend(args, spec: dict) -> dict:
     if args.backend in {"wan", "ltx"}:
         # Explicit local family request still honours probe for offload sizing,
@@ -335,6 +351,8 @@ def select_backend(args, spec: dict) -> dict:
         ext = run_external_probe(args.task, args.model, args.want_quality,
                                  args.margin, args.backend)
         if ext and ext.get("backend", "").startswith("local"):
+            if args.offload and ext.get("backend") == "local-multi":
+                return _force_single_offload(ext, spec)
             return ext
         return builtin_select(args.task, args.model, spec, args.want_quality,
                               args.margin, args.backend, args.offload)
@@ -347,6 +365,8 @@ def select_backend(args, spec: dict) -> dict:
                              args.margin, None)
     if ext:
         ext.setdefault("model", spec.get("repo"))
+        if args.offload and ext.get("backend") == "local-multi":
+            return _force_single_offload(ext, spec)
         return ext
     return builtin_select(args.task, args.model, spec, args.want_quality,
                           args.margin, None, args.offload)
