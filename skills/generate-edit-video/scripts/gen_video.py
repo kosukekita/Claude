@@ -484,9 +484,12 @@ def run_ltx(args, spec: dict, decision: dict) -> None:
         from diffusers import LTXPipeline
         pipe = LTXPipeline.from_pretrained(repo, torch_dtype=torch.bfloat16)
 
-    # Keep VAE fp32 for clean decode.
+    # NOTE: do NOT force the LTX VAE to fp32. Unlike Wan, the LTX pipeline does
+    # not upcast latents before the VAE, so a fp32 VAE with bf16 latents raises
+    # "Input type (BFloat16) and bias type (float) should be the same". LTX-Video
+    # decodes fine in bf16; keep the whole pipeline bf16.
     try:
-        pipe.vae.to(torch.float32)
+        pipe.vae.enable_tiling()  # memory-friendly decode for tall/long clips
     except Exception:
         pass
 
