@@ -443,6 +443,17 @@ Author 2: First Name: Kosuke | Last Name: Ebina
 - **フォントサイズ**: Figure 内の全てのテキスト（軸ラベル、凡例、注釈等）は **20pt 以上** とする
 - **略語**: Figure 内で使用した略語は、全て **Figure Legend（図の説明文）に定義を記載** する
 
+## Table キャプション・脚注ルール
+
+表のキャプションは「**1文の表題＋表下の脚注（Note/legend）**」に分離する。ICMJE は明文で *"Place explanatory matter in footnotes, not in the heading."*（説明事項は見出しではなく脚注へ）と規定し、AMA Manual of Style（11th ed.）・NEJM ファミリーの実掲載論文も同じ構造（タイトル＝1文の名詞句、補足は全て脚注）。複数文を表題位置に連結した「物語的キャプション」は非標準。
+
+- **表題（1文）**: 「この表が何を示すか」だけを書く。例: `Baseline characteristics of the pooled analysis set, by initial treatment.` / `Overall average treatment effect, expressed as the difference in restricted mean survival time.`
+- **脚注（Note）に置く**: 統計表記の慣例（mean (SD), n (%)）/ 略語キー（表は本文と独立に読まれるため、本文既出でも各表の脚注に再掲）/ 記号（✓ 等）の意味 / 群・分類の定義（例 Q1=greatest predicted benefit）/ 行の収載基準（どの行を載せたか）/ 効果量の向き（positive = …）/ 欠測 n。
+- **表のキャプション・脚注に「結果」を書かない**（最重要）。結果＝具体的な所見の数値・有意性の判定文・効果の解釈。これらは Results 本文のみに置く。
+  - 排除する例: "All point estimates were slightly negative and all 95% CIs crossed 0, with no significant difference"（=結果文。しばしば直前の本文と重複）/ "(statistically significant)"（=判定ラベル）。
+  - 「結果」と「定義/凡例」の線引き: **判定ラベル**（significant / present / no modifier 等、実データへの評価）は本文へ。**判定規則そのものの定義**（"HTE was classified as present when both AUTOC and Cochran's Q met P<0.05" のように、何をもってそのカテゴリとするかの機械的ルール）は脚注に置いてよい。✓ 等の記号は「statistically significant」と書かず "95% CI lower bound exceeded 0" のような機械的条件で定義する。
+- **収載基準と表内容の整合**: 「有意な変数のみ掲載」と脚注に書くなら、非該当アウトカムに min P 値の行を載せている等の矛盾を残さない。「該当が無い場合は最小 P 値を示す」まで脚注で明示して整合させる。
+
 ---
 
 ## 投稿前チェックリスト
@@ -465,6 +476,9 @@ Author 2: First Name: Kosuke | Last Name: Ebina
 - [ ] フィラー表現・過度なヘッジングが除去されている
 - [ ] Figure 内のフォントサイズが 20pt 以上である
 - [ ] Figure 内の略語が全て Figure Legend に定義されている
+- [ ] **Table のキャプションが「1文の表題＋表下の脚注」に分離されている**（ICMJE: 説明事項は見出しでなく脚注へ。物語的な複数文キャプションがない）
+- [ ] **Table のキャプション・脚注に「結果」（所見の数値・有意性の判定文・効果の解釈）が書かれていない**（結果は Results 本文のみ。判定規則の定義は脚注可、判定ラベルは本文へ）
+- [ ] Table の略語が各表の脚注に再定義され、記号（✓ 等）が機械的条件で定義されている。脚注の収載基準が表内容と矛盾していない
 - [ ] Target journal の投稿規定（word count、reference style 等）に準拠
 - [ ] **投稿規定の数値ルール（抄録語数・本文word count・文献数・図表数）は、厳守して削る前にその雑誌の実掲載論文を実測し実態を確認した**（規定超でもアクセプトされている例が多い。見出し構造・必須要素・倫理要件は数値ルールではなく厳守）
 - [ ] **AI 研究の場合**: TRIPOD+AI 27 項目チェックリストに準拠している
