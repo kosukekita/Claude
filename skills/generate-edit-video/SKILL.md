@@ -109,21 +109,29 @@ source scripts/env.sh
 
 ## 画像生成フロー
 
+**推奨の既定 3 本柱（実機評価ベース）= `z-image-turbo` / Codex(GPT Image) / Grok。**
+フォトリアルな人物・日常スナップで実機検証した結果: **Z-Image-Turbo（ローカル）= 人物の可愛さ・透明感が最良**、**Grok = 生活感・シーンのリアルさが最良**、**Codex(GPT Image) = ナチュラル/構図忠実**。FLUX.1-dev は同用途では微妙だった（落ち着きすぎ）。特に指定が無ければこの 3 本で出して見比べる。
+
 ```bash
 source scripts/env.sh
-# 既定（auto）: FLUX.1-dev（品質）→ 収まらなければ SDXL → cloud/grok に降りる
-"$UV" run scripts/gen_image.py --backend auto --prompt "..." --steps 40 --guidance 3.5 --out img.png
-# 高速反復: FLUX.1-schnell（1-4 step turbo, Apache-2.0, guidance≈0）
-"$UV" run scripts/gen_image.py --backend flux --fast --prompt "..." --out fast.png
-# 小VRAM/高速: SDXL base
-"$UV" run scripts/gen_image.py --backend sdxl --size 1024x1024 --prompt "..." --out a.png
+# ① Z-Image-Turbo（ローカル・既定の主力。9step・guidance0・高速・高品質・Apache-2.0）
+"$UV" run scripts/gen_image.py --backend z-image-turbo --prompt "..." --size 832x1216 --seed 7 --out z.png
+
+# ② Codex(GPT Image / gpt-image-2)。出力は ~/.codex/generated_images/<sid>/ig_*.png（cwd には出ない）
+codex exec --skip-git-repo-check --sandbox workspace-write \
+  "Use your image_gen tool to generate one image from this Japanese prompt. Prompt: ..."
+#   回収: ls -dt ~/.codex/generated_images/*/ | head -1 の中の ig_*.png をコピー
+
+# ③ Grok（grok-media に委譲。出力は ~/.grok/sessions/<enc-cwd>/<sid>/images/N.jpg）
+"$HOME/.grok/bin/grok" -p 'Use your image_gen tool to create an image: ...'
 ```
 
-`gen_image.py` がローカル実装するのは **FLUX.1（dev/schnell）と SDXL**。
-- `--backend auto`（既定）= FLUX.1-dev 品質。`--fast` = FLUX.1-schnell（turbo, guidance≈0・少ステップ。高 CFG は破綻）。`--backend sdxl` = 小VRAM。
-- License: flux.1-dev は **gated + 非商用**。商用は FLUX.1-schnell / SDXL（どちらも可）。
-- **Z-Image / Qwen-Image（画中テキスト）/ FLUX.2 / SD3.5 が要るとき** → ローカル未実装。`cloud_modal.py` / `cloud_fal.py` のホスト経由、または **grok-media** の image_gen にフォールバック（`reference/models.md` 参照）。
-- Grok フォールバック → `gen_image.py --backend grok`（grok-media への委譲契約を出力）。
+`gen_image.py` のローカル実装（`--backend`）: **z-image-turbo（推奨主力）/ flux / sdxl / qwen-image（画中テキスト）/ flux.2-dev（4bit量子化）**。
+- **turbo（z-image-turbo, flux --fast）は guidance≈0・少ステップ**（高 CFG は破綻）。
+- 大型（qwen-image=offload強制 / flux.2-dev=4bit必須）は `gen_image.py` が自動処理。
+- License: 商用可= Z-Image / FLUX.1-schnell / SDXL / Qwen-Image。gated+非商用= FLUX.1/2-dev。
+- **ポリシー差（重要）**: Codex(OpenAI) は身体表現に厳格で「巨乳」「Fカップ+色っぽい+妖艶」等の複合を `sexualized content` で拒否することがある（婉曲表現で通る場合あり）。**そういう表現は Grok かローカル（Z-Image/FLUX）が確実**。Grok・ローカルは制限が緩い。
+- さらに上の品質が要るとき → `reference/models.md` のモデル表（Qwen-Image 20B 等）。cloud は `cloud_modal.py` / `cloud_fal.py`。
 
 ## 動画編集フロー（ffmpeg）
 
