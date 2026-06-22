@@ -96,8 +96,12 @@ def main() -> int:
     p.add_argument("--negative-prompt",
                    default="worst quality, inconsistent motion, blurry, jittery, distorted")
     p.add_argument("--out", default="ltx23.mp4", help="output mp4 path")
-    p.add_argument("--width", type=int, default=768, help="width (mult of 32)")
-    p.add_argument("--height", type=int, default=512, help="height (mult of 32)")
+    p.add_argument("--width", type=int, default=None,
+                   help="width (mult of 32); default: auto from input image aspect")
+    p.add_argument("--height", type=int, default=None,
+                   help="height (mult of 32); default: auto from input image aspect")
+    p.add_argument("--max-side", type=int, default=1152,
+                   help="longest side when auto-sizing from the image (default 1152)")
     p.add_argument("--num-frames", type=int, default=121, help="8k+1 (121, 193)")
     p.add_argument("--fps", type=float, default=24.0)
     p.add_argument("--steps", type=int, default=30)
@@ -114,9 +118,27 @@ def main() -> int:
                    help="drop the generated audio track from the mp4")
     args = p.parse_args()
 
+    # Auto-size to the INPUT IMAGE aspect ratio when width/height are not given.
+    # (Forcing a fixed 768x512 / 704x1280 stretches a 3:4 photo into the wrong
+    # shape — the subject looks elongated. Preserve the source aspect instead.)
+    if args.width is None or args.height is None:
+        from PIL import Image as _Image
+        with _Image.open(args.image) as _im:
+            iw, ih = _im.size
+        ms = args.max_side
+        if iw >= ih:
+            args.width = ms
+            args.height = max(32, round(ms * ih / iw))
+        else:
+            args.height = ms
+            args.width = max(32, round(ms * iw / ih))
+        log(f"auto-size from image {iw}x{ih} (aspect {iw/ih:.3f}) "
+            f"-> {args.width}x{args.height} (max-side {ms})")
+
     args.width = snap(args.width, 32, "width")
     args.height = snap(args.height, 32, "height")
     args.num_frames = snap_frames(args.num_frames)
+    log(f"final size {args.width}x{args.height} (aspect {args.width/args.height:.3f})")
 
     import torch
     from diffusers.utils import load_image
