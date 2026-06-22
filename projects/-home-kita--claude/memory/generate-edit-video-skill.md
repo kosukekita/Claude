@@ -43,4 +43,13 @@ metadata:
 
 **Codex(GPT Image)も画像生成可（2026-06-22）**: `codex exec --skip-git-repo-check --sandbox workspace-write "Use your image_gen tool to generate ... Prompt: ..."` で gpt-image-2 が生成。出力は `~/.codex/generated_images/<session-id>/ig_*.png`（cwd保存は sandbox で失敗しても本体はここに残る）。**OpenAIポリシーが厳格**：「巨乳」等の語は `rejected for sexualized content` で拒否→「Fカップ」等の婉曲表現で通過。Grok はこの種の制限が緩く同プロンプトをそのまま通す。品質: Codex=ナチュラル/リアル、Grok=華やか/SNS映え。
 
-[[slide-making-skill-v2]]（同じ conda LD 汚染問題）, [[grok-media]] 連携。
+**LTX-2.3(22B)が最高品質i2v・実機成功（2026-06-22）**:
+- 「A14Bより高品質なモデルは？」→ Codex/Web調査で **LTX-2.3 が open-weights 品質1位**（A14Bと同tier以上）。Wan2.5やWan2.2上位I2VはHF未公開（API/ベータのみ）。HunyuanVideo-I2Vは720pで60-80GB必要→48GB不可。SkyReels-V2-I2V-14Bは映画的だがWan2.1比較。
+- **LTX-2.3 は diffusers 対応**（私の旧 `gen_video_ltx2.py`(公式ltx_pipelines前提)ではなく diffusers経由が正解）。新規 `scripts/gen_ltx23.py` を作成。repo=`diffusers/LTX-2.3-Diffusers`、class=`LTX2ImageToVideoPipeline`、戻り値=(video, audio)。
+- **`enable_sequential_cpu_offload` で ~5GB VRAM**（A14Bの37GBより遥かに軽い）・**70秒/step×30step**（A14Bの146秒/step×40より速い＝合計約35分 vs 1時間37分）。bf16でfp8不要。~95GB DL。
+- **LTX-2.3 特有の必須call引数**: `stg_scale=1.0, modality_scale=3.0, guidance_rescale=0.7（露出オーバー防止）, spatio_temporal_guidance_blocks=[28], use_cross_timestep=True`。frame 8k+1, dim/32。
+- **Gemma-3 はオプション（プロンプト強化のみ）→ 使わなければ gated 不要**で plain i2v が動く。
+- **LTX-Video 0.9.8 の「動画が崩壊（時間とともに白飛び）」の真因**: VAEをbf16にした副作用＋`guidance_rescale`未使用。LTX-2.3 では `guidance_rescale=0.7` で露出破綻なし（frame0輝度128→最終128で一定）を確認。0.9.8側も同パラメータで直せるはず。
+- 音声出力は `encode_video` が PyAV 必要 → 未導入なら `export_to_video`(動画のみ)に自動フォールバック。音声込みは PEP723 に `av` 追加で対応。
+
+[[slide-making-skill-v2]]（同じ conda LD 汚染問題）, [[grok-media]] 連携, [[codex-consult]]（高品質モデル調査をCodexに委譲）。
