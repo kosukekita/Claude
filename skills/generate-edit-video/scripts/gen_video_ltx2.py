@@ -2,7 +2,7 @@
 # /// script
 # requires-python = ">=3.10"
 # dependencies = [
-#   "torch",
+#   "torch==2.5.1",
 #   # Official Lightricks inference code. diffusers has NO LTX-2 support (see
 #   # header). Package/module name has historically drifted ("ltx", "ltx-video",
 #   # "ltx_video", "ltx_pipelines"); we install from the official repo and probe
@@ -20,6 +20,17 @@
 #   "numpy",
 #   "huggingface-hub",
 # ]
+#
+# # Pin torch to the CUDA 12.1 build: this rig's NVIDIA driver is CUDA 12.2
+# # (12020); default PyPI torch wheels target a newer CUDA runtime and fail with
+# # "driver is too old". cu121 wheels run fine on 12.2. See reference/setup.md.
+# [tool.uv.sources]
+# torch = { index = "pytorch-cu121" }
+#
+# [[tool.uv.index]]
+# name = "pytorch-cu121"
+# url = "https://download.pytorch.org/whl/cu121"
+# explicit = true
 # ///
 """
 gen_video_ltx2.py — run LTX-2.3 (the ~22B AUDIO+VIDEO model) locally via the

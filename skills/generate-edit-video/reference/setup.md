@@ -193,18 +193,36 @@ Grok. That's fine — local-single covers almost everything on this 96 GB rig.
 
 ---
 
-## 6. CUDA 12.2 wheel compatibility
+## 6. CUDA 12.2 wheel compatibility (IMPORTANT — verified gotcha)
 
-The driver is **CUDA 12.2**, but the CUDA runtime ships **inside the PyTorch wheel**. CUDA
-minor-version compatibility means **cu124 (and cu121 / cu126) wheels run fine on a 12.2
-driver** — you do NOT need a cu122-exact wheel. `uv run` handles this via the PEP723 deps,
-but if you build a venv by hand, install from the cu124 index:
+The driver is **CUDA 12.2 (12020)**. The CUDA runtime ships **inside the PyTorch wheel**,
+but **the default PyPI `torch` wheel targets a NEWER CUDA runtime and FAILS on this driver**
+with: `RuntimeError: The NVIDIA driver on your system is too old (found version 12020)`.
+This was hit live by `gen_image.py` before the fix.
+
+**Fix (already baked into the gen scripts):** the PEP723 headers pin `torch==2.5.1` and add a
+`cu121` index, so `uv run` installs the CUDA 12.1 build, which runs fine on the 12.2 driver
+(verified: `torch.cuda.is_available()` True, matmul OK on the A6000):
+
+```toml
+# (inside the # /// script ... # /// block of each gen_*.py)
+dependencies = ["torch==2.5.1", ...]
+[tool.uv.sources]
+torch = { index = "pytorch-cu121" }
+[[tool.uv.index]]
+name = "pytorch-cu121"
+url = "https://download.pytorch.org/whl/cu121"
+explicit = true
+```
+
+If you build a venv by hand, install torch the same way:
 
 ```bash
 source scripts/env.sh
-"$UV" pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
-# (cu121 also works against the 12.2 driver if you prefer)
+"$UV" pip install "torch==2.5.1" --index-url https://download.pytorch.org/whl/cu121
 ```
+
+(cu124 *may* also work, but **cu121 is the verified-good choice on this 12.2 driver** — use it.)
 
 These are **Ampere** A6000s (no Hopper FA3, limited fp8 matmul):
 

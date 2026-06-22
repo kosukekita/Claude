@@ -2,7 +2,8 @@
 # /// script
 # requires-python = ">=3.10"
 # dependencies = [
-#     "torch",
+#     "torch==2.5.1",
+#     "numpy",
 #     "diffusers @ git+https://github.com/huggingface/diffusers",
 #     "transformers>=4.51.3",
 #     "accelerate",
@@ -11,6 +12,17 @@
 #     "protobuf",
 #     "bitsandbytes",
 # ]
+#
+# # Pin torch to the CUDA 12.1 build: this rig's NVIDIA driver is CUDA 12.2
+# # (12020), and the default PyPI torch wheels target a newer CUDA runtime and
+# # fail with "driver is too old". cu121 wheels run fine on 12.2. See setup.md.
+# [tool.uv.sources]
+# torch = { index = "pytorch-cu121" }
+#
+# [[tool.uv.index]]
+# name = "pytorch-cu121"
+# url = "https://download.pytorch.org/whl/cu121"
+# explicit = true
 # ///
 """
 generate_image.py — unified LOCAL-FIRST text-to-image generation.
