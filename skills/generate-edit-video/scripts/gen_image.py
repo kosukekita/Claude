@@ -90,6 +90,19 @@ MODELS: dict[str, dict] = {
         "gated": True,
         "license": "FLUX.1 community (non-commercial), GATED on HF",
     },
+    "flux.1-krea-dev": {
+        # FLUX.1 variant tuned for "aesthetic photography" — more natural,
+        # less plastic than FLUX.1-dev for iPhone-style daily snapshots.
+        "repo": "black-forest-labs/FLUX.1-Krea-dev",
+        "pipeline": "FluxPipeline",
+        "vram_bf16_gb": 33.0,
+        "vram_offload_floor_gb": 12.0,
+        "default_steps": 32,
+        "default_guidance": 4.5,
+        "turbo": False,
+        "gated": True,
+        "license": "FLUX.1 community (non-commercial), GATED on HF",
+    },
     "flux.1-schnell": {
         "repo": "black-forest-labs/FLUX.1-schnell",
         "pipeline": "FluxPipeline",
@@ -235,7 +248,7 @@ def select_model(
     if backend == "sdxl":
         return _fit_or_offload("sdxl", best_free, want_offload, margin)
 
-    if backend in {"qwen-image", "flux.2-dev", "z-image-turbo"}:
+    if backend in {"qwen-image", "flux.2-dev", "z-image-turbo", "flux.1-krea-dev"}:
         return _fit_or_offload(backend, best_free, want_offload, margin)
 
     # auto --------------------------------------------------------------------
@@ -528,7 +541,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--backend",
         choices=[
             "auto", "flux", "sdxl", "grok",
-            "qwen-image", "flux.2-dev", "z-image-turbo",
+            "qwen-image", "flux.2-dev", "z-image-turbo", "flux.1-krea-dev",
         ],
         default="auto",
         help="generation backend (default: auto). qwen-image/flux.2-dev/"
