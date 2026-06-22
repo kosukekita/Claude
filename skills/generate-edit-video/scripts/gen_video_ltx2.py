@@ -435,6 +435,12 @@ def _write_mp4(out_path: str, frames, fps: int, audio=None) -> None:
     audio sample-rate/format the official pipeline returns before wiring this.
     For now we write the video reliably and log that audio mux needs the repo's
     documented sample rate; cloud_fal.py already returns muxed a/v if needed.
+
+    Output is pinned to yuv420p + faststart for universal playback (QuickTime/
+    Safari/browsers/PowerPoint cannot decode yuv444p, which some imageio-ffmpeg
+    versions emit by default). LTX-2 dims are always /32 -> even, so no extra
+    even-dimension padding is needed (macro_block_size=None keeps the exact
+    requested size).
     """
     import numpy as np
     import imageio
@@ -460,6 +466,8 @@ def _write_mp4(out_path: str, frames, fps: int, audio=None) -> None:
     writer = imageio.get_writer(
         str(out), fps=int(fps), codec="libx264",
         quality=8, macro_block_size=None,
+        pixelformat="yuv420p",                       # universal-playback chroma
+        output_params=["-movflags", "+faststart"],   # web/streaming-friendly mp4
     )
     try:
         for fr in seq:

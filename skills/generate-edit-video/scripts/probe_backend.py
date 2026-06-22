@@ -40,8 +40,12 @@ PRIORITY LADDER (decided in EXACTLY this order)
                      offload=True, precision bf16 (or fp8 if that's all that fits).
   3. local-multi   — ONLY for wan_big models, ONLY when want_quality==quality,
                      AND both GPUs are sufficiently free. multigpu=True.
-                     (This tier is a QUALITY upsell, hence it sits below the
-                     single-card tiers in the ladder but is checked before cloud.)
+                     (This tier is a QUALITY upsell. It is EVALUATED before
+                     local-offload because on a 2x48GB rig a big-Wan job always
+                     clears the single-card offload floor at fp8, so testing
+                     offload first would make multi unreachable — matching
+                     gen_video.py's builtin_select, which checks multi before
+                     single/offload inside its "fits natively" branch.)
   4. cloud-modal   — if MODAL_TOKEN_ID / MODAL_TOKEN_SECRET present.
   5. cloud-fal     — else if FAL_KEY present.
   6. grok          — terminal fallback (delegates to the grok-media skill).
@@ -503,8 +507,8 @@ def build_parser() -> argparse.ArgumentParser:
             "nvidia-smi), and picks a backend by this priority:\n"
             "  local-single (bf16, freest card)            best\n"
             "  local-single (fp8, if bf16 won't fit)\n"
-            "  local-offload (>= offload_floor, offload=on)\n"
             "  local-multi (wan_big + --want-quality quality + both GPUs free)\n"
+            "  local-offload (>= offload_floor, offload=on)\n"
             "  cloud-modal (MODAL_TOKEN_ID/SECRET set)\n"
             "  cloud-fal   (FAL_KEY set)\n"
             "  grok        (terminal fallback -> grok-media skill)\n\n"

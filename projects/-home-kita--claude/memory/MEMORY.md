@@ -2,3 +2,4 @@
 - [alphaXiv MCP needs type:http](alphaxiv-mcp-streamable-http.md) — alphaXiv must be Streamable HTTP not sse; sse hangs 30s; auth-vs-transport tell
 - [pCloud project memory (Solution A)](pcloud-project-memory-solution-a.md) — project memory in <project>/.claude-memory/ for cross-PC sync; inject hook + migration helper
 - [slide-making skill v2](slide-making-skill-v2.md) — ask HTML-or-PPTX first; PPTX native python-pptx; GPT Image parts only; anaconda LD_LIBRARY_PATH breaks soffice
+- [generate-edit-video skill](generate-edit-video-skill.md) — local-GPU-first video/image gen+edit; A6000x2 96GB; probe_vram→probe_backend→gen_video chain verified; Grok delegated to grok-media

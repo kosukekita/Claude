@@ -123,10 +123,16 @@ source scripts/env.sh
 # larger:
 "$UV" run --with huggingface_hub huggingface-cli download Wan-AI/Wan2.2-I2V-A14B-Diffusers   # Wan-A14B (large, ~moe)
 "$UV" run --with huggingface_hub huggingface-cli download black-forest-labs/FLUX.1-dev       # gated
-# LTX-2.3 (gated Gemma; NOT diffusers — handled by gen_video_ltx2.py):
-"$UV" run --with huggingface_hub huggingface-cli download Lightricks/LTX-2.3 ltx-2.3-22b-distilled-1.1.safetensors --local-dir ./weights
-"$UV" run --with huggingface_hub huggingface-cli download Lightricks/LTX-2.3 ltx-2.3-spatial-upscaler-x2-1.1.safetensors --local-dir ./weights
-"$UV" run --with huggingface_hub huggingface-cli download google/gemma-3-12b-it-qat-q4_0-unquantized --local-dir ./weights/gemma  # gated
+# LTX-2.3 (gated Gemma; NOT diffusers — loaded by gen_video_ltx2.py via from_pretrained):
+#   These two repos are gated: `huggingface-cli login` + accept BOTH licenses first.
+#   gen_video_ltx2.py pulls weights itself on first run (into HF_HOME) through the
+#   official Lightricks/LTX-2 pipeline; you normally do NOT pre-stage these.
+#   If you do want to warm the cache, pull the WHOLE repos — the exact per-file
+#   names/layout inside Lightricks/LTX-2.3 are NOT verified here (the LTX-2 repo has
+#   no diffusers support and gen_video_ltx2.py treats its file layout as unconfirmed;
+#   see its `# TODO[VERIFY]` notes). Do not invent individual *.safetensors filenames.
+"$UV" run --with huggingface_hub huggingface-cli download Lightricks/LTX-2.3               # gated, ~22B + upscalers (~large)
+"$UV" run --with huggingface_hub huggingface-cli download google/gemma-3-12b-it-qat-q4_0-unquantized   # gated text encoder
 ```
 
 Rough sizes / disk budget (**~217 GB free on `/`** — plan, don't fill it):
@@ -249,4 +255,4 @@ If (b) shows two ~48 GB cards and `nvidia_smi_available:true`, and (e) writes a 
 `source scripts/env.sh` then `"$UV" run scripts/<tool>.py ...` per `SKILL.md`.
 
 For deeper troubleshooting (OOM ladder, VAE fp32, diffusers-git-main for FLUX.2/Z-Image,
-the libtinfo gotcha in detail), see `reference/reference.md`.
+the libtinfo gotcha in detail), see `reference/backend-selection.md`.

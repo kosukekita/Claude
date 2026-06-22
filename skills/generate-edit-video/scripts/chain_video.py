@@ -179,19 +179,9 @@ def extract_last_frame(clip: Path, out_png: Path, env: dict) -> None:
             "-loglevel", "error",
             "-y",
             "-i", str(clip),
-            "-vf", "select='eq(n\\,0)'+reverse",  # placeholder; replaced below
-        ]
-        # The robust portable fallback: decode all, keep only the final frame.
-        cmd2 = [
-            FFMPEG,
-            "-hide_banner",
-            "-loglevel", "error",
-            "-y",
-            "-i", str(clip),
-            "-vsync", "vfr",
-            "-q:v", "1",
             "-update", "1",
             "-frames:v", "1",
+            "-q:v", "1",
             "-vf", "reverse",
             str(out_png),
         ]
@@ -213,9 +203,9 @@ def gen_scene(
     prompt: str,
     negative_prompt: str,
     model: str,
-    num_frames: int | None,
-    fps: int | None,
-    backend: str | None,
+    num_frames: "int | None",
+    fps: "int | None",
+    backend: "str | None",
     env: dict,
 ) -> None:
     cmd = [
@@ -252,7 +242,7 @@ def gen_scene(
 
 
 # --------------------------------------------------------------------------- #
-def load_scenes(path: Path) -> list[dict]:
+def load_scenes(path: Path) -> "list[dict]":
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except Exception as exc:  # noqa: BLE001

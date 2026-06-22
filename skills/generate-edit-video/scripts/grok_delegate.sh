@@ -14,6 +14,11 @@
 #                         [--image PATH] [--out PATH]
 set -euo pipefail
 
+# Scrub anaconda libtinfo LD pollution before spawning `grok` (consistency with
+# the rest of the skill; harmless if env.sh is absent).
+# shellcheck source=/dev/null
+[ -f "$(dirname "$0")/env.sh" ] && . "$(dirname "$0")/env.sh" >/dev/null 2>&1 || true
+
 # --- locate the Grok CLI (grok-media documents grok.exe on Windows; on this
 # --- Linux box it is plain `grok`). Resolve without guessing flags. ---------
 GROK=""
@@ -23,13 +28,16 @@ for cand in "${GROK_BIN:-}" "$HOME/.grok/bin/grok" "$HOME/.grok/bin/grok.exe" gr
 done
 
 # --- args (echoed back only; never executed as Grok flags) ------------------
+# Note: we deliberately avoid `shift 2`, which fails under `set -e` when a
+# value-taking flag is the trailing arg with no value. Shift the flag, then
+# shift the value only if one is present.
 TASK="" ; PROMPT="" ; IMAGE="" ; OUT=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    --task)   TASK="${2:-}"  ; shift 2 ;;
-    --prompt) PROMPT="${2:-}"; shift 2 ;;
-    --image)  IMAGE="${2:-}" ; shift 2 ;;
-    --out)    OUT="${2:-}"   ; shift 2 ;;
+    --task)   TASK="${2:-}"  ; shift; [ "$#" -gt 0 ] && shift ;;
+    --prompt) PROMPT="${2:-}"; shift; [ "$#" -gt 0 ] && shift ;;
+    --image)  IMAGE="${2:-}" ; shift; [ "$#" -gt 0 ] && shift ;;
+    --out)    OUT="${2:-}"   ; shift; [ "$#" -gt 0 ] && shift ;;
     -h|--help) TASK="${TASK:-help}"; shift ;;
     *) printf 'warn: ignoring unknown arg: %s\n' "$1" >&2; shift ;;
   esac
