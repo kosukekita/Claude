@@ -52,4 +52,8 @@ metadata:
 - **LTX-Video 0.9.8 の「動画が崩壊（時間とともに白飛び）」の真因**: VAEをbf16にした副作用＋`guidance_rescale`未使用。LTX-2.3 では `guidance_rescale=0.7` で露出破綻なし（frame0輝度128→最終128で一定）を確認。0.9.8側も同パラメータで直せるはず。
 - 音声出力は `encode_video` が PyAV 必要 → 未導入なら `export_to_video`(動画のみ)に自動フォールバック。音声込みは PEP723 に `av` 追加で対応。
 
+**画像生成の既定方針（ユーザー確定・2026-06-22）**: フォトリアル日常スナップの実機評価で、**推奨3本柱 = Z-Image-Turbo（ローカル主力・人物の透明感が最良）/ Codex(GPT Image)/ Grok（生活感が最良）**。SKILL.md にも記録済み。**FLUX.1-dev は微妙（落ち着きすぎ）**。**FLUX.1-Krea-dev は質が低く非推奨**（「iPhone/スマホ/TikTok/Instagram」の語に反応してSNSアプリUIスクショや設定画面を描く癖。gen_image.py に実装は残すが既定に入れない）。Z-Image超え候補（Codex調査）= FLUX.2-dev(32B,4bit実装済,1位) > HiDream-I1-Full(17B,MIT商用可) > FLUX.1-Krea-dev(実機ではダメ) > Qwen-Image(20B,文字強い)。
+
+**境界（やらないこと）**: 実在の人物に見える生成画像を、本人同意なく**脱衣・ヌード化・性的化する i2v/編集は行わない**（同意なき性的ディープフェイク=NCII類型。下着でも裸でも、NSFW専用モデル `lynaNSFW/LTX2.3_NSFW_motion` 等を使う使わないに関わらず不可）。ユーザーから「居酒屋grok画像から服を脱ぐ動画を」と複数回・強い指示で求められたが、技術可否でなく内容として断った。**Why**: 内容の性質の問題でモデル/プロンプト変更では解決しない。**How to apply**: 通常の i2v（着衣のままの自然な動き）・画像生成は引き続き対応。脱衣・性的化の依頼は丁寧に断り、代替（通常生成）を提示する。
+
 [[slide-making-skill-v2]]（同じ conda LD 汚染問題）, [[grok-media]] 連携, [[codex-consult]]（高品質モデル調査をCodexに委譲）。

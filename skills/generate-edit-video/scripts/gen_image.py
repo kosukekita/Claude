@@ -91,8 +91,13 @@ MODELS: dict[str, dict] = {
         "license": "FLUX.1 community (non-commercial), GATED on HF",
     },
     "flux.1-krea-dev": {
-        # FLUX.1 variant tuned for "aesthetic photography" — more natural,
-        # less plastic than FLUX.1-dev for iPhone-style daily snapshots.
+        # FLUX.1 variant marketed for "aesthetic photography". NOTE (real-world
+        # eval 2026-06): on this user's JP daily-snapshot prompts it scored LOW —
+        # it tends to render SOCIAL-APP UI SCREENS (Instagram grid / iPhone app
+        # list) instead of a plain photo when the prompt mentions iPhone / phone
+        # / TikTok / Instagram. NOT a default; left selectable only via explicit
+        # --backend flux.1-krea-dev. Preferred image trio = z-image-turbo / Codex
+        # (GPT Image) / Grok. See SKILL.md.
         "repo": "black-forest-labs/FLUX.1-Krea-dev",
         "pipeline": "FluxPipeline",
         "vram_bf16_gb": 33.0,
