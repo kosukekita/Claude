@@ -27,4 +27,11 @@ metadata:
 - **FLUX の日本語プロンプト弱点**: CLIP テキストエンコーダが 77トークンで切り捨て（T5側は長文OK）。長い日本語は英語化推奨。
 - **Grok は grok-media に委譲**。このPC(Linux)に Grok CLI 未導入だったので `curl -fsSL https://x.ai/cli/install.sh | bash` で導入(v0.2.60, ~/.grok/bin/grok)。**スマホ/リモート環境のログインは `grok login --device-auth`（公式に headless/remote 用）が有効**: PCで出る URL+code をスマホのXログイン済みブラウザで承認すれば完走する（`!`経由でなく background 起動で URL を取り出して提示する形でも成立した）。出力は cwd でなく `~/.grok/sessions/<enc-cwd>/<sid>/images/N.jpg` に出る（grok-media の回収手順通り）。ログイン: u879269j@yahoo.co.jp。
 
+**画像生成 5モデルを実機で全成功（2026-06-22 追加実装・5枚比較を生成）**:
+- 当初 gen_image.py は FLUX.1/SDXL のみ。**Qwen-Image / FLUX.2-dev / Z-Image-Turbo を追加実装**（diffusers git-main の QwenImagePipeline / Flux2Pipeline / ZImagePipeline。すべて存在。`--backend` に追加）。
+- **torchvision は必須（実害）**: 無いと FLUX.2 の PixtralProcessor が `Placeholder` でロード失敗、Qwen/CLIP/Siglip プロセッサも degrade。PEP723 に `torchvision==0.20.1`(cu121) と `transformers>=4.56` を追加して解決。
+- **48GB 単一 A6000 の VRAM 実測**: FLUX.1-dev=native可(33GB) / SDXL=native / Z-Image-Turbo=native(16GB,9step・品質高・日本語◎) / **Qwen-Image=20B でnative OOM→offload必須**（vram_bf16_gb を 56 に設定し offload 強制）/ **FLUX.2-dev=32B+Mistral3 で offload でも OOM→4bit量子化必須**（`PipelineQuantizationConfig(quant_backend="bitsandbytes_4bit", nf4, components=["transformer","text_encoder"])` + offload で ~20GB に収め成功・約3s/step）。MODELS に `quant_4bit`/`quant_components` フラグ追加。
+- **HF キャッシュ実体は `/data`（19TB, 9.5TB空き）にシンボリックリンク**。`/home` 217GB とは別。大型モデル（Qwen ~60GB, LTX-2.3 ~100GB）も余裕。
+- 品質所感（同一プロンプト・日本語）: 日本語理解と"今っぽいカフェ"再現は **Grok ≈ Z-Image-Turbo > Qwen > FLUX.2 > FLUX.1-dev**。FLUX系は日本語が弱い（英語化推奨）。Z-Image-Turbo は9stepで高品質・コスパ最良。
+
 [[slide-making-skill-v2]]（同じ conda LD 汚染問題）, [[grok-media]] 連携。

@@ -3,9 +3,10 @@
 # requires-python = ">=3.10"
 # dependencies = [
 #     "torch==2.5.1",
+#     "torchvision==0.20.1",
 #     "numpy",
 #     "diffusers @ git+https://github.com/huggingface/diffusers",
-#     "transformers>=4.51.3",
+#     "transformers>=4.56",
 #     "accelerate",
 #     "safetensors",
 #     "sentencepiece",
@@ -16,8 +17,12 @@
 # # Pin torch to the CUDA 12.1 build: this rig's NVIDIA driver is CUDA 12.2
 # # (12020), and the default PyPI torch wheels target a newer CUDA runtime and
 # # fail with "driver is too old". cu121 wheels run fine on 12.2. See setup.md.
+# # torchvision is REQUIRED for FLUX.2's PixtralProcessor and Qwen/CLIP/Siglip
+# # image processors (without it they degrade to Placeholder/Pil stubs and
+# # FLUX.2 fails to load). Keep it on the same cu121 index as torch.
 # [tool.uv.sources]
 # torch = { index = "pytorch-cu121" }
+# torchvision = { index = "pytorch-cu121" }
 #
 # [[tool.uv.index]]
 # name = "pytorch-cu121"
@@ -107,6 +112,46 @@ MODELS: dict[str, dict] = {
         "gated": False,
         "license": "CreativeML OpenRAIL++-M",
     },
+    "qwen-image": {
+        # 20B model: bf16 needs >48GB on a single A6000 (verified OOM at native),
+        # so it is set above 48 to FORCE offload on auto/explicit paths.
+        "repo": "Qwen/Qwen-Image",
+        "pipeline": "QwenImagePipeline",
+        "vram_bf16_gb": 56.0,
+        "vram_offload_floor_gb": 20.0,
+        "default_steps": 50,
+        "default_guidance": 4.0,
+        "turbo": False,
+        "gated": False,
+        "license": "Apache-2.0 (commercial OK)",
+    },
+    "flux.2-dev": {
+        # 32B transformer + Mistral3/Pixtral text encoder. Even bf16 + model
+        # cpu-offload OOMs on a single 48GB A6000 (verified). REQUIRES 4-bit
+        # quantization (bitsandbytes) to fit (~20GB) -> quant_4bit forces it.
+        "repo": "black-forest-labs/FLUX.2-dev",
+        "pipeline": "Flux2Pipeline",
+        "vram_bf16_gb": 64.0,
+        "vram_offload_floor_gb": 20.0,
+        "default_steps": 28,
+        "default_guidance": 3.5,
+        "turbo": False,
+        "gated": True,
+        "quant_4bit": True,             # always load 4-bit on this rig
+        "quant_components": ["transformer", "text_encoder"],
+        "license": "FLUX.2 community (non-commercial), GATED on HF",
+    },
+    "z-image-turbo": {
+        "repo": "Tongyi-MAI/Z-Image-Turbo",
+        "pipeline": "ZImagePipeline",
+        "vram_bf16_gb": 16.0,
+        "vram_offload_floor_gb": 8.0,
+        "default_steps": 9,             # 9 steps == 8 DiT forwards
+        "default_guidance": 0.0,        # distilled w/o CFG; high guidance breaks it
+        "turbo": True,
+        "gated": False,
+        "license": "Apache-2.0 (commercial OK)",
+    },
 }
 
 # auto ladder: best-quality LOCAL model first, then cheaper/smaller, then grok.
@@ -189,6 +234,9 @@ def select_model(
 
     if backend == "sdxl":
         return _fit_or_offload("sdxl", best_free, want_offload, margin)
+
+    if backend in {"qwen-image", "flux.2-dev", "z-image-turbo"}:
+        return _fit_or_offload(backend, best_free, want_offload, margin)
 
     # auto --------------------------------------------------------------------
     if backend == "auto":
@@ -339,6 +387,26 @@ def run_local(
 
     m = MODELS[key]
     repo = m["repo"]
+    want_cls = m["pipeline"]
+
+    # The newer pipelines (Qwen-Image, FLUX.2, Z-Image) are diffusers git-main
+    # only. Import them lazily/defensively so older diffusers still loads the
+    # FLUX/SDXL paths, and we give a clear message + grok fallback if missing.
+    extra_cls: dict = {}
+    if want_cls not in {"FluxPipeline", "StableDiffusionXLPipeline"}:
+        try:
+            import diffusers as _df  # noqa: PLC0415
+            cls = getattr(_df, want_cls, None)
+            if cls is None:
+                raise ImportError(want_cls)
+            extra_cls[want_cls] = cls
+        except Exception as exc:  # noqa: BLE001
+            log(
+                f"{want_cls} not available in this diffusers build ({exc}); "
+                f"need diffusers git-main. Falling back to grok-media."
+            )
+            emit_grok_delegation(prompt, out, f"{want_cls} unavailable: {exc}")
+            return 0
     if steps is None:
         steps = m["default_steps"]
     if guidance is None:
@@ -358,9 +426,36 @@ def run_local(
     pipe_cls = {
         "FluxPipeline": FluxPipeline,
         "StableDiffusionXLPipeline": StableDiffusionXLPipeline,
-    }[m["pipeline"]]
+        **extra_cls,
+    }[want_cls]
 
-    pipe = pipe_cls.from_pretrained(repo, torch_dtype=torch.bfloat16)
+    from_kwargs: dict = {"torch_dtype": torch.bfloat16}
+    # Z-Image's loader is happier with low_cpu_mem_usage disabled (per model card).
+    if want_cls == "ZImagePipeline":
+        from_kwargs["low_cpu_mem_usage"] = False
+
+    # 4-bit quantization (bitsandbytes) for models too big for 48GB even with
+    # offload (e.g. FLUX.2-dev, 32B+Mistral3). Quantizes the heavy components
+    # to ~NF4 so the pipeline fits, then still uses cpu-offload for headroom.
+    if m.get("quant_4bit"):
+        try:
+            from diffusers import PipelineQuantizationConfig  # noqa: PLC0415
+            comps = m.get("quant_components", ["transformer", "text_encoder"])
+            from_kwargs["quantization_config"] = PipelineQuantizationConfig(
+                quant_backend="bitsandbytes_4bit",
+                quant_kwargs={
+                    "load_in_4bit": True,
+                    "bnb_4bit_quant_type": "nf4",
+                    "bnb_4bit_compute_dtype": torch.bfloat16,
+                },
+                components_to_quantize=comps,
+            )
+            log(f"{key}: loading with bitsandbytes 4-bit NF4 (components={comps})")
+            offload = True  # 4-bit still benefits from offload headroom
+        except Exception as exc:  # noqa: BLE001
+            log(f"{key}: 4-bit quantization unavailable ({exc}); trying bf16+offload")
+
+    pipe = pipe_cls.from_pretrained(repo, **from_kwargs)
     if offload:
         pipe.enable_model_cpu_offload()
     else:
@@ -379,8 +474,10 @@ def run_local(
     }
     if gen is not None:
         kwargs["generator"] = gen
-    # FLUX ignores negative_prompt; SDXL uses it.
-    if negative and m["pipeline"] == "StableDiffusionXLPipeline":
+    # FLUX(.1/.2) ignore negative_prompt; SDXL / Qwen-Image / Z-Image accept it.
+    if negative and want_cls in {
+        "StableDiffusionXLPipeline", "QwenImagePipeline", "ZImagePipeline",
+    }:
         kwargs["negative_prompt"] = negative
 
     image = pipe(**kwargs).images[0]
@@ -429,9 +526,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument(
         "--backend",
-        choices=["auto", "flux", "sdxl", "grok"],
+        choices=[
+            "auto", "flux", "sdxl", "grok",
+            "qwen-image", "flux.2-dev", "z-image-turbo",
+        ],
         default="auto",
-        help="generation backend (default: auto)",
+        help="generation backend (default: auto). qwen-image/flux.2-dev/"
+             "z-image-turbo need diffusers git-main.",
     )
     p.add_argument("--prompt", required=True, help="text prompt")
     p.add_argument("--negative-prompt", default=None, help="negative prompt (SDXL)")
