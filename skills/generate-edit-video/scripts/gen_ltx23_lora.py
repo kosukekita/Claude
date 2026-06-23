@@ -14,10 +14,13 @@
 #   "protobuf",
 #   "imageio",
 #   "imageio-ffmpeg",
+#   "av",
 #   "pillow",
 #   "numpy",
 #   "ftfy",
 # ]
+# # av (PyAV) is needed by diffusers.utils.encode_video to MUX the 24kHz audio
+# # LTX-2.3 generates; without it we silently fall back to video-only export.
 #
 # # cu121 torch for the CUDA 12.2 driver (see reference/setup.md). torchvision is
 # # required for the image conditioning processors. peft is needed for LoRA stacking.
