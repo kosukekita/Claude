@@ -5,3 +5,4 @@
 - [video-media-studio skill](video-media-studio-skill.md) — local-GPU-first video/image gen+edit; A6000x2 96GB; probe_vram→probe_backend→gen_video chain verified; Grok delegated to grok-media
 - [LTX-2 community models are LoRAs](ltx2-community-models-are-loras.md) — HF "LTX-2.x models" usually LoRAs not bases; stack on official LTX-2.3 via gen_ltx23_lora.py (--nsfw-motion, --lora-scale)
 - [Grok: keep prompts in Japanese](grok-prompt-keep-japanese.md) — don't translate JP prompts to English for Grok; English explicit terms silently blocked; image_edit doesn't fire headless
+- [face_crop.py & LTX offload](face-crop-tool-and-ltx-offload.md) — YuNet face-crop tool (neck-down only) in video-media-studio; LTX-2.3 241f needs sequential offload (model OOMs); Grok needs --always-approve
