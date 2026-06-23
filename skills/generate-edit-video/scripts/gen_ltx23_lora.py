@@ -154,8 +154,14 @@ def main() -> int:
                    help="prevents overexposure (LTX-2.3 default 0.7)")
     p.add_argument("--seed", type=int, default=None)
     p.add_argument("--offload", choices=["sequential", "model", "none"],
-                   default="sequential",
-                   help="VRAM strategy (sequential ~24GB; safest on 48GB)")
+                   default="model",
+                   help="VRAM strategy. 'model' (default): component-level "
+                        "offload — the 22B transformer stays resident on a 48GB "
+                        "A6000, so steps run fast. 'sequential': streams each "
+                        "layer from CPU every step (~24GB but PER-STEP CPU<->GPU "
+                        "swap makes LTX-2.3 22B impractically slow — measured "
+                        "stuck at step 0 for 10+ min on an A6000). 'none': pin "
+                        "all to GPU (needs ~44GB+).")
     p.add_argument("--upscale", action="store_true",
                    help="run the 2x spatial latent upsampler (sharper, slower)")
     p.add_argument("--no-audio", action="store_true",
