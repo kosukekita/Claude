@@ -11,6 +11,8 @@ HF 上の "LTX-2.x モデル"（例 `lynaNSFW/LTX2.3_NSFW_motion`, `lynaNSFW/LTX
 
 **設定の正解**: フル base を差し替えるのではなく、公式 base に LoRA を `--lora` でスタックする。`video-media-studio` スキルに `scripts/gen_ltx23_lora.py` を新設（`gen_ltx23.py` + `load_lora_weights` 複数枚スタック・`--lora-scale` strength・`--nsfw-motion` ショートカット）。diffusers の `LTX2LoraLoaderMixin`（`_convert_non_diffusers_ltx2_lora_to_diffusers`, `non_diffusers_prefix='diffusion_model'`）が `diffusion_model.` プレフィックスを `transformer.` に自動変換 → ComfyUI/wan2gp 不要で `load_lora_weights()` 直接ロード。NSFW_motion は rank64・bf16・2496テンソル（audio_attn/audio_to_video_attn 含む）を全変換できることを実機確認。作者推奨 strength は 0.7。
 
-**実機検証済み（A6000・sequential offload ~24GB・416x768/49f）**: base ロード→LoRA attach（`adapters active`）→推論開始まで通過。`diffusers/LTX-2.3-Diffusers` は HF キャッシュ済み。
+**offload は `model` が正解（罠）**: `--offload sequential` は LTX-2.3 22B だと層を毎ステップ CPU↔GPU swap するため step0 で10分以上固まり実用外。`--offload model`（コンポーネント単位オフロード・22B transformer は 48GB A6000 に常駐）を使う。`none` は ~44GB+ 必要。`diffusers/LTX-2.3-Diffusers` は HF キャッシュ済み。
+
+**実機の生成速度（A6000・model offload）**: 解像度依存が大きい。低解像 416x768/49f は数秒/step だが、本番 640x1152/121f/30step では **~23.6s/step → 全体約12分**（i2v from Grok 720x1280, NSFW_motion scale0.7, cfg3.0/rescale0.7, 音声48kHz付き 5.04秒mp4 を生成、2026-06-23 実証）。run_in_background 推奨。`av(PyAV)` 依存追加済み（音声 mux 用）。
 
 関連: [[video-media-studio-skill]]。LTX-2.3 i2v は diffusers の `LTX2ImageToVideoPipeline` 対応（t2v は従来どおり `gen_video_ltx2.py` の公式 ltx_pipelines・専用 venv）。
