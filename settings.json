@@ -140,7 +140,7 @@
           },
           {
             "type": "command",
-            "command": "powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/detect-leaked-toolcall.ps1\"",
+            "command": "if command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/detect-leaked-toolcall.ps1\"; else bash \"$HOME/.claude/hooks/detect-leaked-toolcall.sh\"; fi",
             "timeout": 10
           }
         ]
