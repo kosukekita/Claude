@@ -46,7 +46,7 @@ unset LD_LIBRARY_PATH
 If `scripts/env.sh` is missing, create it once (idempotent — safe to source repeatedly):
 
 ```bash
-cat > /home/kita/.claude/skills/generate-edit-video/scripts/env.sh <<'EOF'
+cat > /home/kita/.claude/skills/video-media-studio/scripts/env.sh <<'EOF'
 # Source me before any python/ffmpeg/torchrun/huggingface-cli call.
 # Scrubs the anaconda libtinfo LD pollution and pins the HF cache to the big disk.
 
@@ -72,7 +72,7 @@ EOF
 Then verify:
 
 ```bash
-source /home/kita/.claude/skills/generate-edit-video/scripts/env.sh
+source /home/kita/.claude/skills/video-media-studio/scripts/env.sh
 echo "$UV"; echo "$HF_HOME"; echo "${LD_LIBRARY_PATH:-<empty, good>}"
 "$UV" --version          # confirms uv resolves and LD is clean
 ```
@@ -241,7 +241,7 @@ Run these in order; each should succeed before the next. All assume you've `cd`'
 skill dir or use absolute paths.
 
 ```bash
-cd /home/kita/.claude/skills/generate-edit-video
+cd /home/kita/.claude/skills/video-media-studio
 source scripts/env.sh
 
 # (a) env is clean + uv works

@@ -6,7 +6,7 @@
 """
 probe_vram.py — query per-GPU VRAM and recommend a backend tier.
 
-This is the heart of backend auto-selection for the generate-edit-video skill.
+This is the heart of backend auto-selection for the video-media-studio skill.
 It shells out to `nvidia-smi` (no Python GPU libraries needed), reads free/total
 VRAM for every visible GPU, prints a JSON summary, and — given --required-mb —
 picks a backend tier and the GPU index to use.

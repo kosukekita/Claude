@@ -28,7 +28,7 @@
 # ///
 """
 generate_video.py — unified video-generation entrypoint for the
-`generate-edit-video` skill.
+`video-media-studio` skill.
 
 CLI: --backend [auto|wan|ltx|grok], --task [t2v|i2v], --prompt, --image (i2v),
 --out, plus --model / --width / --height / --num-frames / --fps / --steps /

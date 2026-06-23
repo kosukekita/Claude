@@ -2,7 +2,7 @@
 FFMPEG RECIPES — Video Editing Toolkit Reference
 ================================================================================
 
-Heavy reference for the `generate-edit-video` skill's editing flow. Loaded only
+Heavy reference for the `video-media-studio` skill's editing flow. Loaded only
 when the user is editing existing video. The wrapper script
 `scripts/edit_video.py` injects the safe defaults below for the common ops;
 fall back to this cookbook for exotic cases. All commands run through the

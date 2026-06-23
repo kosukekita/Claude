@@ -1,4 +1,4 @@
-# models.md — Per-Model Deep Reference (generate-edit-video)
+# models.md — Per-Model Deep Reference (video-media-studio)
 
 Per-model lookup that `SKILL.md` defers to. Numbers here are
 **authoritative for the agent** and match `scripts/gen_video.py` FALLBACK_MODELS /

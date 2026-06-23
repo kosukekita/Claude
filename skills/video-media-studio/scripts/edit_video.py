@@ -4,7 +4,7 @@
 # dependencies = []
 # ///
 """
-edit_video.py — a thin, robust wrapper over ffmpeg for the `generate-edit-video`
+edit_video.py — a thin, robust wrapper over ffmpeg for the `video-media-studio`
 skill. Fully LOCAL editing (no GPU, no backend selection). It does NOT generate
 media — see gen_video.py / gen_image.py for that. This file wraps the *common*
 ffmpeg recipes with SAFE DEFAULTS; heavier / edge recipes live in

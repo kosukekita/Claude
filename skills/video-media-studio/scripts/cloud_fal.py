@@ -8,7 +8,7 @@
 # ///
 """
 cloud_fal.py — fal.ai hosted-inference fallback for Wan / LTX / FLUX, used by the
-`generate-edit-video` skill when probe_backend.py selects backend `cloud-fal`.
+`video-media-studio` skill when probe_backend.py selects backend `cloud-fal`.
 
 WHEN TO USE THIS (vs cloud_modal.py)
 ====================================

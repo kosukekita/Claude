@@ -163,7 +163,7 @@ MODELS: dict[str, dict] = {
 
 CACHE_DIR = "/cache"
 
-app = modal.App("generate-edit-video-cloud-fallback")
+app = modal.App("video-media-studio-cloud-fallback")
 
 # Persistent weight cache so a model downloads exactly once across all calls.
 weights_volume = modal.Volume.from_name(

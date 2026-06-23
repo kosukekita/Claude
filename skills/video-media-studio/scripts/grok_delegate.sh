@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # grok_delegate.sh — SIGNPOST, not an implementation.
 #
-# This is the *terminal fallback* for the generate-edit-video skill's Grok path.
+# This is the *terminal fallback* for the video-media-studio skill's Grok path.
 # It DOES NOT reimplement Grok. It (1) checks the Grok CLI is present + authed,
 # (2) prints the grok-media delegation contract, and (3) echoes any --task/--prompt
 # /--image/--out args back as a *suggested* grok-media invocation.

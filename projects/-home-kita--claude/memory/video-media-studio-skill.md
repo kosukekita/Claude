@@ -1,5 +1,5 @@
 ---
-name: generate-edit-video-skill
+name: video-media-studio-skill
 description: new local-GPU-first video/image gen+edit skill; backend auto-select chain (probe_vram->probe_backend->gen_video) verified on A6000x2
 metadata: 
   node_type: memory
@@ -7,7 +7,7 @@ metadata:
   originSessionId: 90ddda0a-24a1-4fc1-a7a7-1dd0531ce4a3
 ---
 
-`~/.claude/skills/generate-edit-video/` — digitalsamba/claude-code-video-toolkit を土台に新規作成した動画/画像の生成・編集スキル（2026-06-22）。
+`~/.claude/skills/video-media-studio/` — digitalsamba/claude-code-video-toolkit を土台に新規作成した動画/画像の生成・編集スキル（2026-06-22）。
 
 **設計の核**: LOCAL-GPU-FIRST + graceful fallback。優先順位 `local-single > local-offload > local-multi(Wan only, 公式torchrun) > cloud-modal > cloud-fal > grok`。
 - バックエンド選択は LLM の頭でやらず機械的に: `gen_video.py --backend auto` が subprocess で `probe_backend.py`（モデル認識・models.py 参照）を呼び、それが `probe_vram.py`（stdlib・nvidia-smi 実測）を呼ぶ。出力JSON契約 = `{backend,device,precision,offload,multigpu,model,why}`。**この3スクリプト連鎖は実機 A6000×2 でE2E動作確認済み**。

@@ -1,5 +1,5 @@
 # shellcheck shell=sh
-# env.sh — source this before running any generate-edit-video skill script.
+# env.sh — source this before running any video-media-studio skill script.
 #   . "$(dirname "$0")/env.sh"   (or with an absolute path)
 #
 # Goals:
