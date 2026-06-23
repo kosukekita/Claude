@@ -127,6 +127,9 @@ source scripts/env.sh
 codex exec --skip-git-repo-check --sandbox workspace-write \
   "Use your image_gen tool to generate one image from this Japanese prompt. Prompt: ..."
 #   回収: ls -dt ~/.codex/generated_images/*/ | head -1 の中の ig_*.png をコピー
+#   ⚠ ログが image_gen 発火前で途切れ exit 0 でも、画像は ~/.codex/generated_images/<sid>/ に出ていることがある。
+#     成否はログでなく generated_images/<その session id>/ の中身で判定する。
+#   顔リファレンス付き（男性）は `-i reference/assets/male-face-reference.jpg` + プロンプト stdin（後述「男性人物の顔リファレンス」）。
 
 # ③ Grok（grok-media に委譲。出力は ~/.grok/sessions/<enc-cwd>/<sid>/images/N.jpg）
 "$HOME/.grok/bin/grok" -p 'Use your image_gen tool to create an image: ...'
@@ -138,6 +141,17 @@ codex exec --skip-git-repo-check --sandbox workspace-write \
 - License: 商用可= Z-Image / FLUX.1-schnell / SDXL / Qwen-Image。gated+非商用= FLUX.1/2-dev。
 - **ポリシー差（重要）**: Codex(OpenAI) は身体表現に厳格で「巨乳」「Fカップ+色っぽい+妖艶」等の複合を `sexualized content` で拒否することがある（婉曲表現で通る場合あり）。**そういう表現は Grok かローカル（Z-Image/FLUX）が確実**。Grok・ローカルは制限が緩い。
 - さらに上の品質が要るとき → `reference/models.md` のモデル表（Qwen-Image 20B 等）。cloud は `cloud_modal.py` / `cloud_fal.py`。
+
+### 男性人物の顔リファレンス（必読・固定）
+
+**男性（man / male）を生成するときは、必ず `reference/assets/male-face-reference.jpg` を「この人物の顔」の参照として使う。** 正立済み（1080×1616 縦長）の、30代前半・黒髪ミディアム（柔らかい分け目）・太めの眉・健康的な肌・笑顔の日本人男性。指定がなくても男性が登場するシーンはこの顔に寄せる。
+
+参照のかけ方はバックエンドごとに異なる（実機検証済み）:
+- **Codex(GPT Image)** — 最も顔の同一性が出る。`codex exec --skip-git-repo-check -i reference/assets/male-face-reference.jpg < prompt.txt`（**`-i` で画像添付・プロンプトは stdin リダイレクトで渡す**。`-i` と位置引数プロンプトの併用は `No prompt provided via stdin` で落ちるので不可）。プロンプト本文で「the attached photo is the reference for the man's face and identity, keep THIS same man」と明示する。
+- **ローカル（z-image-turbo / flux / sdxl）** — `gen_image.py` は **text-to-image のみで参照画像入力に非対応**。よって参照画像の顔特徴を**文章で記述**してプロンプトに織り込む（round-ish friendly face / medium-length natural black hair with a soft side part / thick eyebrows / healthy skin / warm smile / early 30s）。同一人物ではなく「特徴を寄せた」レベルになる点に留意。
+- **Grok（image_edit）** — ヘッドレス `-p` 実行では image_edit / image_gen が「ワークフロー読み込み中…」で発火せず画像が出ないことがある（実機で複数回再現）。Grok で顔参照が要るなら不調を疑い、ローカル文章記述か Codex `-i` に切り替える。
+
+注意: スマホで撮った縦長写真は **EXIF で 90° 横倒し**で保存されていることがある。参照に使う前に `ffmpeg -noautorotate -i src.jpg -vf transpose=2 -map_metadata -1 up.jpg`（反時計回り）で正立を確認する（`reference/assets/male-face-reference.jpg` は補正済み）。
 
 ## 動画編集フロー（ffmpeg）
 
