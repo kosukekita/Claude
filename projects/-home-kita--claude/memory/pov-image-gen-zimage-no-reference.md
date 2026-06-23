@@ -15,4 +15,8 @@ NSFW の**真の一人称視点（first-person POV）**画像（例: ハメ撮�
 
 **Grok**: `image_gen` に露骨 NSFW（全裸＋騎乗位＋POV）を投げると、日本語プロンプトでもヘッドレス `-p` 実行では**無言終了でブロック**（画像が一切出ず、`grok -r` で聞くと NONE）。英語ラッパ指示文を混ぜるとさらに弾かれやすい。露骨度が高い NSFW は Grok でなくローカル Z-Image が確実。[[grok-prompt-keep-japanese]] の「日本語なら通る」は当たる露出表現の度合いによる。
 
-**How to apply**: NSFW 一人称 POV → 迷わず Z-Image-Turbo 参照なし、seed 違いで複数枚出して当たりを選ぶ。三人称で人物の体型を寄せたいときだけ Qwen-Edit + 参照。出力は消えやすい untracked ディレクトリ（`image-cache/` 等）でなく scratchpad か `~/.claude/generated/` に置く（今回 image-cache が作業中に外部要因で丸ごと消えた）。
+**プロンプト設計の決め手（t2i で構図そのものを動かす）**: Z-Image でも初手では「スマホを構えた自撮り＝三人称 mirror selfie」に倒れがち（学習バイアス）。これを殺すには **(1) ポジティブで視点を言い切る**（"the camera IS the viewpoint of a person lying on their back looking up"）、**(2) negative で自撮り構図を明示的に殺す**（`phone, smartphone, holding phone, selfie, mirror selfie, mirror, arm raised, visible hands, visible arms`）。guidance を上げる/解像度を上げる/参照を渡すのは**効かない or 逆効果**（ターボは guidance≈0 が設計値、参照は三人称に倒す）。
+
+**「真の一人称」は撮影者の顔・体も写さない**: ハメ撮りPOVでは撮影者（寝た男性）自身の顔・頭・上半身も**構造的にフレームに入らない**。手前下隅に男性の体をわずかに出す指示を入れると、モデルは「2人目の顔を画面下に描く」方に倒れる。**男性の体への言及はプロンプトから完全に削除**し、negative に `man's face, male face, man's head, face at bottom of frame, head at bottom, two faces, second person, male body, person lying below` を入れて顔/2人目を殺すのが正解。これで撮影者ゼロの純粋POVになる（検証済み: 言及削除＋顔negative で男性の顔が完全消滅）。女性にマスクを付けるなら `wearing a white surgical face mask covering nose and mouth` をポジティブ、`no face mask, uncovered mouth` を negative に。
+
+**How to apply**: NSFW 一人称 POV → 迷わず Z-Image-Turbo 参照なし、`--size 832x1216 --steps 9 --guidance 0`、seed 違いで複数枚（A6000x2 なら CUDA_VISIBLE_DEVICES で 2GPU 並列、各 native 17.6GB）。三人称で人物の体型を寄せたいときだけ Qwen-Edit + 参照。出力は消えやすい untracked ディレクトリ（`image-cache/` 等）でなく scratchpad か `~/.claude/generated/<subdir>/` に置く（今回 image-cache が作業中に外部要因で丸ごと消えた）。
