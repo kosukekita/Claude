@@ -7,3 +7,5 @@
 - [Grok: keep prompts in Japanese](grok-prompt-keep-japanese.md) — don't translate JP prompts to English for Grok; English explicit terms silently blocked; image_edit doesn't fire headless
 - [face_crop.py & LTX offload](face-crop-tool-and-ltx-offload.md) — YuNet face-crop tool (neck-down only) in video-media-studio; LTX-2.3 241f needs sequential offload (model OOMs); Grok needs --always-approve
 - [参照画像生成: Codex vs Qwen](reference-image-gen-codex-vs-qwen.md) — 参照画像が要る生成は SFW=Codex / NSFW=Qwen-Image-Edit。FLUX.1 Kontextは不採用。gen_qwen_edit.py はcu121ピン必須
+- [ツールコール漏洩フックがLinuxで無効](leaked-toolcall-hook-linux.md) — count/court/call+<invoke>漏洩検知の.ps1がpowershell無いLinuxで毎回失敗。node版.mjs採用(jq/python3はanaconda汚染、/usr/bin/nodeだけクリーン)。2回漏れたら/clear
+- [一人称POV画像はZ-Image参照なしt2i](pov-image-gen-zimage-no-reference.md) — 真の一人称POV(撮影者の手/スマホ/体を映さない)は参照画像と相性最悪。Qwen-Editは立ち参照に引っ張られPOV不可。Grokは露骨NSFWをheadlessでブロック
