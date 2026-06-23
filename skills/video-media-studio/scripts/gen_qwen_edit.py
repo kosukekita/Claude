@@ -2,14 +2,28 @@
 # /// script
 # requires-python = ">=3.10"
 # dependencies = [
-#   "torch",
+#   "torch==2.5.1",
+#   "torchvision==0.20.1",
 #   "diffusers @ git+https://github.com/huggingface/diffusers",
-#   "transformers>=4.51.3",
+#   "transformers>=4.56",
 #   "accelerate",
 #   "pillow",
 #   "sentencepiece",
+#   "protobuf",
 #   "safetensors",
 # ]
+#
+# # cu121 torch: this rig's driver is CUDA 12.2; default wheels target newer CUDA
+# # and fail ("driver too old" / accelerator not found). torchvision required for
+# # Qwen/CLIP/Siglip image processors. Same pin as gen_image.py.
+# [tool.uv.sources]
+# torch = { index = "pytorch-cu121" }
+# torchvision = { index = "pytorch-cu121" }
+#
+# [[tool.uv.index]]
+# name = "pytorch-cu121"
+# url = "https://download.pytorch.org/whl/cu121"
+# explicit = true
 # ///
 """
 gen_qwen_edit.py — Qwen-Image-Edit-2509 (the "Plus" multi-reference editor) for the
