@@ -3,7 +3,7 @@
 # requires-python = ">=3.10"
 # dependencies = [
 #   "torch",
-#   "git+https://github.com/huggingface/diffusers",
+#   "diffusers @ git+https://github.com/huggingface/diffusers",
 #   "transformers>=4.51.3",
 #   "accelerate",
 #   "pillow",
