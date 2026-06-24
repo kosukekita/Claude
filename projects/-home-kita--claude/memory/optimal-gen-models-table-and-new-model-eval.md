@@ -16,11 +16,17 @@ metadata:
 | t2i アニメ | NoobAI-XL(eps) | NoobAI-XL eps/vpred | ❌ | vpredは`v_prediction`+`rescale_betas_zero_snr=True`必須 |
 | 画中テキスト t2i | Qwen-Image | Qwen-Image | ❌ | offload強制で遅い・商用可 |
 | 参照画像→画像edit | Codex `-i ref.jpg`(stdin prompt必須) | Qwen-Image-Edit (`gen_qwen_edit.py --image`) | ✅Qwen1-3枚/Codex1枚 | Qwen無検閲・同一性保持・cu121必須。Codexはヌード拒否。FLUX Kontextは不採用 |
-| t2v | wan2.1-t2v-1.3b(軽量)/wan2.2-t2v-a14b fp8 | NSFW動画行 | ❌ | A14B fp8で46GB・frame4k+1 |
-| i2v | LTX-2.3 i2v(`gen_ltx23.py`最高品質音声付)/wan2.2-i2v-a14b | NSFW動画行 | ✅first-frameのみ | 継続は`chain_video.py` |
-| NSFW動画 | — | Wan2.2+LoRA(`gen_wan_lora.py`品質最上だが激遅)/実用速度はLTX-2.3+lynaNSFW(`gen_ltx23_lora.py --nsfw-motion`) | ✅i2v first-frame | Wan=offloadで1h超、LTX=~12分実用的 |
 
-注: `gen_wan_lora.py`はメモリ記載だが当スキルscripts/内に未確認→使用前に存在確認。
+
+## 動画は2軸(SFW/NSFW)で記録 — 参照画像軸は廃止
+ユーザー指摘(2026-06-24): **動画生成は参照あり(i2v)が全てなので参照画像軸は無意味**。動画はSFW/NSFWの2軸のみ。
+| 動画用途 | 現状最適 | 速度代替 | 備考 |
+|---|---|---|---|
+| SFW 動画 | **Wan2.2**(i2v-a14b / t2v-a14b, 品質最上) | LTX-2.3 i2v(`gen_ltx23.py`, 音声付・実用速度・~12分) | Wan A14Bはbf16 80GB→fp8 46GB or torchrun multi。offloadだと激遅(81f/40stepで1h超)。frame: Wan=4k+1 / LTX=8k+1 |
+| NSFW 動画 | **Wan2.2+LoRA**(`gen_wan_lora.py --lora HIGH --lora-low LOW`, 品質最上) | LTX-2.3+lynaNSFW(`gen_ltx23_lora.py --nsfw-motion --lora-scale 0.7`, ~12分実用) | LoRAセット`lkzd7/WAN2.2_LoraSet_NSFW`(HIGH→transformer_2=False/LOW→True)。LTXコミュニティ"LTX-2.x"はLoRAで公式baseにスタック(差替禁止) |
+
+**現状は動画はSFW/NSFWともWan2.2が最適だが、今後最適モデルが増える可能性あり**(新着評価で更新する)。
+注: `gen_wan_lora.py`はメモリ記載だが当スキルscripts/内に未確認→使用前に存在確認。LTX-2.3 NSFWは`--offload model`(seqは固まる)。
 
 ## 新着HFモデル4軸評価チェックリスト
 1. **画像/動画判定**: `model_index.json`の`_class_name`(`*Pipeline`=画像/`*ToVideoPipeline`/`Wan*`/`LTX*`=動画)、`pipeline_tag`でも一次判定
