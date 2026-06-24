@@ -170,6 +170,34 @@ MODELS: dict[str, dict] = {
         "gated": False,
         "license": "Apache-2.0 (commercial OK)",
     },
+    # Chroma1-HD: FLUX.1-schnell pruned to 8.9B, UNCENSORED BY DESIGN (no NSFW
+    # filtering in training). FLUX-class photoreal that produces explicit content
+    # raw, no jailbreak/LoRA needed. Fills Z-Image's gap. diffusers git-main.
+    "chroma": {
+        "repo": "lodestones/Chroma1-HD",
+        "pipeline": "ChromaPipeline",
+        "vram_bf16_gb": 20.0,
+        "vram_offload_floor_gb": 10.0,
+        "default_steps": 40,
+        "default_guidance": 3.0,        # base model, needs real CFG (not distilled)
+        "turbo": False,
+        "gated": False,
+        "license": "Apache-2.0 (commercial OK)",
+    },
+    # NoobAI-XL (v-pred): Illustrious-XL retrained on extended Danbooru2023.
+    # ANIME/illustration, native booru tags, the gateway to the huge SDXL LoRA
+    # universe Z-Image can't touch. Uses the standard SDXL pipeline.
+    "noobai-xl": {
+        "repo": "Laxhar/noobai-XL-Vpred-1.0",
+        "pipeline": "StableDiffusionXLPipeline",
+        "vram_bf16_gb": 12.0,
+        "vram_offload_floor_gb": 8.0,
+        "default_steps": 28,
+        "default_guidance": 5.0,
+        "turbo": False,
+        "gated": False,
+        "license": "Fair-AI-public-1.0 (anime; booru tags)",
+    },
 }
 
 # auto ladder: best-quality LOCAL model first, then cheaper/smaller, then grok.
@@ -492,9 +520,10 @@ def run_local(
     }
     if gen is not None:
         kwargs["generator"] = gen
-    # FLUX(.1/.2) ignore negative_prompt; SDXL / Qwen-Image / Z-Image accept it.
+    # FLUX(.1/.2) ignore negative_prompt; SDXL / Qwen-Image / Z-Image / Chroma accept it.
     if negative and want_cls in {
         "StableDiffusionXLPipeline", "QwenImagePipeline", "ZImagePipeline",
+        "ChromaPipeline",
     }:
         kwargs["negative_prompt"] = negative
 
