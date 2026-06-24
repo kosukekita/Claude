@@ -1,7 +1,20 @@
-# memory-inject.ps1
+﻿# memory-inject.ps1
 # Claude Code SessionStart hook:
-#   1. Inject cross-session memory stores into additionalContext
-#   2. Extract the previous session's conversation log and ask Claude to summarize/save it
+#   Inject cross-session memory stores (summarized memory only) into
+#   additionalContext.
+#
+# DESIGN (changed 2026-06): this hook used to ALSO extract the previous
+# session's RAW conversation log and inject it under a "previous session log"
+# header so Claude would summarize it. That was the root cause of a serious bug:
+# the raw log contained tool-call syntax fragments that a past assistant turn had
+# leaked into its text (antml:invoke / antml:parameter tags, raw <div ...> HTML,
+# etc.). Re-injecting that text burned it into the new session's context and
+# corrupted the model's tool-call generation on the very first turn (raw
+# call/invoke syntax leaking into the reply, Bash 'command' param dropped). It was
+# also self-perpetuating: the corrupted turn got saved and re-injected every
+# start. We now inject ONLY the summarized memory stores (MEMORY.md + linked
+# bodies under memory/), which are curated prose and never contain tool-call
+# syntax. The "auto-summarize last session" flow is intentionally removed.
 #
 # RULE: this file must stay ASCII-only. Japanese literals in hook .ps1 files have
 # previously broken parsing (encoding mismatch kills the whole hook). Japanese UI
@@ -10,23 +23,6 @@
 $ErrorActionPreference = "SilentlyContinue"
 $claudeDir   = "$env:USERPROFILE\.claude"
 $projectsDir = "$claudeDir\projects"
-$sessionsDir = "$claudeDir\sessions"
-
-# Truncate a string to at most $max UTF-16 code units WITHOUT splitting a
-# surrogate pair. PowerShell strings are UTF-16; chars >= U+10000 (emoji, some
-# CJK like U+20BB7) are a high+low surrogate pair. A naive Substring(0,$max) can
-# stop between the two halves, leaving a lone high surrogate. That serializes to
-# invalid JSON and the API rejects the whole request:
-#   "invalid high surrogate in string". Drop a trailing lone high surrogate.
-function Limit-Text([string]$s, [int]$max) {
-    if ($null -eq $s -or $s.Length -le $max) { return $s }
-    $cut = $s.Substring(0, $max)
-    $last = [int][char]$cut[$cut.Length - 1]
-    if ($last -ge 0xD800 -and $last -le 0xDBFF) {
-        $cut = $cut.Substring(0, $cut.Length - 1)  # trailing high surrogate -> drop it
-    }
-    return $cut
-}
 
 # Strip characters that serialize to invalid JSON / poison the request body.
 # Two kinds are removed (both seen in real corrupted transcripts on JP Windows):
@@ -61,17 +57,50 @@ function Remove-BadChars([string]$s) {
     return $sb.ToString()
 }
 
-# --- Localized strings (ASCII fallbacks if the JSON is missing) --------------
-$strMemoryHeader     = "## Memory (from previous sessions)"
-$strSessionLogHeader = "## Previous session log (please summarize and save)"
-$strSessionLogIntro  = "Below is the conversation log of the previous session ({SESSION_ID}). At the start of this session, save important decisions, feedback, and learnings to {MEM_DIR}, then briefly report how many memories you updated."
+# Safety net against SEMANTIC poison (distinct from Remove-BadChars, which only
+# guards byte/JSON validity). Even though summarized memory is curated prose and
+# should never contain tool-call syntax, a memory file could in theory capture a
+# code snippet that LOOKS like a tool call or raw HTML. If such a fragment lands
+# in additionalContext it can derail the model's own tool-call generation on the
+# first turn. So we neutralize anything resembling:
+#   - assistant tool-call XML: <invoke ...>, <parameter ...>,
+#     <invoke name=...>, <parameter name=...> and their closing tags
+#   - raw HTML tags (<div ...>, <span ...>, </div>, etc.)
+# Neutralization replaces the angle brackets with fullwidth look-alikes so the
+# information is preserved (a human/model can still read it) but it is no longer
+# parsed as a real tag. This is deliberately conservative: it only touches things
+# that open like a tag, leaving normal prose, code fences, and math untouched.
+function Remove-ToolCallSyntax([string]$s) {
+    if ([string]::IsNullOrEmpty($s)) { return $s }
+    # 1) Explicit assistant tool-call markers (with or without the antml: prefix),
+    #    opening or closing, are the most dangerous - defang them by name.
+    $s = [regex]::Replace($s,
+        '</?\s*(?:antml:)?(?:invoke|parameter|function_calls)\b[^>]*>',
+        { param($m) "[[sanitized-toolcall:" + ($m.Value -replace '[<>]', '') + "]]" })
+    # 1b) BARE markers with no angle brackets: real corrupted logs often leak only
+    #     a fragment of a tag (e.g. the literal text "antml:invoke" with the < >
+    #     already stripped upstream). The antml: prefix is a reliable tool-call
+    #     fingerprint that never appears in legitimate prose, so defang it even
+    #     without brackets. We insert a zero-width-free marker so the token can no
+    #     longer be matched as tool-call syntax by the model.
+    $s = [regex]::Replace($s,
+        '\bantml:(invoke|parameter|function_calls)\b',
+        { param($m) "[[sanitized-toolcall:antml-" + $m.Groups[1].Value + "]]" })
+    # 2) Any remaining raw HTML-ish tag: replace the < > delimiters with fullwidth
+    #    look-alikes so it cannot be parsed as a tag while staying human-readable.
+    $s = [regex]::Replace($s,
+        '<(/?[a-zA-Z][^>]*)>',
+        { param($m) [char]0xFF1C + $m.Groups[1].Value + [char]0xFF1E })
+    return $s
+}
+
+# --- Localized strings (ASCII fallback if the JSON is missing) ----------------
+$strMemoryHeader = "## Memory (from previous sessions)"
 $stringsFile = Join-Path $PSScriptRoot "memory-strings-ja.json"
 if (Test-Path $stringsFile) {
     try {
         $js = [System.IO.File]::ReadAllText($stringsFile, [System.Text.Encoding]::UTF8) | ConvertFrom-Json
-        if ($js.memoryHeader)     { $strMemoryHeader     = $js.memoryHeader }
-        if ($js.sessionLogHeader) { $strSessionLogHeader = $js.sessionLogHeader }
-        if ($js.sessionLogIntro)  { $strSessionLogIntro  = $js.sessionLogIntro }
+        if ($js.memoryHeader) { $strMemoryHeader = $js.memoryHeader }
     } catch {}
 }
 
@@ -82,14 +111,7 @@ if (Test-Path $stringsFile) {
 $memStores = @(Get-ChildItem $projectsDir -Directory -ErrorAction SilentlyContinue |
     Where-Object { $_.Name -match '^[cC]--Users-.+--claude$' -and (Test-Path (Join-Path $_.FullName "memory\MEMORY.md")) })
 
-# The store belonging to THIS machine is the save target for new memories.
-$localStore = $memStores |
-    Where-Object { $_.Name -match "^[cC]--Users-$([regex]::Escape($env:USERNAME))--claude$" } |
-    Select-Object -First 1
-if ($localStore) { $localMemDir = Join-Path $localStore.FullName "memory" }
-else             { $localMemDir = "$projectsDir\C--Users-$($env:USERNAME)--claude\memory" }
-
-# --- Part 1: inject existing memories ----------------------------------------
+# --- Inject existing (summarized) memories -----------------------------------
 $memoryContext = ""
 $charLimit  = 6000
 $totalChars = 0
@@ -130,76 +152,18 @@ if ($sections.Count -gt 0) {
     $memoryContext = $strMemoryHeader + "`n`n" + ($sections -join "`n`n---`n`n")
 }
 
-# --- Part 2: extract the previous session's log -------------------------------
-$sessionLogContext = ""
-
-$sessionFiles = Get-ChildItem "$sessionsDir\*.json" -ErrorAction SilentlyContinue |
-                Sort-Object LastWriteTime -Descending
-
-# The second-newest file is the previous session (newest = this startup).
-$prevSessionFile = $sessionFiles | Select-Object -Skip 1 -First 1
-if (-not $prevSessionFile) {
-    $prevSessionFile = $sessionFiles | Select-Object -First 1
-}
-
-if ($prevSessionFile) {
-    $prevSession   = Get-Content $prevSessionFile.FullName -Raw | ConvertFrom-Json -ErrorAction SilentlyContinue
-    $prevSessionId = $prevSession.sessionId
-
-    if ($prevSessionId) {
-        # Search every project dir for the session id (more reliable than
-        # guessing the slug naming convention).
-        $jsonlPath = Get-ChildItem $projectsDir -Directory -ErrorAction SilentlyContinue |
-                     ForEach-Object { Join-Path $_.FullName "$prevSessionId.jsonl" } |
-                     Where-Object { Test-Path $_ } |
-                     Select-Object -First 1
-
-        if ($jsonlPath) {
-            $lines    = Get-Content $jsonlPath -Encoding UTF8 2>$null
-            $allTurns = @()
-
-            foreach ($line in $lines) {
-                try { $obj = $line | ConvertFrom-Json -ErrorAction Stop } catch { continue }
-
-                if ($obj.type -eq "user") {
-                    $texts = @($obj.message.content |
-                               Where-Object { $_.type -eq "text" } |
-                               ForEach-Object { ($_.text -replace '(?s)<[^>]+>.*?</[^>]+>', '').Trim() } |
-                               Where-Object { $_ })
-                    if ($texts) {
-                        $t = Limit-Text ($texts -join ' ') 200
-                        $allTurns += "User: $t"
-                    }
-                }
-                elseif ($obj.type -eq "assistant") {
-                    $texts = @($obj.message.content | Where-Object { $_.type -eq "text" } | ForEach-Object { $_.text })
-                    if ($texts) {
-                        $t = Limit-Text ($texts -join ' ') 200
-                        $allTurns += "Assistant: $t"
-                    }
-                }
-            }
-
-            # Keep only the latest 40 turns (older parts are not needed).
-            $turns = $allTurns | Select-Object -Last 40
-
-            if ($turns.Count -gt 0) {
-                $turnText = $turns -join "`n"
-                $intro = $strSessionLogIntro -replace '\{SESSION_ID\}', $prevSessionId -replace '\{MEM_DIR\}', $localMemDir
-                $sessionLogContext = "`n`n---`n`n" + $strSessionLogHeader + "`n`n" + $intro + "`n`n" + $turnText
-            }
-        }
-    }
-}
-
 # --- Output -------------------------------------------------------------------
-$combined = ($memoryContext + $sessionLogContext).Trim()
+$combined = $memoryContext.Trim()
 if (-not $combined) { exit 0 }
 
-# Final safety net: strip lone surrogates / mojibake before this string becomes
-# additionalContext. Without this, a corrupted transcript (lone U+DCxx etc.) is
-# re-injected every SessionStart and the API rejects the whole request with
-# "400 ... invalid high surrogate". This protects all projects unconditionally.
+# Two-stage sanitize before this string becomes additionalContext:
+#   1. Remove-ToolCallSyntax - defang semantic poison (tool-call syntax / raw HTML)
+#      so it cannot derail the model's first-turn tool-call generation.
+#   2. Remove-BadChars       - strip lone surrogates / mojibake so the request
+#      body stays valid JSON (otherwise "400 ... invalid high surrogate").
+# Order matters: defang tags first (it inserts only safe BMP chars), then the
+# byte-level pass guarantees JSON validity of the final string.
+$combined = Remove-ToolCallSyntax $combined
 $combined = Remove-BadChars $combined
 
 $output = @{
