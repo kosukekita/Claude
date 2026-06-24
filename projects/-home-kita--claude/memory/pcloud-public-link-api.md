@@ -16,7 +16,7 @@ pCloud(アカウント u879269j@gmail.com, **USリージョン api.pcloud.com**)
 **動く手順**:
 1. `getdigest`でdigest取得(使い捨て、呼ぶ毎に新規)
 2. `getfilepublink?username=...&digest=...&passworddigest=...&path=/Data/AIGenerated/file.png` → `result:0`なら`code`が返る → ページURL `https://u.pcloud.link/publink/show?code=<code>`(恒久)
-3. `--direct`時: `getpublinkdownload?code=<code>` → `hosts[0]+path`で画像直URL `https://ptokN.pcloud.com/.../file.png`(.png直接表示・**期限付き**)
+3. `--direct`時: **`getfilelink?username=...&digest=...&passworddigest=...&path=/Data/AIGenerated/file.png`** → `hosts[0]+path`で画像直URL `https://ptokN.pcloud.com/.../file.png`(.png直接表示・**期限付き数時間**)。⚠️**`getpublinkdownload`は使わない**(code渡しで`7001 Invalid link 'code'`、linkid渡しで`1028 Please provide code`の矛盾エラー。pcloud_link.mjsの旧実装はこのバグで`--direct`が常に失敗していた→2026-06-24に`getfilelink`へ修正済み)。前回メールで届いた`ptok2.pcloud.com/...`URLの正体はこの`getfilelink`の直URL。
 
 **重要事実**:
 - パスワード `osakau19901214` は正しい(Google/Facebook連携が有効でも**ネイティブpCloudパスワードは存在**した)。最初の失敗はdigest式バグであってパスワードや2FAではなかった。

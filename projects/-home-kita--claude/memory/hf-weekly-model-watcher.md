@@ -31,4 +31,18 @@ metadata:
 - 次回確認: `systemctl --user list-timers hf-watcher.timer`
 - ログ: `journalctl --user -u hf-watcher.service -n 30`
 
-**環境制約(再掲・重要)**: PATH `node`/`jq`/`python3`/`curl` は anaconda版で `libtinfo.so.6` 警告を出し汚染する。systemdユニットは `PATH=/usr/bin:/bin`, `LD_LIBRARY_PATH=`(空) を明示。関連: [[nsfw-models-chroma-noobai-wan-lora]]（HF探索TIPS・追跡family）, [[image-cache-volatile-use-media-out]]（durableデータは~/media-out）
+**環境制約(再掲・重要)**: PATH `node`/`jq`/`python3`/`curl` は anaconda版で `libtinfo.so.6` 警告を出し汚染する。systemdユニットは `PATH=/usr/bin:/bin`, `LD_LIBRARY_PATH=`(空) を明示。
+
+## 比較生成パイプライン統合（2026-06-24追加）
+検知だけでなく「新着画像モデルを現状最適baselineと同一プロンプトで実生成し、横並びPNG＋pCloudリンクをメールに添える」自動比較を追加。ユーザー希望: セッション閉じてもタイマーだけで画像リンク付きメールが届くこと。
+- **追加ファイル(全て~/media-out/hf-watcher/)**:
+  - `eval-prompts.json` — 4軸(sfw_noref/sfw_ref/nsfw_noref/nsfw_ref)のプロンプト＋baseline＋ref_image。`{場所}`(全角/半角両対応)プレースホルダは比較時にAIが週替わりで1つ選び全パターン共通で差し込む(used-locations.jsonで直近6回重複回避)。nsfw_refだけ場所固定で`{場所}`無し。baselineはローカル可動モデルのみ自動生成(qwen/zimage/chroma/noobai)、codex/grokはheadless不可で手動注記のみ→**SFW軸にローカルbaseline(sfw_noref=zimage, sfw_ref=qwen)を追加**しないと新モデル1枚だけになる
+  - `eval-compare.mjs` — `--axis --model`受け。軸マップ→場所選び→**GPUプリフライト(nvidia-smiで空き確認、埋まってたらexit2でskip)**→新モデル汎用生成(ゲート)→baseline生成→ffmpeg drawtext+hstack→`~/pCloudDrive/Data/AIGenerated/`に保存→sync待ち→pcloud_link.mjs --directでURL。exit2=新モデル生成失敗(検知のみ), exit3=動画/対象外
+  - `gen_generic_edit.py` — 新着モデルをdiffusers Auto*Pipelineで汎用ロード試行。**失敗(gguf/未知class/OOM/壊れ画像)なら非0で抜け比較全体skip(ユーザー確定: 生成全体スキップ検知メールのみ)**。`looks_broken()`で真っ黒/単色/ノイズ(輝度mean<6 or >249, std<4)を成功扱いから除外。`save_checked`はsys.exitするので各try節に`except SystemExit: raise`ガード必須
+- **hf-watcher.mjs改修**: 各NEW画像モデルの`_axes`を`mapAxis()`で4軸化→`runEvalCompare()`呼び出し→成功で`m._compareUrl/_compareAxis`セット→`fmtModel`がメールにリンク行追記。動画/生成失敗は従来digestのみ。`HFW_NO_COMPARE=1`で無効化
+- **ref画像**: `~/media-out/hf-watcher/ref/male-body.jpg`(スキルのmale-body-reference.jpgコピー)。「(参照画像あり)」テキストだけでは効かず`--image`で実ファイル渡しが必須(sfw_ref/nsfw_refの男性同一性保持用、女性は参照なし)
+- **systemd改修**: `hf-watcher.service`に`EnvironmentFile=-%h/.config/pcloud-link.env`(mode600, PCLOUD_USER/PASS)追加、`TimeoutStartSec`を600→**7200(2h)**に延長(複数モデル直列生成)、`KillMode=mixed`(hung gen childをreap)
+- **Qwen baseline実測**: cu121/offload model/40step/640x1664で約6分(初回モデルロード込)、参照画像の同一性保持OK
+- **未完/Codexレビュー失敗**: Codex設計レビューは`bwrap: loopback: Failed RTM_NEWADDR`でサンドボックス起動不可→評価得られず。重要2点(壊れ画像検出・GPUプリフライト)はClaude自身で反映済み。残検討: pCloud REST API直upload(FUSE sync待ちをバイパス), systemd-credentials移行
+
+関連: [[nsfw-models-chroma-noobai-wan-lora]]（HF探索TIPS・追跡family）, [[image-cache-volatile-use-media-out]]（durableデータは~/media-out）, [[optimal-gen-models-table-and-new-model-eval]]（4軸baseline）, [[pcloud-public-link-api]]（リンク発行、getfilelinkが直URL）
