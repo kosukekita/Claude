@@ -12,6 +12,7 @@
 #     "sentencepiece",
 #     "protobuf",
 #     "bitsandbytes",
+#     "scipy",
 # ]
 #
 # # Pin torch to the CUDA 12.1 build: this rig's NVIDIA driver is CUDA 12.2
