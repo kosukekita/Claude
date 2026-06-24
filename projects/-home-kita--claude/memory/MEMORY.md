@@ -12,3 +12,4 @@
 - [NSFWモデル拡充: Chroma/NoobAI/Wan2.2 LoRA](nsfw-models-chroma-noobai-wan-lora.md) — Chroma無検閲フォトリアルt2i(beta-sigmas scheduler+scipyで高画質/参照不可)・NoobAIアニメ(v-predはscheduler再設定要)・gen_wan_lora.py(Wan2.2 MoE HIGH/LOW振分、LTXよりNSFW上だがoffloadで激遅)・HF探索TIPS
 - [image-cache揮発→media-out](image-cache-volatile-use-media-out.md) — ~/.claude/image-cache はセッション中に自動クリアされ生成物が消える。残すものは ~/media-out に出力。スキル内ファイルは消えない
 - [HF週次モデル監視](hf-weekly-model-watcher.md) — 週次でHF新着の画像/動画生成モデル(NSFW含む)を検知しGmail通知するsystemd --userタイマー。~/media-out/hf-watcher/、2段ゲート(relevance+notability)、Claude pushはheadless不可なのでGmail一択
+- [Grok NSFW拒否→Chroma代替](grok-nsfw-refuse-chroma-fallback.md) — Grokは盗撮+上半身裸+実写偽装の複合NSFWを明示拒否。代替はローカルChroma+Z-Image 2枚比較(ユーザー恒久ルール)。SFWはCodexが良好
