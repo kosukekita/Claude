@@ -13,3 +13,4 @@
 - [image-cache揮発→media-out](image-cache-volatile-use-media-out.md) — ~/.claude/image-cache はセッション中に自動クリアされ生成物が消える。残すものは ~/media-out に出力。スキル内ファイルは消えない
 - [HF週次モデル監視](hf-weekly-model-watcher.md) — 週次でHF新着の画像/動画生成モデル(NSFW含む)を検知しGmail通知するsystemd --userタイマー。~/media-out/hf-watcher/、2段ゲート(relevance+notability)、Claude pushはheadless不可なのでGmail一択
 - [Grok NSFW拒否→Chroma代替](grok-nsfw-refuse-chroma-fallback.md) — Grokは盗撮+上半身裸+実写偽装の複合NSFWを明示拒否。代替はローカルChroma+Z-Image 2枚比較(ユーザー恒久ルール)。SFWはCodexが良好
+- [現状ベスト生成モデル表+新着評価](optimal-gen-models-table-and-new-model-eval.md) — 画像/動画×SFW/NSFW×参照画像の最適モデル早見表。新着HFは4軸(画像か動画か/NSFW対応/参照画像可/ローカル可)を判定し現状最適と比較生成するチェックリスト
