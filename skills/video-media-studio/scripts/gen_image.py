@@ -179,9 +179,10 @@ MODELS: dict[str, dict] = {
         "vram_bf16_gb": 20.0,
         "vram_offload_floor_gb": 10.0,
         "default_steps": 40,
-        "default_guidance": 3.0,        # base model, needs real CFG (not distilled)
+        "default_guidance": 4.0,        # true CFG sweet spot 3-5; 7+ burns/plastics
         "turbo": False,
         "gated": False,
+        "chroma_schedule": True,        # beta-sigmas + dynamic shift (quality)
         "license": "Apache-2.0 (commercial OK)",
     },
     # NoobAI-XL: Illustrious-XL retrained on extended Danbooru2023. ANIME/illustration,
@@ -529,6 +530,24 @@ def run_local(
             rescale_betas_zero_snr=True,
         )
         log(f"{key}: scheduler set to v_prediction + zero-SNR")
+
+    # Chroma's stock FlowMatchEuler runs uniform sigmas with no shift, which is
+    # the main cause of soft/low-quality output. Switch to beta sigmas + flux-style
+    # dynamic shifting (base 0.5 / max 1.15) — the diffusers equivalent of ComfyUI's
+    # recommended beta+shift~1 schedule. Big quality win.
+    if m.get("chroma_schedule"):
+        try:
+            from diffusers import FlowMatchEulerDiscreteScheduler  # noqa: PLC0415
+            pipe.scheduler = FlowMatchEulerDiscreteScheduler.from_config(
+                pipe.scheduler.config,
+                use_beta_sigmas=True,
+                use_dynamic_shifting=True,
+                base_shift=0.5,
+                max_shift=1.15,
+            )
+            log(f"{key}: scheduler -> FlowMatchEuler beta-sigmas + dynamic shift")
+        except Exception as exc:  # noqa: BLE001
+            log(f"{key}: chroma scheduler tweak failed ({exc}); using stock scheduler")
 
     if offload:
         pipe.enable_model_cpu_offload()
