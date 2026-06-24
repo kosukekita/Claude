@@ -281,7 +281,8 @@ def select_model(
     if backend == "sdxl":
         return _fit_or_offload("sdxl", best_free, want_offload, margin)
 
-    if backend in {"qwen-image", "flux.2-dev", "z-image-turbo", "flux.1-krea-dev"}:
+    if backend in {"qwen-image", "flux.2-dev", "z-image-turbo", "flux.1-krea-dev",
+                   "chroma", "noobai-xl"}:
         return _fit_or_offload(backend, best_free, want_offload, margin)
 
     # auto --------------------------------------------------------------------
@@ -576,10 +577,12 @@ def build_parser() -> argparse.ArgumentParser:
         choices=[
             "auto", "flux", "sdxl", "grok",
             "qwen-image", "flux.2-dev", "z-image-turbo", "flux.1-krea-dev",
+            "chroma", "noobai-xl",
         ],
         default="auto",
         help="generation backend (default: auto). qwen-image/flux.2-dev/"
-             "z-image-turbo need diffusers git-main.",
+             "z-image-turbo/chroma need diffusers git-main. chroma=uncensored "
+             "photoreal base; noobai-xl=anime/booru SDXL.",
     )
     p.add_argument("--prompt", required=True, help="text prompt")
     p.add_argument("--negative-prompt", default=None, help="negative prompt (SDXL)")
