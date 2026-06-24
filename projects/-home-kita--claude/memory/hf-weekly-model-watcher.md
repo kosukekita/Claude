@@ -43,6 +43,8 @@ metadata:
 - **ref画像**: `~/media-out/hf-watcher/ref/male-body.jpg`(スキルのmale-body-reference.jpgコピー)。「(参照画像あり)」テキストだけでは効かず`--image`で実ファイル渡しが必須(sfw_ref/nsfw_refの男性同一性保持用、女性は参照なし)
 - **systemd改修**: `hf-watcher.service`に`EnvironmentFile=-%h/.config/pcloud-link.env`(mode600, PCLOUD_USER/PASS)追加、`TimeoutStartSec`を600→**7200(2h)**に延長(複数モデル直列生成)、`KillMode=mixed`(hung gen childをreap)
 - **Qwen baseline実測**: cu121/offload model/40step/640x1664で約6分(初回モデルロード込)、参照画像の同一性保持OK
+- **フルテスト実証(2026-06-24)**: `krea/Krea-2-Turbo`(sfw_noref)でend-to-end成功。新モデル汎用生成4分20秒+zimage baseline1分9秒→横並び→pCloudリンク両方(ページ恒久+direct直URL)。**汎用ローダーgen_generic_editは専用gen_krea2.pyが別にあるKrea2でもAutoPipelineForText2Imageで素直にロード・生成できた**(ゲートは想定より頑健)。codex/grokは手動注記で正しくskip
+- **ffmpeg合成の2つの落とし穴(フルテストで判明・修正済み)**: (1)ラベル日本語が豆腐化→DejaVuにCJKグリフ無し。**Noto Sans CJK(`/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc`)に変更**。(2)このリグのffmpegは**anaconda版のみ(`/home/kita/anaconda3/bin/ffmpeg`)、`/usr/bin`に無い**。CLEAN_ENVが/usr/bin前置きするのでbare"ffmpeg"は将来失敗しうる→eval-compare.mjsで絶対パス解決(FFMPEG定数)に変更
 - **未完/Codexレビュー失敗**: Codex設計レビューは`bwrap: loopback: Failed RTM_NEWADDR`でサンドボックス起動不可→評価得られず。重要2点(壊れ画像検出・GPUプリフライト)はClaude自身で反映済み。残検討: pCloud REST API直upload(FUSE sync待ちをバイパス), systemd-credentials移行
 
 関連: [[nsfw-models-chroma-noobai-wan-lora]]（HF探索TIPS・追跡family）, [[image-cache-volatile-use-media-out]]（durableデータは~/media-out）, [[optimal-gen-models-table-and-new-model-eval]]（4軸baseline）, [[pcloud-public-link-api]]（リンク発行、getfilelinkが直URL）
