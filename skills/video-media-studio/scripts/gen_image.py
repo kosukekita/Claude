@@ -184,10 +184,24 @@ MODELS: dict[str, dict] = {
         "gated": False,
         "license": "Apache-2.0 (commercial OK)",
     },
-    # NoobAI-XL (v-pred): Illustrious-XL retrained on extended Danbooru2023.
-    # ANIME/illustration, native booru tags, the gateway to the huge SDXL LoRA
-    # universe Z-Image can't touch. Uses the standard SDXL pipeline.
+    # NoobAI-XL: Illustrious-XL retrained on extended Danbooru2023. ANIME/illustration,
+    # native booru tags, the gateway to the huge SDXL LoRA universe Z-Image can't touch.
+    # We use the EPS (1.1) variant so the standard SDXL pipeline works out of the box;
+    # the v-pred variant needs v_prediction + zero-SNR scheduler config (noobai-xl-vpred).
     "noobai-xl": {
+        "repo": "Laxhar/noobai-XL-1.1",
+        "pipeline": "StableDiffusionXLPipeline",
+        "vram_bf16_gb": 12.0,
+        "vram_offload_floor_gb": 8.0,
+        "default_steps": 28,
+        "default_guidance": 5.0,
+        "turbo": False,
+        "gated": False,
+        "license": "Fair-AI-public-1.0 (anime; booru tags)",
+        "vpred": False,
+    },
+    # NoobAI-XL v-pred 1.0 — sharper but needs v_prediction + zero-SNR scheduler.
+    "noobai-xl-vpred": {
         "repo": "Laxhar/noobai-XL-Vpred-1.0",
         "pipeline": "StableDiffusionXLPipeline",
         "vram_bf16_gb": 12.0,
@@ -197,6 +211,7 @@ MODELS: dict[str, dict] = {
         "turbo": False,
         "gated": False,
         "license": "Fair-AI-public-1.0 (anime; booru tags)",
+        "vpred": True,
     },
 }
 
@@ -503,6 +518,18 @@ def run_local(
             log(f"{key}: 4-bit quantization unavailable ({exc}); trying bf16+offload")
 
     pipe = pipe_cls.from_pretrained(repo, **from_kwargs)
+
+    # v-prediction models (e.g. NoobAI-XL v-pred) need the scheduler switched to
+    # v_prediction + zero-terminal-SNR, else output is pure noise. Reconfigure
+    # the loaded scheduler in place from its own config.
+    if m.get("vpred"):
+        pipe.scheduler = pipe.scheduler.from_config(
+            pipe.scheduler.config,
+            prediction_type="v_prediction",
+            rescale_betas_zero_snr=True,
+        )
+        log(f"{key}: scheduler set to v_prediction + zero-SNR")
+
     if offload:
         pipe.enable_model_cpu_offload()
     else:
