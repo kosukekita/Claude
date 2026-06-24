@@ -9,7 +9,18 @@ metadata:
 
 ローカルリグ(A6000 48GB×2)での**現状ベスト生成モデル早見表**と、新着HFモデルが出たときの評価フロー。ユーザー依頼(2026-06-24): 新着が出たら「画像/動画か・NSFW対応か・参照画像取れるか・ローカルで動くか」を確認し、判明したら現状最適モデルと比較生成する。
 
-## 現状ベスト早見表
+## 画像モデル4分類（ユーザー確定設定 2026-06-24）
+画像は **NSFWか × 参照画像取れるか の2軸=4分類**。各分類の最適モデル:
+| 分類 | 参照画像 | 最適モデル |
+|---|---|---|
+| **SFW + 参照なし** | t2i | **Codex** と **Grok** |
+| **SFW + 参照あり** | edit/i2i | **Codex**（`codex exec -i ref.jpg`、prompt は stdin） |
+| **NSFW + 参照なし** | t2i | **Grok・Z-Image・Chroma の3本常に**（Grokが拒否しても残2本は出る。[[grok-nsfw-refuse-chroma-fallback]]と整合） |
+| **NSFW + 参照あり** | edit/i2i | **Qwen**（Qwen-Image-Edit, `gen_qwen_edit.py --image`、無検閲・同一性保持・cu121必須） |
+
+注: Grokは露骨NSFW(盗撮+上半身裸+実写偽装)を拒否しうる→NSFW参照なしで3本並べる理由。Chromaは英語フォトリアルprompt必須。動画は別軸(下記、参照軸なしSFW/NSFWのみ)。
+
+## 現状ベスト早見表（詳細）
 | 用途 | SFW最適 | NSFW最適 | 参照画像 | 備考 |
 |---|---|---|---|---|
 | t2i 人物フォトリアル | Z-Image-Turbo / 外部Grok・Codex | Z-Image+Chroma+Grok 3本並べ | ❌ | Chromaは英語フォトリアルprompt必須(でないとアニメ/デバイス誤生成) |
