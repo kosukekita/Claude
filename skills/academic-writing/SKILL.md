@@ -384,6 +384,34 @@ Author 2: First Name: Kosuke | Last Name: Ebina
 4. **段階的提案**: 第一候補（挑戦的）・第二候補（妥当）・第三候補（確実）の 3 段階で提案する
 5. **リスト外のジャーナル**: 研究分野がリストの対象（Translational Medical AI）と異なる場合は、その旨を伝えた上で分野固有のジャーナルを提案する
 
+### 捕食的ジャーナルのスクリーニング
+
+投稿先・引用先のジャーナルが捕食的（predatory）でないかを投稿前に確認する。以下のレッドフラグが複数該当する場合は要警戒。
+
+**レッドフラグ・チェックリスト:**
+
+- [ ] 攻撃的なメール勧誘（submit を促す spam 的メール）
+- [ ] 投稿から **72時間以内**での受理（査読が機能していない）
+- [ ] 編集委員会が不明、または偽名・無関係な研究者を無断掲載
+- [ ] Scopus / Web of Science / PubMed のいずれにも索引されていない
+- [ ] **COPE**（Committee on Publication Ethics）非加盟
+- [ ] **DOAJ**（Directory of Open Access Journals）未収載（OA誌の場合）
+- [ ] 過度に広いスコープ（"International Journal of Everything" 的）
+- [ ] 偽・水増しの impact metric（独自指標を IF と詐称等）
+- [ ] サイトの英文が粗悪（文法・スペルミス多数）
+- [ ] APC が異常に低い（full OA で **< $200**）／逆に不透明
+- [ ] 編集部の所在地が表記された国と相違
+- [ ] 撤回（retraction）方針・倫理方針の欠如
+
+**正当性の確認リソース:**
+
+- **DOAJ** — 正当な OA 誌のホワイトリスト
+- **COPE member directory** — 出版倫理団体の加盟確認
+- **Scopus Source List** / **Journal Citation Reports (Clarivate)** — 索引・指標の正本
+- **Cabell's Predatory Reports** — 捕食的誌のブラックリスト（購読制）
+- **Beall's List** — 非公式だが出発点として有用
+- **Think. Check. Submit.**（thinkchecksubmit.org） — 投稿前の総合チェックツール
+
 ---
 
 ## 投稿規定の数値ルールは実掲載論文で実態を確認してから守る
