@@ -1,3 +1,4 @@
+- [academic-writing 採否基準: ストップゲート](academic-writing-stop-gate-criterion.md) — 外部(ジャーナル/査読者)に検知され弾かれる項目は残す、検知されないのにプロセスを止めるだけのゲートは入れない
 - [MCP cross-PC & .claude.json race](mcp-cross-pc-and-claude-json-race.md) — .mcp.json shared Win+Linux; approval clobbered by concurrent claude processes
 - [alphaXiv MCP needs type:http](alphaxiv-mcp-streamable-http.md) — alphaXiv must be Streamable HTTP not sse; sse hangs 30s; auth-vs-transport tell
 - [pCloud project memory (Solution A)](pcloud-project-memory-solution-a.md) — project memory in <project>/.claude-memory/ for cross-PC sync; inject hook + migration helper
