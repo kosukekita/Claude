@@ -26,4 +26,10 @@ Grok Build CLI（`~/.grok/bin/grok`、X Premium/SuperGrokのOAuth認証）の**�
 - **切り分け手順(Codex推奨)**: 24時間以上完全停止→1回だけ実行で取れれば(A)確定。24h後もダメなら同じ取得をGrok Web/Xアプリで試す→Webで取れCLIだけ0件ならCLI問題、Webでも制限ならプラン枠→Premium+/SuperGrok検討
 - **Grok取得に依存する自動化は今のPremiumでは不安定**。確実にWeb集約したいなら Claude(WebSearch/WebFetch)が安定だが、それはsystemdタイマー無人実行から使えない（→ /schedule クラウドClaude cron が代替候補だが未検証）
 
+## ★解決策(2026-06-25): 要約はローカルLLM、Web取得はr.jina.aiでGrok依存を消せる
+- **Grokが要る工程は「取得」だけ。厳選・要約はGrok不要**: 厳選=数値ならJSソート、主観なら**ローカルLLM Ollama**。要約=**Ollama(qwen3.5)がGrok同等品質**(`localhost:11434/api/generate`, stream=false, /no_think, 約33秒/件, A6000で動作。`ollama list`で確認)。systemdタイマー無人からHTTP直叩きで使える(Claudeのツールと違いタイマーで動く)
+- **Web取得は r.jina.ai プロキシでbot対策突破**: `curl -sL https://r.jina.ai/https://<URL>` でCloudflare/ModSecurityを突破しLLM向けクリーンMarkdown取得。生curlが403/Cloudflareで弾かれるサイト(socialbee等)も読める。**X特定アカウント以外のWeb情報なら、curl+r.jina.ai+Ollamaで完全にGrokゼロの自動化が組める**(MasukiResumaのsns-trends.mjsで実証)
+- **Xの特定アカウント投稿取得だけはGrok固有**(Instagram APIも他人投稿不可、Web版はログイン壁)。ここだけGrok依存が残り、レート制限の影響を受ける
+- 共通ヘルパー実装例: MasukiResuma `platforms/_lib/ollama-summarize.mjs`(summarizeJa/selectTopJa/ollamaUp)
+
 関連: [[grok-prompt-keep-japanese]]（日本語プロンプト維持）, [[video-media-studio-skill]]（Grok画像/動画はサブスク枠で別挙動）
