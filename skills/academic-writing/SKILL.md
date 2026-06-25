@@ -19,7 +19,12 @@ description: "医学・学術論文の執筆支援。構成（IMRAD）、文体�
 | **校正・編集** | 既存原稿の改善 | 文体ルール、引用・参考文献 |
 | **AI文体除去** | AI生成テキストの humanize | AI文体除去（18パターン） |
 | **AI研究報告** | 予測モデル研究の執筆 | TRIPOD+AI チェックリスト |
-| **投稿先選定** | ジャーナル推薦 | 投稿先ジャーナルの推薦 |
+| **報告ガイドライン選択** | RCT/観察/SR/質的/診断精度等で正しいチェックリストを選ぶ | `references/equator-guideline-selector.md`（予測モデルは TRIPOD+AI） |
+| **システマティックレビュー/メタ解析** | SR/MA の執筆・査読 | `references/systematic-review-meta-analysis-toolkit.md` |
+| **引用の検証** | 引用が実在し、かつ主張を支持しているか監査 | `references/citation-existence-verification.md`（実在）／`references/citation-claim-faithfulness.md`（支持） |
+| **投稿前セルフレビュー** | 致命傷・統計的整合性・論証・図を投稿前に自己点検 | `references/adversarial-self-review.md`、`references/integrity-fallacy-self-audit.md`、`references/argument-frameworks-claim-calibration.md`、`references/figure-design-self-check.md` |
+| **著者・貢献** | CRediT/ICMJE での著者資格・貢献記述・AI開示 | `references/authorship-credit-icmje.md` |
+| **投稿先選定** | ジャーナル推薦・捕食的ジャーナル回避 | 投稿先ジャーナルの推薦（捕食的ジャーナルのスクリーニング含む） |
 
 ### Step 2: 原稿分析（校正の場合）
 
@@ -27,6 +32,7 @@ description: "医学・学術論文の執筆支援。構成（IMRAD）、文体�
 2. AI 文体パターン（18種）をスキャン
 3. 統計表記・引用形式をチェック
 4. Results は一文ずつ over/under-claim チェックリストを適用（下記「Results 特有の over/under-claim 検出チェックリスト」）
+5. 必要に応じて拡張リファレンスを併用: 引用は実在＋忠実性を監査（`citation-existence-verification.md` / `citation-claim-faithfulness.md`）、統計・デザインは整合性レッドフラグとフォールシーを自己スキャン（`integrity-fallacy-self-audit.md`）、図は `figure-design-self-check.md`、論証は `argument-frameworks-claim-calibration.md`
 
 ### Step 3: 執筆・修正
 
@@ -465,15 +471,38 @@ Author 2: First Name: Kosuke | Last Name: Ebina
 - [ ] **AI 研究の場合**: Abstract が TRIPOD+AI for Abstracts 13 項目に準拠している
 - [ ] **LLM 研究の場合**: TRIPOD-LLM チェックリストにも準拠している
 - [ ] ソフトウェア・パッケージ名は専用パラグラフ（統計解析ソフトウェア・再現性）に一度だけ記載。関数名は論文本文に書いていない（手法は概念で記述し、関数名はコード／補遺に置く）
+- [ ] **報告ガイドライン**: 研究デザインに対応する EQUATOR チェックリストに準拠（RCT=CONSORT／観察研究=STROBE／SR・MA=PRISMA／質的=COREQ／診断精度=STARD／症例報告=CARE 等。`references/equator-guideline-selector.md`）
+- [ ] **引用検証**: 全参照が実在し（捏造・ハルシネーション参照なし）、各引用がその主張を実際に支持している（集団・指標・結論強度の歪曲なし。`references/citation-existence-verification.md` / `citation-claim-faithfulness.md`）
+- [ ] **整合性・フォールシー**: P-hacking/HARKing 等の整合性レッドフラグと名前付きフォールシー（Simpson/ecological/RTM/Texas sharpshooter 等）を自己スキャン済み（`references/integrity-fallacy-self-audit.md`）
+- [ ] **敵対的セルフレビュー**: CRITICAL 4類型（Foundation Collapse／Logic-Chain Break／Data-Conclusion Mismatch／Stronger Counter-Narrative）を投稿前に自己点検済み（`references/adversarial-self-review.md`）
+- [ ] **著者・貢献**: CRediT 役割と ICMJE 著者4要件を満たし、AI 利用を開示している（`references/authorship-credit-icmje.md`）
+- [ ] **投稿先**: 捕食的ジャーナルのレッドフラグを確認済み（投稿先・引用先とも）
 
 ---
 
 ## References
 
+### 既存リファレンス
+
 - `references/tenses.md` — セクション別の時制使い分けガイド（IMRaD）
 - `references/humanizer-patterns.md` — 18 パターンの詳細な検出・修正リファレンス
 - `references/authors.md` — 共著者リスト（名前・所属）
 - `references/translational_journals_analysis.md` — Translational Medical AI ジャーナルの JCR IF 順リスト（投稿先推薦用）
+
+### 拡張リファレンス（執筆・自己査読・文献調査の質を高める）
+
+- `references/citation-claim-faithfulness.md` — 引用‑主張の忠実性監査（存在≠支持）。6次元照合・5段階 verdict ladder・defect stage 語彙・Pass 規則・サンプリング・安全な書き換え例
+- `references/citation-existence-verification.md` — 引用の実在検証。S2/Crossref/OpenAlex/arXiv（+PubMed）へ多重照会しタイトル類似度0.70と DOI/ID クロスチェックで捏造参照を摘発（単一インデックスの欠落≠捏造）
+- `references/equator-guideline-selector.md` — 研究デザイン→EQUATOR 報告ガイドライン選択表（PRISMA/CONSORT/STROBE/COREQ/SQUIRE 等の凝縮チェックリスト＋フロー図。TRIPOD 以外の全ファミリ）
+- `references/integrity-fallacy-self-audit.md` — 統計的整合性レッドフラグ（P-hacking/HARKing 等、severity 付き）と名前付きフォールシー（検出 tell 付き）で投稿前に自原稿を自己監査
+- `references/figure-design-self-check.md` — Figure 設計の自己チェック（チャート種選択・禁則と修正・色覚/コントラスト配慮・VLM 描画検証・キャプション過大主張）
+- `references/adversarial-self-review.md` — 投稿前の敵対的セルフレビュー（3レンズ精読・devil's-advocate ストレステスト・CRITICAL 4類型・severity 較正2ゲート）
+- `references/authorship-credit-icmje.md` — CRediT 14役割・ICMJE 著者4要件・著者/謝辞境界・Author×Role マトリクス・AI 著者方針と AI 引用例
+- `references/systematic-review-meta-analysis-toolkit.md` — SR/MA 報告ツールキット（PRISMA 2020・RoB 2/ROBINS-I・I²/GRADE・効果量と抽出階層・出版バイアス検定ゲート・SWiM・PROSPERO/OSF）
+- `references/argument-frameworks-claim-calibration.md` — 原稿の論証検査と主張言語の較正（Toulmin/Bradford Hill/IBE/エピステミック・ステータス梯子）
+
+### 外部リンク
+
 - [TRIPOD+AI statement (BMJ 2024)](https://pubmed.ncbi.nlm.nih.gov/38626948/) — AI 予測モデル研究の報告ガイドライン（27 項目）
 - [TRIPOD+AI Expanded Checklist & Supplement](https://www.tripod-statement.org/) — 各項目の詳細な説明と記入例
 - [TRIPOD-LLM (Nature Medicine 2024)](https://www.nature.com/articles/s41591-024-03425-5) — LLM を用いた生物医学研究の報告ガイドライン
