@@ -16,3 +16,10 @@ video-media-studio の `gen_image.py` を複数バックエンド（z-image / ch
 - ファイル未生成なのに `saved`/`exit=` がログに無い → worker が SIGKILL/OOM で死んだサイン。`gen_image.py` は OOM 時に grok-media 委譲メッセージ（"falling back to grok-media"）をログ末尾に吐くので、それを grep すれば OOM 確定。
 - 完了判定は通知でなく**出力 PNG の存在 + ログの `saved ->`** で行う（[[image-cache-volatile-use-media-out]] と同じ「ログでなく実ファイルで判定」の原則）。
 - 安全策: GPU を食い合わせないなら**並列せず逐次**起動する（96GB リグでも単一 GPU を順番に使う方が確実）。
+
+**★2026-06-26 追加の落とし穴（実害あり、繰り返すな）:**
+- **tail -f を Monitor に使うと「古いバッファの `saved ->` 行」を再生して誤検出する**。chroma が 19/40 ステップでまだ推論中なのに Monitor が `saved ->` を報告 → それを信じて「完了した」と誤認した。さらに**保存前のワーカーをゾンビと勘違いして `kill -9` し、生成中のジョブを SIGKILL（EXIT=137）で殺してファイルを失った**。
+- 教訓1: **生成中か終了かは tail のログ行でなく `pgrep -f "gen_image.py --backend <X>"` でプロセスの生死を直接見る**。プロセスが生きている間は絶対に kill しない。STAT=Rl は実行中。
+- 教訓2: **「ゾンビ」と断定する前に、それが今走らせているジョブ自身でないか必ず確認する**。chroma_run*.log を Read して進捗バー（`n/40`）が進んでいれば正常稼働中。kill するのは「自分が起動していない・前セッションの残骸で・かつ新規ジョブが OOM する」ときだけ。
+- 教訓3: Monitor の完了条件は「`pgrep` が空 → 2秒待つ → 実 PNG の存在を stat で確認」の順にする。tail -f の途中行をトリガにしない。
+- chroma は native(22GB)で steps=40・約90秒/枚。z-image-turbo は steps=9・約6秒/枚(ロード4.5分)。flux.2-dev は 70GB 要求で単一48GB には収まらず必ず offload(激遅)になる→比較に入れるなら時間覚悟か外す。
