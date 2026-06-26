@@ -206,18 +206,45 @@ def cmd_image(args: argparse.Namespace) -> int:
         content.append(
             {"type": "image_url", "image_url": {"url": _to_image_url(img)}}
         )
-    body = {
-        "model": args.model,
-        "modalities": ["image", "text"],
-        "messages": [{"role": "user", "content": content}],
-    }
     log(f"image -> {args.model}")
-    resp = requests.post(
-        f"{API_BASE}/chat/completions",
-        headers=auth_headers(key),
-        json=body,
-        timeout=HTTP_TIMEOUT,
-    )
+    # Two model families on OpenRouter:
+    #   out=[image,text]  (gemini-*, gpt-5*-image, openrouter/auto) -> need both modalities
+    #   out=[image] only  (flux.2-*, gpt-image-*, recraft, riverflow, seedream, mai,
+    #                       grok-imagine) -> reject ["image","text"] with a 404
+    #                       "No endpoints found that support ... image, text"
+    # Try the richer set first, then fall back to image-only on that exact 404.
+    def _post(modalities: list[str]) -> requests.Response:
+        return requests.post(
+            f"{API_BASE}/chat/completions",
+            headers=auth_headers(key),
+            json={
+                "model": args.model,
+                "modalities": modalities,
+                "messages": [{"role": "user", "content": content}],
+            },
+            timeout=HTTP_TIMEOUT,
+        )
+
+    # Pick the modality set once (image-only models 404 on ["image","text"]).
+    modalities = ["image", "text"]
+    probe = _post(modalities)
+    if probe.status_code == 404 and "output modalities" in probe.text:
+        log("  image-only model: using modalities=['image']")
+        modalities = ["image"]
+        probe = _post(modalities)
+    # Transient provider hiccups (500 / "Provider returned error" 400) are common on
+    # the image-only family — retry a few times with backoff before giving up.
+    resp = probe
+    for attempt in range(1, 5):
+        transient = resp.status_code in (429, 500, 502, 503) or (
+            resp.status_code == 400 and "Provider returned error" in resp.text
+        )
+        if not transient:
+            break
+        wait = 4 * attempt
+        log(f"  transient HTTP {resp.status_code}; retry {attempt}/4 after {wait}s")
+        time.sleep(wait)
+        resp = _post(modalities)
     _raise_for_openrouter(resp)
     data = resp.json()
     try:
