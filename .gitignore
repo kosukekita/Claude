@@ -5,6 +5,9 @@ client_secret_*.json
 mcp-needs-auth-cache.json
 .env
 .env.local
+# API key files (real home is ~/.config/, but block any stray copy under ~/.claude)
+*.key
+openrouter.key
 
 # Nested .claude (prevent .claude/.claude)
 .claude/

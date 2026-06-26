@@ -622,14 +622,23 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--backend",
         choices=[
-            "auto", "flux", "sdxl", "grok",
+            "auto", "flux", "sdxl", "grok", "openrouter",
             "qwen-image", "flux.2-dev", "z-image-turbo", "flux.1-krea-dev",
             "chroma", "noobai-xl",
         ],
         default="auto",
         help="generation backend (default: auto). qwen-image/flux.2-dev/"
              "z-image-turbo/chroma need diffusers git-main. chroma=uncensored "
-             "photoreal base; noobai-xl=anime/booru SDXL.",
+             "photoreal base; noobai-xl=anime/booru SDXL. openrouter=explicit "
+             "cloud API (key in ~/.config/openrouter.key), use --or-model to "
+             "pick the model; NOT part of the auto ladder.",
+    )
+    p.add_argument(
+        "--or-model",
+        default="google/gemini-2.5-flash-image-preview",
+        dest="or_model",
+        help="OpenRouter image-output model id (only with --backend openrouter; "
+             "default: google/gemini-2.5-flash-image-preview)",
     )
     p.add_argument("--prompt", required=True, help="text prompt")
     p.add_argument("--negative-prompt", default=None, help="negative prompt (SDXL)")
@@ -667,8 +676,24 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
+def delegate_openrouter_image(args) -> int:
+    """Explicit, user-named cloud path. Shell out to cloud_openrouter.py so the
+    OpenRouter key/HTTP logic lives in ONE place; this script stays local-only."""
+    import subprocess  # noqa: PLC0415
+
+    script = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          "cloud_openrouter.py")
+    cmd = [script, "image", "--model", args.or_model,
+           "--prompt", args.prompt, "--out", args.out]
+    log(f"backend=openrouter -> delegating to cloud_openrouter.py (model {args.or_model})")
+    return subprocess.call(cmd)
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+
+    if args.backend == "openrouter":
+        return delegate_openrouter_image(args)
 
     try:
         width, height = parse_size(args.size)

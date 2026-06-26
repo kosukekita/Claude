@@ -191,6 +191,22 @@ export FAL_KEY=...                # put in your shell profile if you use it ofte
 If neither is configured, the cloud rung is simply skipped and the skill falls through to
 Grok. That's fine — local-single covers almost everything on this 96 GB rig.
 
+### OpenRouter (explicit backend only — NOT in the auto gating order)
+
+OpenRouter is reached ONLY when the user names it (`--backend openrouter`, or calling
+`scripts/cloud_openrouter.py` directly). It is deliberately absent from the
+`probe_backend.py` auto resolution above, so the local-first ladder is unchanged. One key
+covers LLM + image + video.
+
+```bash
+# Key lives in a dedicated file (NOT an env you must export each shell), mirroring
+# ~/.config/gmail-smtp.pass and kept out of the public ~/.claude git repo:
+umask 077 && printf '%s' 'sk-or-v1-...' > ~/.config/openrouter.key
+chmod 600 ~/.config/openrouter.key
+# Resolution order in the script: ~/.config/openrouter.key  ->  $OPENROUTER_API_KEY
+# Get a key at https://openrouter.ai/keys
+```
+
 ---
 
 ## 6. CUDA 12.2 wheel compatibility (IMPORTANT — verified gotcha)

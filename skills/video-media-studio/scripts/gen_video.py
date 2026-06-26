@@ -360,6 +360,10 @@ def select_backend(args, spec: dict) -> dict:
         return {"backend": "grok", "device": None, "precision": None,
                 "offload": False, "multigpu": False,
                 "model": spec.get("repo"), "why": "user forced grok"}
+    if args.backend == "openrouter":
+        return {"backend": "openrouter", "device": None, "precision": None,
+                "offload": False, "multigpu": False,
+                "model": args.or_model, "why": "user forced openrouter (explicit cloud API)"}
     # backend == auto
     ext = run_external_probe(args.task, args.model, args.want_quality,
                              args.margin, None)
@@ -708,10 +712,16 @@ def build_parser() -> argparse.ArgumentParser:
               generate_video.py --backend grok --task t2v --prompt "neon city" --out city.mp4
             """),
     )
-    p.add_argument("--backend", choices=["auto", "wan", "ltx", "grok"],
+    p.add_argument("--backend", choices=["auto", "wan", "ltx", "grok", "openrouter"],
                    default="auto",
                    help="auto = VRAM-probe pick; wan/ltx force a local family; "
-                        "grok prints grok-media delegation (default: auto)")
+                        "grok prints grok-media delegation; openrouter = explicit "
+                        "cloud API (key in ~/.config/openrouter.key), pick the "
+                        "model with --or-model; NOT part of the auto ladder "
+                        "(default: auto)")
+    p.add_argument("--or-model", dest="or_model", default="google/veo-3.1",
+                   help="OpenRouter video model id (only with --backend openrouter; "
+                        "default: google/veo-3.1)")
     p.add_argument("--task", choices=["t2v", "i2v"], default="t2v",
                    help="text-to-video or image-to-video (default: t2v)")
     p.add_argument("--prompt", default="", help="text prompt")
@@ -742,6 +752,39 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--print-decision", action="store_true",
                    help="probe + print the backend decision JSON, then exit")
     return p
+
+
+def delegate_openrouter_video(args) -> int:
+    """Explicit, user-named cloud path. Shell out to cloud_openrouter.py so the
+    OpenRouter key/HTTP/async-poll logic lives in ONE place; this script stays
+    local-first. Only reached when the user passes --backend openrouter."""
+    import subprocess  # noqa: PLC0415
+
+    script = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          "cloud_openrouter.py")
+    cmd = [script, "video", "--model", args.or_model,
+           "--task", args.task, "--prompt", args.prompt or "", "--out", args.out]
+    if args.task == "i2v":
+        if not args.image:
+            log("ERROR: --task i2v requires --image")
+            return 2
+        cmd += ["--image", args.image]
+    if args.width and args.height:
+        cmd += ["--aspect-ratio", _aspect_from_dims(args.width, args.height)]
+    if args.seed is not None:
+        cmd += ["--seed", str(args.seed)]
+    log(f"BACKEND=openrouter -> delegating to cloud_openrouter.py (model {args.or_model})")
+    return subprocess.call(cmd)
+
+
+def _aspect_from_dims(w: int, h: int) -> str:
+    """Map common WxH to an OpenRouter aspect_ratio token; fall back to 16:9."""
+    if w <= 0 or h <= 0:
+        return "16:9"
+    ratio = w / h
+    table = {16 / 9: "16:9", 9 / 16: "9:16", 1.0: "1:1", 4 / 3: "4:3", 3 / 2: "3:2"}
+    best = min(table, key=lambda r: abs(r - ratio))
+    return table[best]
 
 
 def main() -> int:
@@ -775,6 +818,8 @@ def main() -> int:
     backend = decision["backend"]
 
     # ---- non-local handoffs (print exact instructions, do not run) ----
+    if backend == "openrouter":
+        return delegate_openrouter_video(args)
     if backend == "grok":
         emit_grok(args, spec, decision)
         return 0
