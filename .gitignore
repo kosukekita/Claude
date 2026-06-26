@@ -42,6 +42,16 @@ tasks/
 .last-update-result.json
 settings.json.bak.*
 
+# Session work products & caches (generated during sessions; never publish to the
+# public repo). These were UN-ignored before, so a manual `git add .` would have
+# pushed them (generated/ can hold NSFW images/video). auto-push uses a whitelist
+# so it never staged them, but close the manual-add hole here as the real backstop.
+generated/
+paste-cache/
+chrome/
+image-cache/
+SCRATCHPAD.md
+
 # Exception: cross-PC memory stores must be synced (conversation history under
 # projects/ stays ignored, but the memory/ folder inside it is shared).
 # Re-allow each path segment down to the memory files (git won't descend into an
