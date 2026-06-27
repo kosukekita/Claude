@@ -364,7 +364,10 @@ def _poll_video(key: str, poll_url: str, first: dict) -> dict:
 def _retrieve_video(key: str, job_id: str, status: dict, out: Path) -> None:
     urls = status.get("unsigned_urls") or status.get("urls") or []
     if urls:
-        _download(urls[0], out)
+        # Despite the name, unsigned_urls point at .../videos/{id}/content?index=0
+        # under api/v1 — they STILL require the Bearer (without key -> 401
+        # "No cookie auth credentials found"). Always pass the key.
+        _download(urls[0], out, key=key)
         return
     # Fall back to the content endpoint when the status payload has no direct url.
     content_url = f"{API_BASE}/videos/{job_id}/content?index=0"
