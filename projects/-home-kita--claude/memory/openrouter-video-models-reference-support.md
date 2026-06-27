@@ -28,9 +28,16 @@ kling-v3.0-pro/std, kling-video-o1, google/veo-3.1(/fast/lite), bytedance/seedan
 ## t2v専用(画像参照不可) = openai/sora-2-pro のみ
 sora-2-proは `supported_frame_images=[]`。テキストからのみ。
 
+## ★NSFW入力画像のi2v: 検閲で弾かれるモデルが多い(実証2026-06-27)
+上半身裸のChroma画像をi2v開始フレームにしたら:
+- **seedance-2.0 / 2.0-fast (ByteDance)**: 400 `InputImageSensitiveContentDetected`(入力画像NSFW検閲)→拒否
+- **happyhorse-1.1 (Alibaba)**: job failed "Green net check failed for image (input): inappropriate content"(阿里绿网検閲)→拒否
+- **wan-2.7 (Alibaba)**: ✅ 通る。同じAlibaba製でも**wan-2.7だけ入力画像フィルタをすり抜ける**(happyhorseは弾く)。
+→ **OpenRouterで露骨NSFW入力のi2vは事実上 wan-2.7 一択**。他は入力画像検閲で全滅。SFW入力なら各モデル使える見込み。露骨NSFW i2vはローカルWan2.2(無検閲)が確実。
+
 ## 結論
-- 1枚を開始フレームにするだけ(i2v) → **sora以外ほぼ全部OK**。
-- **人物の同一性を保つ参照画像セットが要る → wan-2.7(最柔軟) / hailuo-2.3 / happyhorse-1.1**。
+- 1枚を開始フレームにするだけ(i2v) → **SFW入力ならsora以外ほぼ全部OK**。**NSFW入力はwan-2.7のみ**(上記)。
+- **人物の同一性を保つ参照画像セットが要る → wan-2.7(最柔軟) / hailuo-2.3 / happyhorse-1.1**(ただしNSFW入力はwan-2.7のみ)。
 - 動画はもともと i2v が主([[optimal-gen-models-table-and-new-model-eval]]の動画は参照軸廃止しSFW/NSFW2軸)。ローカルNSFW動画はWan2.2+LoRA最適、クラウドで手軽に参照→動画ならwan-2.7。
 
 ## ★cloud_openrouter.py video の3バグ修正(2026-06-27, 修正済)
