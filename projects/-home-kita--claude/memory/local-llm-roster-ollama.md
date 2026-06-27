@@ -18,4 +18,6 @@ akitaken (NVIDIA RTX A6000 48GB × 2 = 96GB VRAM, Ollama 0.17.6) の導入済み
 
 **検討して見送ったもの（96GB超で快適不可、CPUオフロード激遅）**: qwen3:235b(q4で142GB)、glm-4.6(355B MoE, q4で135GB+)。llama3.3:70b(43GBで動くが世代古く日本語・推論で見劣り、Metaライセンス)。第2候補だったqwen3:32b(dense, 35GB@q8)とglm-4.7-flash(32GB@q8)は将来の追加候補。
 
+**マルチGPU分散の仕組み**: Ollama/llama.cppは複数GPUがあると既定で**レイヤー分割(pipeline parallelism, --split-mode layer)**を自動実行。モデルの前半レイヤーをGPU0・後半をGPU1に配置し、48GB単体に入らない65GBモデルも33+34GBに分けて100% GPU搭載できる(同一ollama PIDがnvidia-smiで両GPUに2行出るのが証拠)。**目的は容量拡張であって高速化ではない**(レイヤーは順次通すので速度は概ね1枚分)。速度も上げたいならtensor parallelism(vLLM等、--split-mode row)だがNVLink無しだと通信コスト高。「1モデル=1GPU」は古い前提で、現代エンジンは1モデルを複数GPUにまたげる。
+
 **How to apply**: 「A6000×2で動く最高品質のローカルLLM」を問われたら gpt-oss:120b。96GBで全量GPU・快適の上限は量子化込み概ね70GB前後(KV/コンテキスト余裕込み)。それ超はオフロードで激遅になるので避ける。Ollamaタグの実在は ollama.com/library/<model>/tags で必ず確認(存在しないタグを書かない)。
