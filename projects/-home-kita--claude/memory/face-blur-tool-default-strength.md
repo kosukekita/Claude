@@ -21,4 +21,7 @@ metadata:
 
 **How to apply:** 顔ぼかし依頼は `cd .../video-media-studio/scripts && uv run ./face_blur.py --in X --out Y`(strengthは既定0.4でよい)。形状は楕円(円ではない、ユーザー指示2026-06-27)。出力は ~/media-out へ([[image-cache-volatile-use-media-out]])。
 
+## 動画版 face_blur_video.py(2026-06-27追加)
+動画の顔ぼかしは **`face_blur_video.py`**(同スキルscripts/)。全フレームをYuNetで検出→各フレーム顔追従で楕円ぼかし→**元動画の音声をffmpegでmuxして保持**→libx264 crf18で再エンコード。既定 --strength 0.4・--mode blur(pixelate可)、`--hold N`(検出漏れ時に直前検出をNフレーム流用しちらつき防止、既定6)。`uv run ./face_blur_video.py --in X.mp4 --out Y.mp4`。実証: wan-2.7の150f/5s動画で150/150フレーム顔検出・追従成功(顔がカメラ最接近する場面も枠が追従)。顔が動く動画でも静止画のぼかしは追従しないので必ずこの動画版を使う。
+
 関連: [[face-crop-tool-and-ltx-offload]](同スキルのYuNet顔crop別ツール), [[optimal-gen-models-table-and-new-model-eval]]
