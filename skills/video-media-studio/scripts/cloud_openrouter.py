@@ -282,10 +282,18 @@ def cmd_video(args: argparse.Namespace) -> int:
     if args.audio:
         body["generate_audio"] = True
     if args.task == "i2v":
-        # first-frame image-to-video
-        body["frame_images"] = [{"url": _to_image_url(args.image)}]
+        # first-frame image-to-video. OpenRouter's /videos Zod schema requires:
+        #   type="image_url" (the part kind), frame_type="first_frame"|"last_frame",
+        #   image_url={"url": ...}  (same nesting as chat vision parts).
+        body["frame_images"] = [{
+            "type": "image_url",
+            "frame_type": "first_frame",
+            "image_url": {"url": _to_image_url(args.image)},
+        }]
     for ref in args.reference or []:
-        body.setdefault("input_references", []).append({"url": _to_image_url(ref)})
+        body.setdefault("input_references", []).append(
+            {"type": "image_url", "image_url": {"url": _to_image_url(ref)}}
+        )
 
     log(f"video -> {args.model} ({args.task}); submitting job ...")
     resp = requests.post(
@@ -299,7 +307,10 @@ def cmd_video(args: argparse.Namespace) -> int:
     job_id = job.get("id")
     if not job_id:
         die(f"ERROR: no job id in submit response: {json.dumps(job)[:500]}")
-    poll_url = job.get("polling_url") or f"{API_BASE}/videos/{job_id}"
+    # NOTE: job["polling_url"] is a browser/cookie-auth URL ("No cookie auth
+    # credentials found" on a Bearer GET). Always poll the API endpoint with the
+    # same Bearer auth as submit.
+    poll_url = f"{API_BASE}/videos/{job_id}"
     log(f"job id={job_id}; polling {poll_url}")
 
     status = _poll_video(key, poll_url, job)
