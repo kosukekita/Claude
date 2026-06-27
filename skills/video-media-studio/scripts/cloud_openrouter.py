@@ -148,6 +148,17 @@ def auth_headers(key: str) -> dict:
     }
 
 
+def _get_headers(key: str) -> dict:
+    """Headers for bodyless GETs (video polling / download). Crucially OMITS
+    Content-Type: application/json — sending it on an empty-body GET makes
+    OpenRouter's gateway fall through to cookie auth and return 401."""
+    return {
+        "Authorization": f"Bearer {key}",
+        "HTTP-Referer": "https://github.com/anthropics/claude-code",
+        "X-Title": "video-media-studio",
+    }
+
+
 # --------------------------------------------------------------------------- #
 # LLM
 # --------------------------------------------------------------------------- #
@@ -342,7 +353,10 @@ def _poll_video(key: str, poll_url: str, first: dict) -> dict:
         time.sleep(POLL_INTERVAL)
         waited += POLL_INTERVAL
         log(f"  status={state or 'pending'} ({waited}s elapsed)")
-        r = requests.get(poll_url, headers=auth_headers(key), timeout=HTTP_TIMEOUT)
+        # GET must NOT carry Content-Type: application/json — with an empty body
+        # OpenRouter's gateway then ignores the Bearer and demands cookie auth
+        # ("No cookie auth credentials found", 401). Send Authorization only.
+        r = requests.get(poll_url, headers=_get_headers(key), timeout=HTTP_TIMEOUT)
         _raise_for_openrouter(r)
         status = r.json()
 
@@ -410,7 +424,8 @@ def _to_image_url(path_or_url: str) -> str:
 
 def _download(url: str, out: Path, key: str | None = None) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
-    headers = auth_headers(key) if key else {}
+    # Bodyless GET: omit Content-Type (see _get_headers) so Bearer is honored.
+    headers = _get_headers(key) if key else {}
     with requests.get(url, headers=headers, stream=True, timeout=HTTP_TIMEOUT) as r:
         _raise_for_openrouter(r)
         with out.open("wb") as fh:
