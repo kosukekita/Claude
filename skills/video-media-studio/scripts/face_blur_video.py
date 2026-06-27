@@ -128,6 +128,42 @@ def main():
             fills_s[i] = True
     fills = fills_s
 
+    # ---- Interpolate the MAIN face over no-detection gaps -----------------
+    # The killer case the user hit: a mid-size face the detector momentarily
+    # loses, with no big neighbour to trigger a full-frame fill -> the frame got
+    # NOTHING. Track the largest face per frame, then linearly interpolate its
+    # box across frames where it dropped (borrowing from neighbours), and ensure
+    # every non-fill frame has at least that main box to blur.
+    main = [None] * n  # (cx,cy,bw,bh) of largest face, or None
+    for i in range(n):
+        if per_frame_boxes[i]:
+            cx, cy, bw, bh, _ = max(per_frame_boxes[i], key=lambda b: b[2] * b[3])
+            main[i] = (cx, cy, bw, bh)
+    idx = [i for i in range(n) if main[i] is not None]
+    if idx:
+        arr = np.array([main[i] for i in idx], dtype=float)
+        interp = np.zeros((n, 4))
+        for c in range(4):
+            interp[:, c] = np.interp(np.arange(n), idx, arr[:, c])
+        # light temporal smoothing of the interpolated main track
+        k = 5; pad = k // 2
+        for c in range(4):
+            padded = np.pad(interp[:, c], (pad, pad), mode="edge")
+            interp[:, c] = np.convolve(padded, np.ones(k) / k, mode="valid")[:n]
+        for i in range(n):
+            if fills[i]:
+                continue
+            mcx, mcy, mbw, mbh = interp[i]
+            mfrac = (mbw * mbh) / area
+            # if interpolation says the main face is actually big here, fill frame
+            if mfrac >= a.bigfrac:
+                fills[i] = True
+                continue
+            have_main = any(abs(b[0] - mcx) < mbw and abs(b[1] - mcy) < mbh
+                            for b in per_frame_boxes[i])
+            if not have_main:
+                per_frame_boxes[i].append((mcx, mcy, mbw, mbh, mfrac))
+
     # ---- Pass 2: blur ----------------------------------------------------
     tmp = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False).name
     vw = cv2.VideoWriter(tmp, cv2.VideoWriter_fourcc(*"mp4v"), fps, (W, H))
