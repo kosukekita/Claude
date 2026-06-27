@@ -1,3 +1,4 @@
+- [ローカルLLM構成(Ollama)](local-llm-roster-ollama.md) — akitaken A6000x2/96GBの導入済みテキストLLM。メイン=gpt-oss:120b(65GB,100%GPU,o4-mini級,日本語実用)。qwen3:30b/qwen3.5併存。70GB超はオフロード激遅で回避
 - [academic-writing 採否基準: ストップゲート](academic-writing-stop-gate-criterion.md) — 外部(ジャーナル/査読者)に検知され弾かれる項目は残す、検知されないのにプロセスを止めるだけのゲートは入れない
 - [MCP cross-PC & .claude.json race](mcp-cross-pc-and-claude-json-race.md) — .mcp.json shared Win+Linux; approval clobbered by concurrent claude processes
 - [ネスト.claudeとgitignoreの穴](nested-claude-and-gitignore-holes.md) — ~/.claude/.claudeはgit無視済みで漏れない(再生成は正常・放置でOK)／本当の穴はgenerated等未ignore作業生成物→塞ぎ済み(8429e2d)
