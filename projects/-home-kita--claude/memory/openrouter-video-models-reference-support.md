@@ -35,9 +35,12 @@ sora-2-proは `supported_frame_images=[]`。テキストからのみ。
 - **wan-2.7 (Alibaba)**: ✅ 通る。同じAlibaba製でも**wan-2.7だけ入力画像フィルタをすり抜ける**(happyhorseは弾く)。
 → **OpenRouterで露骨NSFW入力のi2vは事実上 wan-2.7 一択**。他は入力画像検閲で全滅。SFW入力なら各モデル使える見込み。露骨NSFW i2vはローカルWan2.2(無検閲)が確実。
 
+## ★★ユーザー恒久ルール(2026-06-27): NSFW動画・リファレンスありはWanのみ
+**動画生成で「NSFW かつ リファレンス画像あり(i2v/参照)」のときは wan-2.7(クラウド) か Wan2.2(ローカル) を使う**。他モデル(seedance/happyhorse/kling/veo/sora等)は入力画像のNSFW検閲で弾かれるか未検証。seedance/happyhorseで露骨入力が拒否されたのを実証済み。→ NSFW i2vの第一候補=ローカルWan2.2(無検閲・確実)、クラウドで手軽なら=wan-2.7。SFW i2vなら他モデルも可。
+
 ## 結論
-- 1枚を開始フレームにするだけ(i2v) → **SFW入力ならsora以外ほぼ全部OK**。**NSFW入力はwan-2.7のみ**(上記)。
-- **人物の同一性を保つ参照画像セットが要る → wan-2.7(最柔軟) / hailuo-2.3 / happyhorse-1.1**(ただしNSFW入力はwan-2.7のみ)。
+- 1枚を開始フレームにするだけ(i2v) → **SFW入力ならsora以外ほぼ全部OK**。**NSFW入力はWan(2.7 or ローカル2.2)のみ**(↑恒久ルール)。
+- **人物の同一性を保つ参照画像セットが要る → wan-2.7(最柔軟) / hailuo-2.3 / happyhorse-1.1**(ただしNSFW入力はWanのみ)。
 - 動画はもともと i2v が主([[optimal-gen-models-table-and-new-model-eval]]の動画は参照軸廃止しSFW/NSFW2軸)。ローカルNSFW動画はWan2.2+LoRA最適、クラウドで手軽に参照→動画ならwan-2.7。
 
 ## ★cloud_openrouter.py video の3バグ修正(2026-06-27, 修正済)

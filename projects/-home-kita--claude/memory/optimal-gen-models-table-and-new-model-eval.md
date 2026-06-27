@@ -37,6 +37,8 @@ metadata:
 | NSFW 動画 | **Wan2.2+LoRA**(`gen_wan_lora.py --lora HIGH --lora-low LOW`, 品質最上) | LTX-2.3+lynaNSFW(`gen_ltx23_lora.py --nsfw-motion --lora-scale 0.7`, ~12分実用) | LoRAセット`lkzd7/WAN2.2_LoraSet_NSFW`(HIGH→transformer_2=False/LOW→True)。LTXコミュニティ"LTX-2.x"はLoRAで公式baseにスタック(差替禁止) |
 
 **現状は動画はSFW/NSFWともWan2.2が最適だが、今後最適モデルが増える可能性あり**(新着評価で更新する)。
+
+**★ユーザー恒久ルール(2026-06-27): NSFW動画でリファレンス画像ありの場合は wan-2.7(クラウド/OpenRouter) か Wan2.2(ローカル) を使う**。他のクラウド動画モデル(seedance=ByteDance / happyhorse=Alibaba / kling / veo / sora)は**入力画像のNSFW検閲で弾く**(seedance=`InputImageSensitiveContentDetected`、happyhorse=阿里绿网`Green net check failed`を実証)。同じAlibaba製でも**wan-2.7だけ入力画像フィルタをすり抜ける**。クラウドで手軽なら wan-2.7、確実さ・無検閲ならローカル Wan2.2(ti2v-5b は単一GPU native/速い、i2v-a14b は2GPU分散で高品質)。詳細は [[openrouter-video-models-reference-support]]。クラウド wan-2.7 は `cloud_openrouter.py video --model alibaba/wan-2.7 --task i2v --image X`(3バグ修正済)。
 注: `gen_wan_lora.py`はメモリ記載だが当スキルscripts/内に未確認→使用前に存在確認。LTX-2.3 NSFWは`--offload model`(seqは固まる)。
 
 ## 新着HFモデル4軸評価チェックリスト
