@@ -10,6 +10,7 @@
 - [face_crop.py & LTX OOM真因](face-crop-tool-and-ltx-offload.md) — YuNet face-crop tool (neck-down only); LTX-2.3 OOMの真因は解像度²×frames→--max-side下げれば241f(10秒)も --offload model で完走(sequential不要、旧説は誤り); Grok needs --always-approve
 - [参照画像生成: Codex vs Qwen](reference-image-gen-codex-vs-qwen.md) — 参照画像が要る生成は SFW=Codex / NSFW=Qwen-Image-Edit。FLUX.1 Kontextは不採用。gen_qwen_edit.py はcu121ピン必須
 - [ツールコール漏洩フックがLinuxで無効](leaked-toolcall-hook-linux.md) — count/court/call+<invoke>漏洩検知の.ps1がpowershell無いLinuxで毎回失敗。node版.mjs採用(jq/python3はanaconda汚染、/usr/bin/nodeだけクリーン)。2回漏れたら/clear
+- [ツールコール漏洩の対処プレイブック](leaked-toolcall-mitigation-playbook.md) — 漏洩時は前置き消して再送→/compact→/rewind→handoffの順。予防=調査後Write/Edit連続注意/サブエージェント3〜4体/1セッション1テーマ/前置き書かない。前置き禁止はhookで縛れない
 - [一人称POV画像はZ-Image参照なしt2i](pov-image-gen-zimage-no-reference.md) — 真の一人称POV(撮影者の手/スマホ/体を映さない)は参照画像と相性最悪。Qwen-Editは立ち参照に引っ張られPOV不可。Grokは露骨NSFWをheadlessでブロック
 - [NSFWモデル拡充: Chroma/NoobAI/Wan2.2 LoRA](nsfw-models-chroma-noobai-wan-lora.md) — Chroma無検閲フォトリアルt2i(beta-sigmas scheduler+scipyで高画質/参照不可)・NoobAIアニメ(v-predはscheduler再設定要)・gen_wan_lora.py(Wan2.2 MoE HIGH/LOW振分、LTXよりNSFW上だがoffloadで激遅)・HF探索TIPS
 - [image-cache揮発→media-out](image-cache-volatile-use-media-out.md) — ~/.claude/image-cache はセッション中に自動クリアされ生成物が消える。残すものは ~/media-out に出力。スキル内ファイルは消えない

@@ -17,4 +17,4 @@ metadata:
 
 **フックでも防げない以上のモデル側緩和**（CLAUDE.md「ツールコール漏洩バグへの対処」にも追記済み）: ツール呼び出しは単独ターンで出す / 結果が返らなければ漏洩を疑い再送 / **同一会話で2回以上漏れたらコンテキスト汚染なので `/clear` を推奨**（同一コンテキストの再試行は再発しやすく、フックの再送促しも効きにくい）。
 
-関連: anaconda LD 汚染は [[video-media-studio-skill]] でも既出（env.sh が掃除）。フック解析系を選ぶときは「anaconda 版でなく `/usr/bin/node` を使う」が一般則。
+関連: anaconda LD 汚染は [[video-media-studio-skill]] でも既出（env.sh が掃除）。フック解析系を選ぶときは「anaconda 版でなく `/usr/bin/node` を使う」が一般則。漏洩したときの対処順序（前置き消し再送→/compact→/rewind→引き継ぎ）と予防策（サブエージェント3〜4体・1セッション1テーマ等）の運用プレイブックは [[leaked-toolcall-mitigation-playbook]]。
