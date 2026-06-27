@@ -108,25 +108,27 @@ def main():
         log("ERROR: no frames")
         return 2
 
-    # ---- Close-up gap handling -------------------------------------------
-    # Frames with no detection that sit between/after big-face frames are
-    # close-ups the detector lost -> force full-frame blur. Propagate the fill
-    # flag across no-detection runs adjacent to a fill frame.
-    nodet = [len(b) == 0 for b in per_frame_boxes]
+    # ---- Close-up gap handling (MAIN-FACE-LOST, not just no-detection) ----
+    # The real failure: on extreme close-ups the detector loses the BIG main
+    # face but still finds a tiny background face, so maxfrac collapses to ~0.001
+    # even though the woman's face fills the frame. Treat a frame as a close-up
+    # (-> full-frame blur) when its main face is small/absent BUT a big face
+    # exists nearby in time. That window is the close-up run; fill all of it.
+    big = [fr >= a.bigfrac for fr in maxfrac_seq]          # frame has a big face
+    lost = [maxfrac_seq[i] < a.bigfrac for i in range(n)]  # main face not big here
+    WIN = 12
     for i in range(n):
-        if nodet[i]:
-            # look at nearest detected neighbours within a window
-            lo = max(0, i - 8); hi = min(n, i + 9)
-            neigh_big = any(fills[j] for j in range(lo, hi) if not nodet[j])
-            neigh_any = any(not nodet[j] for j in range(lo, hi))
-            if neigh_big or not neigh_any:
-                fills[i] = True  # treat as close-up -> full frame
-    # smooth the fill flag so a single dropped frame inside a fill run is filled
-    fills_s = fills[:]
-    for i in range(1, n - 1):
-        if fills[i - 1] and fills[i + 1]:
-            fills_s[i] = True
-    fills = fills_s
+        if lost[i]:
+            lo = max(0, i - WIN); hi = min(n, i + WIN + 1)
+            if any(big[j] for j in range(lo, hi)):
+                fills[i] = True          # inside/adjacent to a close-up run
+    # close small holes: if a fill frame sits within 2 of fills on both sides
+    for _ in range(2):
+        fs = fills[:]
+        for i in range(2, n - 2):
+            if (fills[i - 1] or fills[i - 2]) and (fills[i + 1] or fills[i + 2]):
+                fs[i] = True
+        fills = fs
 
     # ---- Interpolate the MAIN face over no-detection gaps -----------------
     # The killer case the user hit: a mid-size face the detector momentarily
