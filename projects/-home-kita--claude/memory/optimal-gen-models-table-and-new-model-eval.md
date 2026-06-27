@@ -13,7 +13,7 @@ metadata:
 画像は **NSFWか × 参照画像取れるか の2軸=4分類**。各分類の最適モデル:
 | 分類 | 参照画像 | 最適モデル |
 |---|---|---|
-| **SFW + 参照なし** | t2i | **Codex** と **Grok** |
+| **SFW + 参照なし** | t2i | **★6本セット(ユーザー恒久ルール 2026-06-28): Codex CLI / Grok CLI / OpenRouter gpt-5-image / OpenRouter grok-imagine-image-quality / Nano Banana 2 (gemini-3.1-flash-image) / Nano Banana Pro (gemini-3-pro-image)**。「SFWのプロンプトで画像生成して」と言われたらこの6つを生成して並べる。日本語プロンプトOK・「盗撮」は婉曲化([[openrouter-image-gen-quirks]])。Nano Banana 2は画面いっぱい没入スナップ向き/Proはスマホ実機枠を描きがち(プロンプト次第)。OpenRouterはcloud_openrouter.py image、CLIは各スキル(codex exec / grok image_gen) |
 | **SFW + 参照あり** | edit/i2i | **Codex**（`codex exec -i ref.jpg`、prompt は stdin） |
 | **NSFW + 参照なし** | t2i | **Grok・Z-Image・Chroma の3本常に**（Grokが拒否しても残2本は出る。[[grok-nsfw-refuse-chroma-fallback]]と整合） |
 | **NSFW + 参照あり** | edit/i2i | **Qwen**（Qwen-Image-Edit, `gen_qwen_edit.py --image`、無検閲・同一性保持・cu121必須） |
