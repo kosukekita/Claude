@@ -40,6 +40,9 @@ SFW内容でも日本語プロンプトに**「盗撮」**と書くと、OpenAI(
 ## ★gpt-image-2はOpenRouter上で500障害が継続 → gpt-5-imageで代替
 `openai/gpt-image-2` は日本語/英語問わず HTTP 500 (Internal Server Error) を返し続ける = **OpenRouter側エンドポイント障害**(拒否でなくインフラ)。リトライ無効。同じOpenAI枠が欲しいときは **`openai/gpt-5-image`**(out=[image,text]系・別エンドポイント・日本語OK)で代替する。
 
+## ★Nano Banana 2 = OpenRouterのSFWフォトリアルで優秀(実証 2026-06-28)
+**Nano Banana 2 = `google/gemini-3.1-flash-image`**(Gemini 3.1 Flash Image)。上位版 **Nano Banana Pro = `google/gemini-3-pro-image`**。無印 Nano Banana = `gemini-2.5-flash-image`。居酒屋ショート動画SFWプロンプトで生成したら**素人スマホ写真の質感が最も自然**(ザラつき・生活感・本物の居酒屋感、背景他人を自動ぼかしまでする)。SFW参照なしフォトリアルのOpenRouter枠はNano Banana 2が有力候補。Codex/Grok CLIと同等以上。日本語プロンプトOK。NSFWは未検証(Geminiなので露骨は拒否される見込み)。
+
 ## ★日本語特化LLM = sakana/fugu-ultra(翻訳前段に使える)
 OpenRouterに**画像生成の日本語特化モデルは無い**(日本語特化はテキストLLMのみ)。が、日本企業 **Sakana AI の `sakana/fugu-ultra`**(1M context・学習型マルチエージェント・$5/$30 per Mtok)が日本語に非常に強い。日本語の画像プロンプトを投げると、画像生成AI向けに最適化された的確な英語プロンプトへニュアンス保持して変換できる。**使い道**: 「日本語で書く→fugu-ultraで各画像モデル向けに英訳/整形→生成」の前段。英語しか通らない/英語だと拒否されるモデルでも日本語の意図を高精度反映。`cloud_openrouter.py llm --model sakana/fugu-ultra`。
 
