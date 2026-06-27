@@ -33,4 +33,11 @@ sora-2-proは `supported_frame_images=[]`。テキストからのみ。
 - **人物の同一性を保つ参照画像セットが要る → wan-2.7(最柔軟) / hailuo-2.3 / happyhorse-1.1**。
 - 動画はもともと i2v が主([[optimal-gen-models-table-and-new-model-eval]]の動画は参照軸廃止しSFW/NSFW2軸)。ローカルNSFW動画はWan2.2+LoRA最適、クラウドで手軽に参照→動画ならwan-2.7。
 
+## ★cloud_openrouter.py video の3バグ修正(2026-06-27, 修正済)
+wan-2.7のi2vが3つの連鎖バグで動かなかった→全て修正済。同種の動画API実装で再発しうるので記録:
+1. **frame_imagesスキーマ**: 旧`[{"url":...}]`はZodErrorで400。正しくは `[{"type":"image_url","frame_type":"first_frame","image_url":{"url":...}}]`(type=image_url固定、frame_type∈first_frame|last_frame)。`input_references`も`{"type":"image_url","image_url":{"url":...}}`。
+2. **poll/download GETのContent-Type**: 空ボディGETに`Content-Type: application/json`を付けるとゲートウェイがcookie認証にフォールバック→401「No cookie auth credentials found」。GETは`Authorization`(+任意でReferer/X-Title)のみの`_get_headers()`を使う(Content-Type抜く)。
+3. **unsigned_urlsのkey欠落**: 完了時`unsigned_urls[0]`は`.../videos/{id}/content?index=0`(api/v1配下)で**名前に反しBearer必須**。`_download(urls[0], out)`がkeyを渡さず401。`_download(urls[0], out, key=key)`に修正。
+切り分け教訓: submit(POST)もpoll(GET)も200なのにスクリプトだけ401 → 怪しいのは(a)GETのContent-Type (b)完了後のダウンロード認証。手動pollで「どのステップで401か」を切る(submit/poll/downloadのどれか)。wan-2.7は約66秒でcompleted、150f/30fps/5sの.mp4が出る。
+
 関連: [[optimal-gen-models-table-and-new-model-eval]] [[openrouter-image-gen-quirks]] [[nsfw-models-chroma-noobai-wan-lora]] [[video-media-studio-skill]]
