@@ -41,6 +41,10 @@ metadata:
 
 **現状は動画はSFW/NSFWともWan2.2が最適だが、今後最適モデルが増える可能性あり**(新着評価で更新する)。
 
+## ★★ユーザー恒久ルール(2026-06-28): 動画生成のプロンプトは原文のみ・追記禁止・都度確認
+**動画生成では、ユーザーが書いた動きプロンプトをそのまま使い、AIが勝手に何も足さない**。具体的に禁止: ①構図/演出を変える語(「顔をはっきり見せる」「カメラに顔を向ける」「髪を払う」等)②品質ネガティブ(加工感なし/広告感なし/モデル感なし/AIっぽさなし等)③破綻防止ネガ(deformed, extra fingers等)すら足さない。**全部ユーザー原文のまま**。理由: 「顔をはっきり」を勝手に足したら逆に動画の質が落ちた(不自然な動き/構図)実例あり(2026-06-28)。手足の崩れ等が気になる場合もユーザーが明示するまで足さない。**かつ、動画生成ごとに「このプロンプトでよいか」を一度確認してから生成する**。
+- 注: これは**動画のみ**のルール。**画像生成は現状維持**=タトゥー拒否ネガ(`tattoo, tattoos, body ink, lettering on skin`)+品質ネガティブを自動適用してよい(画像はこれで問題なかった)。
+
 **★ユーザー恒久ルール(2026-06-27): NSFW動画でリファレンス画像ありの場合は wan-2.7(クラウド/OpenRouter) か Wan2.2(ローカル) を使う**。他のクラウド動画モデル(seedance=ByteDance / happyhorse=Alibaba / kling / veo / sora)は**入力画像のNSFW検閲で弾く**(seedance=`InputImageSensitiveContentDetected`、happyhorse=阿里绿网`Green net check failed`を実証)。同じAlibaba製でも**wan-2.7だけ入力画像フィルタをすり抜ける**。クラウドで手軽なら wan-2.7、確実さ・無検閲ならローカル Wan2.2(ti2v-5b は単一GPU native/速い、i2v-a14b は2GPU分散で高品質)。詳細は [[openrouter-video-models-reference-support]]。クラウド wan-2.7 は `cloud_openrouter.py video --model alibaba/wan-2.7 --task i2v --image X`(3バグ修正済)。
 注: `gen_wan_lora.py`はメモリ記載だが当スキルscripts/内に未確認→使用前に存在確認。LTX-2.3 NSFWは`--offload model`(seqは固まる)。
 
