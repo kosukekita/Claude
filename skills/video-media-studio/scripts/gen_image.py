@@ -215,6 +215,22 @@ MODELS: dict[str, dict] = {
         "license": "Fair-AI-public-1.0 (anime; booru tags)",
         "vpred": True,
     },
+    # Manga Vision IL — Illustrious-XL (same booru-tag family as NoobAI, uncensored)
+    # finetune SPECIALIZED for black-and-white MANGA pages: auto ink + screentones
+    # without needing monochrome/greyscale tags. Best for 白黒漫画 NSFW. diffusers
+    # format (~6.5GB fp16), drops into the standard SDXL pipeline. eps (no vpred).
+    "manga-vision-il": {
+        "repo": "John6666/manga-vision-il-v1-sdxl",
+        "pipeline": "StableDiffusionXLPipeline",
+        "vram_bf16_gb": 12.0,
+        "vram_offload_floor_gb": 8.0,
+        "default_steps": 28,
+        "default_guidance": 6.0,
+        "turbo": False,
+        "gated": False,
+        "license": "Illustrious / Fair-AI (anime/manga; booru tags)",
+        "vpred": False,
+    },
 }
 
 # auto ladder: best-quality LOCAL model first, then cheaper/smaller, then grok.
@@ -299,7 +315,7 @@ def select_model(
         return _fit_or_offload("sdxl", best_free, want_offload, margin)
 
     if backend in {"qwen-image", "flux.2-dev", "z-image-turbo", "flux.1-krea-dev",
-                   "chroma", "noobai-xl"}:
+                   "chroma", "noobai-xl", "noobai-xl-vpred", "manga-vision-il"}:
         return _fit_or_offload(backend, best_free, want_offload, margin)
 
     # auto --------------------------------------------------------------------
@@ -624,7 +640,7 @@ def build_parser() -> argparse.ArgumentParser:
         choices=[
             "auto", "flux", "sdxl", "grok", "openrouter",
             "qwen-image", "flux.2-dev", "z-image-turbo", "flux.1-krea-dev",
-            "chroma", "noobai-xl",
+            "chroma", "noobai-xl", "noobai-xl-vpred", "manga-vision-il",
         ],
         default="auto",
         help="generation backend (default: auto). qwen-image/flux.2-dev/"
