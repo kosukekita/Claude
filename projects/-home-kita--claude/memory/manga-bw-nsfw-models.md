@@ -21,5 +21,12 @@ metadata:
 ## クラウド(OpenRouter等) = NSFW不可・全滅
 OpenRouter画像モデル(gemini/gpt-image/flux.2/seedream/grok)は全て商用フィルタ付き→白黒漫画"スタイル"は出てもNSFWは弾く。無検閲漫画はローカル一択。クラウドが要るならfal/Modalで自前NoobAI系サーブ([[grok-nsfw-refuse-chroma-fallback]]と同型)。
 
+## ★複数コマ・ページ構成 = 「1枚に直描画」は2コマ・吹き出し無しが鉄則(2026-06-29実証)
+`gen_image.py`は1枚絵t2iのみ(コマ割りレイアウト機能なし)。それでも複数コマ漫画を1枚で狙うときの確定知見:
+- **失敗**: `manga page, multiple panels, panel layout`を強く効かせると、SDXL系(NoobAI/MangaVision)はコマ枠の分割だけ実行し各コマの中身(キャラ/シーン)が空になる。MangaVisionは顔の断片を格子状に並べるだけ・NoobAIは枠+崩れ吹き出しでスカスカ。コマ数が多いほど各コマが小さく中身が消える。
+- **成功(v2)**: ①コマ数は**2まで**(`2koma, two panels`)②構造タグ控えめ・**キャラ描写を主役**に前へ(`1girl, nude, lying on bed, top panel close-up of face, bottom panel full body`)③**speech bubbles/text/dialogueはネガに入れ外す**(SDXLは日本語を描けず崩れた偽文字になるだけ、台詞は後でPILで載せる)。seed違えば絵柄別。NoobAI-vpred 832x1216/steps30/guidance5.5で2コマとも中身ありの白黒漫画成立。
+- **真に多コマ(各コマ作り込み)が要るなら**: 「1ページ=1大ゴマ」で中身を確実に描いた画像を複数枚生成→`scripts/manga_page.py`(今回追加, PILでガター+黒枠+RTL読み順でページ合成。`--panels ... --rows "2,1,2" --rtl`)で合成。これが結局きれい(当初の「個別コマ生成→ページ合成」と同結論)。
+- 出力: `~/media-out/manga-compare/page/`(noobai_v2_2koma=本命 / _page_compare / prompts.md)。
+
 出力: `~/media-out/manga-compare/`(noobai_manga / mangavision_manga / qwen_photo2manga_*)。
-関連: [[nsfw-models-chroma-noobai-wan-lora]](NoobAI設定詳細), [[reference-image-gen-codex-vs-qwen]](Qwen-Edit), [[optimal-gen-models-table-and-new-model-eval]]
+関連: [[nsfw-models-chroma-noobai-wan-lora]](NoobAI設定詳細), [[reference-image-gen-codex-vs-qwen]](Qwen-Edit), [[optimal-gen-models-table-and-new-model-eval]], [[video-media-studio-skill]](manga_page.py)
