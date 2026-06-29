@@ -26,7 +26,7 @@ try {
     $memTargets = @(Get-ChildItem "projects" -Directory -ErrorAction SilentlyContinue |
         Where-Object { $_.Name -match '^[cC]--Users-.+--claude$' } |
         ForEach-Object { "projects/$($_.Name)/memory" })
-    $addTargets = @(".gitignore", ".mcp.json", "CLAUDE.md", "settings.json", "skills/", "hooks/") + $memTargets
+    $addTargets = @(".gitignore", ".mcp.json", "CLAUDE.md", "settings.json", "skills/", "hooks/", "agents/") + $memTargets
     foreach ($t in $addTargets) {
         if (Test-Path $t) { git add $t 2>$null }
     }
