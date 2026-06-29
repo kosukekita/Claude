@@ -60,4 +60,11 @@ metadata:
 - **E2E実証**: 本番相当env(HF_TOKEN無し/新PATH/HF_HOME)で`eval-compare.mjs --axis sfw_noref --model wikeeyang/Flux2-Klein-9B-True-V3`完走→新モデル生成+zimage baseline横並び+pCloud公開リンク両方(ページ恒久+direct)発行成功。合成PNGのラベル日本語も正常(Noto CJK)。実写級品質確認済み。
 - **Codex設計レビュー(codex:codex-rescue)併用**: 「fp8の方が信頼性高い/config推定に注意/offloadは保険」と助言。実機ではgguf Q6_Kが一発で高品質だったのでgguf優先採用、config明示渡しで懸念解消済み。fp8はフォールバックとして実装に残置(将来gguf読めないモデル用)。
 
-関連: [[nsfw-models-chroma-noobai-wan-lora]]（HF探索TIPS・追跡family）, [[image-cache-volatile-use-media-out]]（durableデータは~/media-out）, [[optimal-gen-models-table-and-new-model-eval]]（4軸baseline）, [[pcloud-public-link-api]]（リンク発行、getfilelinkが直URL）, [[gen-image-gpu-zombie-oom]]（生成前GPUゾンビkill）
+## NSFW優先フォールバック + NSFW=リンクのみ/SFW=添付（2026-06-29追加・ユーザー恒久ルール）
+ユーザー恒久ルール2件をwatcher本体に実装(hf-watcher.mjs):
+- **(1) 全モデルで常にNSFW軸を先に生成 → 失敗したらSFW軸にフォールバック**。旧`mapAxis()`(タグ/名前でSFW/NSFW自動判定し片方だけ)は廃止(関数は参照用に残置・未使用)。新`runEvalCompare(modelId, axes)`が**参照画像の有無(`axes.ref`)だけメタから決め**、SFW/NSFW次元は必ずNSFW先行。ref無→`nsfw_noref`先/`sfw_noref`後、ref有→`nsfw_ref`先/`sfw_ref`後。両軸失敗で検知のみ。`runEvalCompareOnce`が1軸実行の下請け(戻り`{ok,url,localPng,status}`)。**ユーザー選択は「NSFW非対応モデルでも全モデルNSFW優先」**(2026-06-29、AskUserQuestionで確定)。SFW専用モデルはNSFW生成が失敗してSFWに落ちる分やや時間増だが許容。
+- **(2) NSFW結果はメール添付せずpCloudリンクのみ／SFW結果はPNGをメール添付**。理由: **NSFWバイナリをGmailに添付/直貼りするとアカウントBANリスク**(ユーザー明示)。`sendEmail(subject, body, attachments=[])`をmultipart/mixed対応に拡張、**`_compareAxis`が`sfw_*`のものだけ添付候補**(`/^sfw_/`)。NSFWは従来通りdigest本文にpCloudリンクだけ載る。`runEvalCompareOnce`が**ログ`composed: <path>`から合成PNGのローカルパスを抽出**して`m._compareLocalPng`に保存(SFW添付用)。digest本文の比較生成行もNSFW=「🔞NSFWのため添付なし・リンクのみ」/SFW=「SFW: メール添付あり」と明示。
+- **手動送信スクリプト**: `~/media-out/hf-watcher/send_nsfw_link_mail.mjs`(NSFW用・添付なしリンクのみ), `send_compare_mail.mjs`(SFW用・添付あり)。本番watcherは上記でmultipart内蔵なので手動スクリプトは単発検証/再送用。
+- **今回の実証(2026-06-29)**: Flux2-Klein-9B-True-V3を`nsfw_noref`で生成成功(NEW+zimage+chroma 3カラム、grokはheadless不可skip)→pCloudリンクのみメール送信完了。SFW版(sfw_noref)は別途添付付きで先に送信済み。構文チェック+軸選択/添付フィルタの単体検証パス。
+
+関連: [[nsfw-models-chroma-noobai-wan-lora]]（HF探索TIPS・追跡family）, [[image-cache-volatile-use-media-out]]（durableデータは~/media-out）, [[optimal-gen-models-table-and-new-model-eval]]（4軸baseline）, [[pcloud-public-link-api]]（リンク発行、getfilelinkが直URL）, [[gen-image-gpu-zombie-oom]]（生成前GPUゾンビkill）, [[gmail-send-smtp-attachments]]（Gmail添付メール送信の定番手順）
