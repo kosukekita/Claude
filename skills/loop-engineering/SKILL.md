@@ -1,6 +1,6 @@
 ---
 name: loop-engineering
-description: Use when designing, building, or reviewing a self-running loop / automation that runs an agent over and over without a human in the inner cycle — a scheduled triage, an overnight sweep, a /loop or /goal, a cloud routine, or a pipeline that opens PRs on its own. Use before shipping such a loop to check it has all five moves and isn't one of the five failure shapes. Trigger phrases: 自走ループ, ループを作る, 毎朝動かす, スケジュール実行, loop engineering, /loop, /goal, automation, cron agent, overnight loop.
+description: Use when designing, building, or reviewing a self-running loop / automation that runs an agent over and over without a human in the inner cycle — a scheduled triage, an overnight sweep, a /loop, a cloud routine, or a pipeline that opens PRs on its own. Use before shipping such a loop. Trigger phrases: 自走ループ, ループを作る, 毎朝動かす, スケジュール実行, loop engineering, ループエンジニアリング, /loop, automation, 自動化, cron agent, overnight loop.
 ---
 
 # Loop Engineering — Build Loops That Run Themselves (and Can Be Stopped)
@@ -66,22 +66,17 @@ fully installed.
 
 ## A complete first loop, annotated
 
-```yaml
-# 1. SCHEDULING — a real trigger (cloud so the lid can close)
-on: { schedule: [ cron: '0 6 * * *' ] }    # 06:00 daily
-# 2. DISCOVERY — a skill, not a wall of text
-run: claude --skill morning-triage
+```text
+# Pseudo-code — the shape of a loop, not literal commands. Map each line to your
+# actual scheduler/CLI; check your tool's docs for exact flag/command names.
+# 1. SCHEDULING — a real trigger (cloud so the lid can close), e.g. a CI/cron schedule:
+#      cron: 0 6 * * *   (06:00 daily)
+# 2. DISCOVERY — invoke a skill (e.g. morning-triage), not a wall of inline text
 # 3. PERSISTENCE — the skill writes ./state/triage.md and commits it back
-# 4. HANDOFF — one worktree per finding
-#    for finding in $(parse ./state/triage.md):
-#        claude --worktree "fix/$finding" --goal "tests pass and lint clean" "draft a fix for $finding"
-# 5. VERIFICATION — /goal's stop check after each turn + a loop-reviewer agent picks holes
+# 4. HANDOFF — one git worktree per finding so parallel agents don't collide
+# 5. VERIFICATION — an independent stop check after each turn + a loop-reviewer agent
+#      (run-until-condition, judged by a FRESH model — see loop-evaluator)
 # 6. HUMAN REVIEW — PRs opened, never auto-merged; anything uncertain lands in ./inbox/
-```
-
-The discovery skill's own headings should map to the five moves, plus one heading the loop
-**cannot infer** and you must write in by hand:
-
 ```
 ## Stop (the boundary you keep for yourself)
 Never merge. Never delete. Anything you're less than confident about goes to ./inbox/
@@ -102,7 +97,9 @@ Must check a local dev server every minute → local. Should scan issues at 3am 
 cloud/CI (laptops get their lids closed). A mature loop uses both: local for tight inner
 checks, cloud for the overnight sweep. **Do not** mistake local rerun ("run a few extra
 rounds while I'm here") for true autonomy ("run while I'm not"). `/loop` reruns on an
-interval; `/goal` runs until a condition is met (judged by a fresh model — see loop-evaluator).
+interval (it self-paces if you omit the interval). A *run-until-a-condition* primitive,
+where a fresh model judges the stop condition each turn, is the stronger pattern — see
+loop-evaluator; check your toolchain for whether it exposes one (and under what name).
 
 ## The four silent debts — and the guard for each
 
