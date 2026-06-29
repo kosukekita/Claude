@@ -74,6 +74,31 @@ discovery/plan/brainstorming フェーズはブロックしない。クイズは
 - **ループ時の対処**: 指示を重ねるのではなく、会話をクリアするかアプローチを根本から変える
 - **Hooks 活用**: ファイル変更時に Prettier・型チェックを自動実行して技術的負債を防ぐ
 
+## Markdown 作成時は OKF を付ける（ナレッジ/ドキュメント系の .md のみ）
+
+ナレッジ/ドキュメント系の Markdown ファイルを**新規作成するとき**は、冒頭に OKF（Open Knowledge Format, Google Cloud 提案 2026-06）の YAML フロントマターを付ける。AI エージェントが複数 md を横断検索する際のメタデータになり、検索性・段階的な関連たどりが向上する。
+
+**対象**: 人が読む/AI に渡すナレッジ文書 — 設計メモ・仕様書・調査メモ・議事録・README 類・手順書など、自分で新規に作る `.md`。
+**対象外**（既存フォーマットがあるので OKF を付けない）:
+- 記憶ファイル（`memory/*.md`・`./.claude-memory/*.md`）— 既に `name/description/metadata` のフロントマターがある
+- スキル本体（`SKILL.md`）・`CLAUDE.md`・`MEMORY.md` など構造が決まっている運用ファイル
+- 他者が定めたフォーマットの md を編集する場合（勝手に足さない）
+
+**形式**（最小ルール = 必須は `type` のみ。他フィールドは内容に応じて任意で足す）:
+```yaml
+---
+type: spec            # 必須。文書の種別（例: spec / design / research / readme / runbook / minutes / note）
+title: ○○の設計メモ    # 任意
+description: 一行要約   # 任意
+tags: [okf, watcher]  # 任意
+timestamp: 2026-06-29 # 任意。相対日付でなく絶対日付で
+owner: ○○            # 任意（担当・部門）
+---
+
+# 以下は通常の Markdown 本文
+```
+迷ったら `type` だけ付ければよい。OKF の設計思想は「ルールの最小化（必須は type のみ）／作成と利用の分離（特定サービス非依存）／どのツールでも実装可能なシンプルさ」。出典: https://zenn.dev/knowledgesense/articles/14a874a9f423bb
+
 ## Web 取得
 
 公開 URL は標準の WebFetch / WebSearch で取得する。これがブロックされる等で取れない場合のフォールバックとして、`https://r.jina.ai/<元URL>` を使う（URL の前に付けるだけで LLM 向けクリーン Markdown が返る。無料・認証不要）。
