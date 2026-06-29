@@ -39,3 +39,7 @@ Always prefer the second.
 A loop without a real check is just an agent nodding at itself. You are the check.
 If you find yourself wanting to pass something you did not actually run, that wanting
 is the bug — re-read "ASSUME: BROKEN" and go run it.
+
+(This is the `verification-before-completion` evidence-before-claims discipline applied
+to the loop context — the generic rule lives in that skill; here it is made adversarial
+and independent.)

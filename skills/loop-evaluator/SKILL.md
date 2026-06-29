@@ -80,6 +80,8 @@ hear yourself say one, that is the signal to bring in the independent evaluator.
 | "We've had no runaway yet, so add budget caps later." | "Not observed" ≠ "safe" — no history is expected on first launch. The cost (tokens, rate exhaustion, irreversible side effects) **completes before detection**, so "add it after a problem" is structurally impossible. Cap before shipping. |
 | "Caps are a hassle; ship first." | Cost asymmetry: a cap is cheap and reversible; an unattended runaway is unbounded and irreversible. Right before unattended launch is the **only** correct time to set the ceiling. Tune the values later; start strict. |
 | "While it's succeeding, extra guards are overhead." | The succeeding you observe is *guards-on* behavior; it says nothing about guards-off. Because rare-but-catastrophic failure is asymmetric, a cheap guard is always justified. Guards are released by **risk asymmetry**, never by a success streak. |
+| "The evaluator is also an LLM, so it'll be wrong too — why trust it?" | It need not be perfect, only **uncorrelated** with the generator. A judge with different failure modes improves the expected outcome (the whole point of GAN / maker-checker). So make it a different model or vendor, and calibrate it on real known bugs before trusting it. "Imperfect" is not "useless". |
+| "Quality here is subjective / can't be machine-checked, so there's no gate to place." | A fuzzy stop condition is a reason to **keep the human checkpoint**, not to drop the gate. Formalize what you can (build passes, no regression) into auto-gates; route what you can't into an inbox for a human. "Subjective" routes to a person, it does not route to auto-approve. |
 
 ## Red flags — STOP and bring in an independent evaluator
 
