@@ -46,7 +46,21 @@ try {
     }
 
     git commit -m $msg 2>$null
+
+    # First push attempt. If rejected because the remote moved ahead (another
+    # machine/session pushed), rebase our new commit onto the fresh origin/main
+    # and retry ONCE. Without this the rejected push was swallowed, leaving the
+    # commit local forever (ahead grew, then auto-pull's --ff-only could never
+    # catch up -> the divergence deadlock). Never force; if the rebase conflicts
+    # we abort cleanly and leave the commit local to retry next time.
     git push 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        git fetch origin 2>$null
+        git -c core.editor=true rebase --no-autostash --no-rerere-autoupdate origin/main 2>$null
+        if (Test-Path (Join-Path $claudeDir ".git\rebase-merge")) { git rebase --abort 2>$null }
+        elseif (Test-Path (Join-Path $claudeDir ".git\rebase-apply")) { git rebase --abort 2>$null }
+        else { git push 2>$null }
+    }
 } finally {
     Pop-Location
 }
