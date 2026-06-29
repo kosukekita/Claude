@@ -42,9 +42,13 @@ try {
     if (Test-Path (Join-Path $claudeDir ".git\rebase-merge")) { git rebase --abort 2>$null }
     if (Test-Path (Join-Path $claudeDir ".git\rebase-apply")) { git rebase --abort 2>$null }
 
-    # Restore stashed changes
+    # Restore stashed changes. Use apply+drop instead of pop: if apply
+    # conflicts, pop's behavior is hard to reason about inside a hook, whereas
+    # apply leaves the stash intact so nothing is lost and the user can resolve
+    # it manually. Only drop when apply succeeded cleanly.
     if ($stashed) {
-        git stash pop 2>$null
+        git stash apply 2>$null
+        if ($LASTEXITCODE -eq 0) { git stash drop 2>$null }
     }
 } finally {
     Pop-Location
