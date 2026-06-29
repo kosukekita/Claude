@@ -37,16 +37,25 @@ separate evaluator. (Borrowed from GANs: one network builds, one picks faults.)
 
 ## How to apply in this environment
 
-- **Independent agent:** spawn `loop-reviewer` (Agent tool, `subagent_type: "loop-reviewer"`),
-  or a Workflow `agent(..., {agentType: 'loop-reviewer'})` per finding.
+- **Independent agent:** spawn the `loop-reviewer` subagent (Agent tool) — its definition
+  lives at `agents/loop-reviewer.md` under this repo. A Workflow can call it per finding with
+  `agentType: 'loop-reviewer'` if the Workflow tool is available.
 - **Different vendor entirely:** delegate the review to Codex (`codex-consult` skill) so the
-  judge shares none of your context or blind spots. The git-sync hook audit that produced
-  these skills did exactly this — Codex + an adversarial workflow, cross-checked.
+  judge shares none of your context or blind spots — the strongest form of independence. The
+  git-sync hook audit that produced these skills did exactly this: Codex + an adversarial
+  workflow, cross-checked.
 - **Acting, not reading:** the reviewer runs tests and pastes real output; for UI it drives
-  the page via chrome-devtools-mcp / claude-in-chrome and screenshots the result.
-- **Adversarial verify pattern in a Workflow:** for each finding, spawn N skeptics prompted
-  to REFUTE it; keep it only if a majority fail to refute. (See the Workflow tool's quality
-  patterns.) Diversity of lens beats N identical refuters.
+  the page via the `claude-in-chrome` or `chrome-devtools-mcp` MCP and screenshots the result.
+- **Adversarial verify pattern:** for each finding, spawn N skeptics prompted to REFUTE it;
+  keep it only if a majority fail to refute. Diversity of lens (correctness / security /
+  does-it-reproduce) beats N identical refuters.
+- **Calibrate the evaluator before trusting it:** an evaluator need not be perfect — it only
+  needs failure modes *uncorrelated* with the generator's. Prove it catches real, known bugs
+  first, then trust it to gate.
+- **Don't over-gate, either:** the discipline is "never delete the gate", not "make the gate
+  ever-heavier until the loop can't move". Match gate cost to risk — full independent review
+  for high-risk diffs (auth, billing, migrations, deletes); cheap machine gates (CI/lint/type)
+  for genuinely low-risk ones (docs, typos). A loop frozen by infinite gating is its own failure.
 
 This skill is the loop layer of the "check that can say no". For a single-task review against
 a plan, use `requesting-code-review`; to gate your own success claims with evidence, use
