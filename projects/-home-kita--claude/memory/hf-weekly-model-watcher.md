@@ -67,4 +67,10 @@ metadata:
 - **手動送信スクリプト**: `~/media-out/hf-watcher/send_nsfw_link_mail.mjs`(NSFW用・添付なしリンクのみ), `send_compare_mail.mjs`(SFW用・添付あり)。本番watcherは上記でmultipart内蔵なので手動スクリプトは単発検証/再送用。
 - **今回の実証(2026-06-29)**: Flux2-Klein-9B-True-V3を`nsfw_noref`で生成成功(NEW+zimage+chroma 3カラム、grokはheadless不可skip)→pCloudリンクのみメール送信完了。SFW版(sfw_noref)は別途添付付きで先に送信済み。構文チェック+軸選択/添付フィルタの単体検証パス。
 
-関連: [[nsfw-models-chroma-noobai-wan-lora]]（HF探索TIPS・追跡family）, [[image-cache-volatile-use-media-out]]（durableデータは~/media-out）, [[optimal-gen-models-table-and-new-model-eval]]（4軸baseline）, [[pcloud-public-link-api]]（リンク発行、getfilelinkが直URL）, [[gen-image-gpu-zombie-oom]]（生成前GPUゾンビkill）, [[gmail-send-smtp-attachments]]（Gmail添付メール送信の定番手順）
+## nsfw_norefプロンプト刷新 + Chroma恒久除外 + negative配線（2026-06-29追加）
+- **nsfw_norefプロンプトを「脱衣所で服を脱ぐ・上半身裸・不意を突かれた表情」に全面刷新**（旧:高級ホテルで紐パンツ盗撮）。ユーザー支給の長文プロンプト(iPhone縦型/咄嗟に胸を腕で隠す/友人がさりげなく撮った気配/圧縮画質・ノイズ・モーションブラー等のリアリズム指定)をそのまま採用。**脱衣所固定なので｛場所｝プレースホルダなし**(nsfw_refと同様、fillPromptは該当なしでそのまま通す。pickLocationは走るがログ表示のみで無害)。
+- **eval-prompts.jsonに`negative`フィールド新設**。eval-compare.mjsの`genBaseline`/`genNewModel`に`negative`を配線し`--negative-prompt`で各genへ渡す(entry.negativeが非空のときのみ。空ならQwenの内蔵DEFAULT_NEG温存)。**negative対応モデル: Qwen/Z-Image/Chroma/SDXL(NoobAI)はhonor、FLUX系は内部で自動無視**(gen_image.py 587行・gen_generic_edit.pyがゲート)。nsfw_norefのnegativeにはユーザー指定NGリスト全部＋anime/illustration/cartoon/2D/CG等を追加。
+- **★Chromaを恒久除外(ユーザー指示2026-06-29)**: nsfw_norefのbaselineを`["grok","zimage"]`に変更(chroma削除)。**Chroma1-HD(FLUX.1-schnellベースの実写無検閲)はこの実写NSFWプロンプト(iPhone/UI/画面系の語が多い)と相性が最悪**で、negative無し→アニメ化、negative追加→人物が消えiPhone設定画面風の青いUI＋文字化けに破綻、と2回連続で使い物にならず。**実写NSFW t2iの現状最適baselineはzimage(Z-Image-Turbo)**(grokはheadless不可で手動注記)。Chromaは実写人物プロンプトで不安定と判明したので今後baselineから外す。
+- **実証(2026-06-29)**: 新プロンプト+negative+chroma除外で`eval-compare --axis nsfw_noref`完走。Flux2-Klein[NEW]とzimageの2カラムとも脱衣所・上半身裸・胸を腕で隠す不意打ち表情・実写級でプロンプト忠実。pCloudリンクのみメール送信完了(NSFW添付なしルール適用)。Flux2-Klein 2回目以降キャッシュで新モデル生成36s、zimage 20s、合成+リンクまで約1分。
+
+関連: [[nsfw-models-chroma-noobai-wan-lora]]（HF探索TIPS・追跡family。Chromaは実写人物NSFWでは不安定と判明）, [[image-cache-volatile-use-media-out]]（durableデータは~/media-out）, [[optimal-gen-models-table-and-new-model-eval]]（4軸baseline。nsfw_norefのbaselineからchroma除外）, [[pcloud-public-link-api]]（リンク発行、getfilelinkが直URL）, [[gen-image-gpu-zombie-oom]]（生成前GPUゾンビkill）, [[gmail-send-smtp-attachments]]（Gmail添付メール送信の定番手順）
