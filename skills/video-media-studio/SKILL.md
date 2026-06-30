@@ -128,7 +128,8 @@ source scripts/env.sh
 | ControlNet OpenPose + Depth（動き保持） | `xinsir/controlnet-{openpose,depth}-sdxl-1.0` + `controlnet_aux`（OpenposeDetector/MidasDetector） | xinsir が現行最良の SDXL ControlNet。`--controlnet openpose,depth`（canny も可） |
 | IP-Adapter FaceID + Reference Only（顔固定） | `ip-adapter-plus-face_sdxl_vit-h.bin`（CLIP ViT-H・`--face-ref`） | **insightface 不要**で `pipe.load_ip_adapter()` に直接載る。FaceID/InstantID は insightface(antelopev2) 必須でビルドが詰まるので**意図的に外した**（顔固定は Plus-Face + ControlNet で代替） |
 | VHS 分解 / 再合成 | ffmpeg 抽出（ロスレス PNG）+ `export`/`libx264` 再合成 | 完全ローカル |
-| シームレス接続 / RIFE | `--blend-prev`（前フレームの変換結果を次の init に混合）+ seed/model/style/negative 固定 | temporal flicker 抑制の中心策 |
+| 顔の破綻防止（ADetailer 相当） | `--max-side` 1024 以上 + `--face-ref-crop auto`（顔だけクロップ）+ `--face-refine auto`（顔 hires-fix 二段）| **顔崩壊の主因は解像度**。小顔は検出→高解像で顔だけ再生成→合成 |
+| シームレス接続 / RIFE | seed/model/style/negative 固定 + ControlNet(pose+depth) | ちらつき抑制の中心策。`--blend-prev` は劣化累積するので既定 OFF |
 
 **コマンド例**:
 ```bash
@@ -140,17 +141,20 @@ source scripts/env.sh
 "$UV" run scripts/gen_v2v_style.py --in real.mp4 --out anime.mp4 \
   --style-model pony --gpu 1 \
   --face-ref char_face.png --face-scale 0.7 \
-  --controlnet openpose,depth --strength 0.5 --blend-prev 0.25 \
-  --prompt "score_9, score_8_up, score_7_up, source_anime, 1girl, anime style, white t-shirt, jeans, bright room"
+  --controlnet openpose,depth --strength 0.72 \
+  --prompt "score_9, score_8_up, score_7_up, source_anime, 1girl, anime style, detailed face, beautiful eyes, white t-shirt, jeans, bright room"
 ```
 
 **重要な設定（ガイドの「重要な設定ポイント」に対応）**:
-- **`--strength`（denoise）= 0.35〜0.55**: 低いほど元の動き・構図を尊重、高いほどスタイル変換が強い。既定 0.5。
+- **★顔崩壊の主因＝解像度（実機確認）**: フレーム別 img2img で**顔が「のっぺり溶けたお化け」になる最大の原因は出力解像度が低いこと**。SDXL の潜在はピクセルの 1/8 なので、顔が画面の 10% 程度（出力で 60〜80px）しか占めないと潜在上 8〜10px しか割けず目鼻口を符号化できない。**`--max-side` は 1024 以上を既定にし（768 だと顔が崩れる）**、それでも顔が小さい立ち構図では下記 ①顔参照クロップ ②顔 hires-fix で底上げする。**解像度 768→1024 にしただけで顔崩壊は解消した**（実証済み）。
+- **①顔参照は自動で顔だけクロップ（`--face-ref-crop auto`・既定）**: IP-Adapter **Plus-Face は「クロップした顔画像」を条件にする設計**。全身画像をそのまま渡すと同一性が落ちる。`gen_v2v_style.py` は OpenCV/YuNet 系で `--face-ref` から顔を検出して正方形クロップし IP-Adapter に渡す（検出失敗時は上半身フォールバック）。`--face-ref-crop-pad`（既定 2.4）でクロップ余白。
+- **②顔 hires-fix 二段処理（`--face-refine auto`・既定）**: ADetailer 相当。顔を検出→正方形 crop→`--face-refine-size`(既定 512) に拡大→**顔だけを ControlNet 無効（scale 0）で img2img 再生成**→フェザー合成で貼り戻す。`auto` は**小さい顔（`--min-face-px`×1.35 未満）でのみ発動**。`--face-refine-strength`(既定 0.5)。1024 出力で顔が十分大きければ発動せず素通りする（=主因は解像度という裏付け）。
+- **③小顔保護リサイズ（`--min-face-px 96`・既定）**: 検出顔が 96px を下回るほど縮小されそうなとき、`--max-side` を無視して顔が 96px 以上残る倍率に引き上げる。`--no-face-safe-resize` で無効化。
+- **`--strength`（denoise）= 既定 0.72**: 実写→アニメ顔は **0.65〜0.8 が安全**（低すぎると元の実写顔が半分残って崩れる）。元のテクスチャを残したいときは 0.35〜0.55。
 - **`--face-scale`（IP-Adapter 重み）= 0.5〜0.9**: 高いほど顔の同一性が強い。既定 0.7。
-- **`--cn-scale`（ControlNet 重み）**: 既定は pose=1.0 / depth・canny=0.6。`--controlnet` と同じ並び・同じ個数でカンマ列挙。
-- **temporal flicker 抑制（フレーム別 img2img の宿命）**: ①全フレームで **seed 固定**（`--seed`）②全フレームで**同一 prompt・同一 model・同一 negative**③`--strength` を低め④**ControlNet(pose+depth) で動きを拘束**⑤`--blend-prev` で前フレーム変換結果を次の init に混合。固定 negative は chain_video.py の `DEFAULT_NEGATIVE`（color drift / flicker / morphing / warping 禁止）をそのまま採用。
-- **scheduler**: Pony は EulerDiscrete 強制、NoobAI v-pred は v_prediction+zero-SNR（gen_image.py と同じ分岐を移植）。長プロンプト（Pony score タグ＋人物固定ブロック）は **compel==2.0.3** で 77 トークン超を全部使う。
-- **解像度**: `--max-side`（既定 1024。SDXL は ~1024 が最良）。寸法は /8 に丸め。
+- **`--cn-scale`（ControlNet 重み）**: 既定は pose=1.0 / depth・canny=0.6。`--controlnet` と同じ並び・同じ個数でカンマ列挙。OpenPose の**顔キーポイントは既定で無効**（`openpose_include_face: false`。顔再生成と干渉するため。同一性は IP-Adapter 側で担保）。
+- **★`--blend-prev` は既定 0（OFF）＝触らないのが安全**: 前フレーム出力を次の init に混ぜる実験機能だが、**劣化が累積する**（各フレームが自分の少し劣化した出力を食い続け、クリップ後半で顔崩壊＋背景の虹ノイズが雪だるま式に増幅。実機で `0.25` にしたら後半 4 フレームが崩壊、`0` で全フレーム健全になった）。**ちらつき抑制は seed 固定＋同一 prompt/model/negative＋ControlNet で行い、`--blend-prev` には頼らない**。ごく短いクリップで試すなら ~0.1 まで、必ず末尾フレームを目視する。
+- **scheduler**: Pony は EulerDiscrete 強制、NoobAI v-pred は v_prediction+zero-SNR（gen_image.py と同じ分岐を移植）。長プロンプト（Pony score タグ＋人物固定ブロック）は **compel==2.0.3** で 77 トークン超を全部使う。固定 negative は chain_video.py の `DEFAULT_NEGATIVE`（color drift / flicker / morphing / warping 禁止）。
 
 **長尺・resume**: フレーム PNG は `<out>.frames/` に出力し、**既存 PNG と既存 `--out` をスキップ**（resume-safe）。`--start`/`--end` でフレーム範囲を区切れる。長尺は 5〜8 秒単位に `edit_video.py trim` で割ってから各セグメントを変換し `edit_video.py concat` で結合（ガイドの「長尺は分割→結合」に対応）。
 
@@ -307,7 +311,8 @@ bash scripts/grok_delegate.sh    # grok-media の契約を表示して委譲（�
 - **v2v スタイル変換で IP-Adapter の image_encoder フォルダを取り違える** → Plus-Face（`ip-adapter-plus-face_sdxl_vit-h.bin`）は **ViT-H**（subfolder `models/image_encoder`）。`ip-adapter_sdxl.bin` の ViT-bigG（`sdxl_models/image_encoder`）と混同すると config.json not found 等で落ちる。`gen_v2v_style.py` は ViT-H を明示ロード済み。
 - **v2v でキャラ固定に FaceID/InstantID を使おうとする** → insightface(antelopev2) のビルドが詰まりやすく重い。`gen_v2v_style.py` は **insightface 不要の Plus-Face + ControlNet** で人物固定する方針（顔の同一性が足りない時だけ重い代替として FaceID/InstantID を検討）。
 - **v2v で Pony/NoobAI を base にして真っ黒/虹色ノイズ** → Pony は EulerDiscrete 強制、NoobAI v-pred は v_prediction+zero-SNR が要る（gen_image.py と同じ。`gen_v2v_style.py` の `--style-model` 選択で自動適用）。
-- **v2v のちらつき（temporal flicker）を放置** → フレーム別 img2img の宿命。seed/model/style/negative を全フレーム固定し、`--strength` を低め、ControlNet で動き拘束、`--blend-prev` で前フレームを次 init に混合する（独立フレーム生成にしない）。
+- **★v2v で顔だけ「のっぺりお化け」になる** → 主因は**出力解像度が低く顔が潜在上 8〜10px しかない**こと（SDXL 潜在=1/8）。**`--max-side` を 1024 以上**にし、立ち構図の小顔は `--face-ref-crop auto`（顔だけクロップして IP-Adapter へ）と `--face-refine auto`（顔 hires-fix 二段＝ADetailer 相当）で底上げする。`gen_v2v_style.py` は既定で全部 ON。768 解像度で顔が崩れた実機事故あり。
+- **★v2v 後半フレームで顔崩壊＋背景の虹ノイズが進行** → `--blend-prev`（前フレーム→次 init 混合）の**劣化累積**。各フレームが自分の劣化出力を食い続け雪だるま式に悪化する。**既定 0（OFF）にしてある。ちらつきは seed/model/negative 固定＋ControlNet で抑え、`--blend-prev` には頼らない**（実機で 0.25→後半崩壊、0→全フレーム健全を確認）。
 - **v2v を塞がっている GPU で走らせる** → 学習中の GPU と取り合うと OOM/激遅。`gen_v2v_style.py --gpu N` で空き GPU に固定（既定は最空き GPU を自動選択）。
 
 ## Setup（初回のみ）

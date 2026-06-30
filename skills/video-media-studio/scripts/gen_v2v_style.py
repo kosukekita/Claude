@@ -345,9 +345,14 @@ def main() -> int:
                     help="steps for face-only refinement (default: max(12, --steps//2)).")
     ap.add_argument("--face-refine-pad", type=float, default=2.0,
                     help="face crop expansion multiplier for face-only refinement. Default 2.0.")
-    ap.add_argument("--blend-prev", type=float, default=0.25,
-                    help="fraction of the PREVIOUS transformed frame blended into the next init "
-                         "image (0-0.5; anti-flicker temporal carry). 0 = independent frames. Default 0.25.")
+    ap.add_argument("--blend-prev", type=float, default=0.0,
+                    help="EXPERIMENTAL temporal carry: fraction of the PREVIOUS transformed frame "
+                         "blended into the next init image. Default 0 (OFF) — it ACCUMULATES "
+                         "degradation: each frame eats its own slightly-worse output, so faces and "
+                         "backgrounds rot toward the end of a clip (verified: >0 caused face collapse "
+                         "+ rainbow noise in later frames). Only try a SMALL value (~0.1) on very "
+                         "short clips, and inspect the tail. Anti-flicker comes from fixed seed + "
+                         "same prompt/model/negative + ControlNet, NOT from this.")
     ap.add_argument("--steps", type=int, default=None)
     ap.add_argument("--guidance", type=float, default=None)
     ap.add_argument("--seed", type=int, default=12345, help="FIXED across all frames (anti-drift).")
