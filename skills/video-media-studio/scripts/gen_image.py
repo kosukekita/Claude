@@ -13,6 +13,7 @@
 #     "protobuf",
 #     "bitsandbytes",
 #     "scipy",
+#     "compel==2.0.3",
 # ]
 #
 # # Pin torch to the CUDA 12.1 build: this rig's NVIDIA driver is CUDA 12.2
@@ -614,7 +615,6 @@ def run_local(
         gen = torch.Generator("cpu").manual_seed(seed)
 
     kwargs: dict = {
-        "prompt": prompt,
         "height": height,
         "width": width,
         "num_inference_steps": steps,
@@ -622,12 +622,50 @@ def run_local(
     }
     if gen is not None:
         kwargs["generator"] = gen
-    # FLUX(.1/.2) ignore negative_prompt; SDXL / Qwen-Image / Z-Image / Chroma accept it.
-    if negative and want_cls in {
-        "StableDiffusionXLPipeline", "QwenImagePipeline", "ZImagePipeline",
-        "ChromaPipeline",
-    }:
-        kwargs["negative_prompt"] = negative
+
+    # --- Long-prompt handling for SDXL (Pony/NoobAI/Manga-Vision/SDXL) --------
+    # CLIP truncates at 77 tokens; Pony-style prompts (score tags + character
+    # block + outfit + pose + background + lighting) routinely exceed that and
+    # the tail (outfit/pose/background) gets silently dropped. compel chunks the
+    # prompt into 77-token windows and concatenates the embeddings, so nothing
+    # is lost. Pony's own docs recommend compel weighting for exactly this. We
+    # only engage it for SDXL pipelines (dual encoder + pooled output); FLUX /
+    # Qwen / Z-Image / Chroma keep their native prompt path.
+    used_compel = False
+    if want_cls == "StableDiffusionXLPipeline":
+        try:
+            from compel import Compel, ReturnedEmbeddingsType  # noqa: PLC0415
+
+            compel = Compel(
+                tokenizer=[pipe.tokenizer, pipe.tokenizer_2],
+                text_encoder=[pipe.text_encoder, pipe.text_encoder_2],
+                returned_embeddings_type=ReturnedEmbeddingsType.PENULTIMATE_HIDDEN_STATES_NON_NORMALIZED,
+                requires_pooled=[False, True],
+                truncate_long_prompts=False,
+            )
+            pe, pooled = compel(prompt)
+            embeds = {"prompt_embeds": pe, "pooled_prompt_embeds": pooled}
+            if negative:
+                ne, npooled = compel(negative)
+                # pad +/- to equal length so diffusers can stack them
+                pe, ne = compel.pad_conditioning_tensors_to_same_length([pe, ne])
+                embeds["prompt_embeds"] = pe
+                embeds["negative_prompt_embeds"] = ne
+                embeds["negative_pooled_prompt_embeds"] = npooled
+            kwargs.update(embeds)
+            used_compel = True
+            log(f"{key}: compel long-prompt embeddings (no 77-token truncation)")
+        except Exception as exc:  # noqa: BLE001
+            log(f"{key}: compel unavailable ({exc}); falling back to truncated prompt")
+
+    if not used_compel:
+        kwargs["prompt"] = prompt
+        # FLUX(.1/.2) ignore negative_prompt; SDXL / Qwen-Image / Z-Image / Chroma accept it.
+        if negative and want_cls in {
+            "StableDiffusionXLPipeline", "QwenImagePipeline", "ZImagePipeline",
+            "ChromaPipeline",
+        }:
+            kwargs["negative_prompt"] = negative
 
     image = pipe(**kwargs).images[0]
     out_dir = os.path.dirname(os.path.abspath(out))
