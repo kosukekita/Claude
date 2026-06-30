@@ -15,6 +15,8 @@
 #     "scipy",
 #     "compel==2.0.3",
 #     "peft",
+#     "controlnet-aux",
+#     "Pillow",
 # ]
 #
 # # Pin torch to the CUDA 12.1 build: this rig's NVIDIA driver is CUDA 12.2
@@ -257,6 +259,33 @@ MODELS: dict[str, dict] = {
     },
 }
 
+# --------------------------------------------------------------------------- #
+# ControlNet registry (SDXL only). Each entry maps a short --control TYPE to the
+# HF ControlNet repo + how to PRE-PROCESS a raw image into the control hint.
+# xinsir's SDXL ControlNets are the community default (high quality) and are
+# already cached on this rig. openpose locks limb count/joint positions; depth
+# locks front/back ordering for overlaps (entangled / restraint / multi-person
+# panels). Both stack on the same StableDiffusionXLControlNetPipeline.
+#   preprocess:
+#     "openpose" -> controlnet_aux OpenposeDetector (skeleton from a photo/pose)
+#     "depth"    -> controlnet_aux MidasDetector / DPT (depth map from an image)
+#     "none"     -> the image is ALREADY a control hint (skeleton/depth), pass through
+# --------------------------------------------------------------------------- #
+CONTROLNETS: dict[str, dict] = {
+    "openpose": {
+        "repo": "xinsir/controlnet-openpose-sdxl-1.0",
+        "preprocess": "openpose",
+    },
+    "depth": {
+        "repo": "xinsir/controlnet-depth-sdxl-1.0",
+        "preprocess": "depth",
+    },
+    "canny": {
+        "repo": "xinsir/controlnet-canny-sdxl-1.0",
+        "preprocess": "canny",
+    },
+}
+
 # auto ladder: best-quality LOCAL model first, then cheaper/smaller, then grok.
 AUTO_LADDER = ["flux.1-dev", "sdxl"]
 
@@ -471,6 +500,69 @@ def parse_size(size: str) -> tuple[int, int]:
     return rw, rh
 
 
+def _parse_control_specs(
+    control: list[str] | None,
+) -> list[tuple[str, str]]:
+    """Parse --control specs into (type, image_path) pairs.
+
+    Accepted forms (repeatable):
+      --control openpose=pose.png   explicit type
+      --control depth=ref.jpg
+      --control pose.png            bare path -> defaults to openpose
+    """
+    specs: list[tuple[str, str]] = []
+    for raw in control or []:
+        if "=" in raw:
+            ctype, path = raw.split("=", 1)
+            ctype = ctype.strip().lower()
+        else:
+            ctype, path = "openpose", raw
+        if ctype not in CONTROLNETS:
+            raise argparse.ArgumentTypeError(
+                f"--control type {ctype!r} unknown; choose from {list(CONTROLNETS)}"
+            )
+        path = path.strip()
+        if not os.path.isfile(path):
+            raise argparse.ArgumentTypeError(f"--control image not found: {path}")
+        specs.append((ctype, path))
+    return specs
+
+
+def _make_control_hint(ctype: str, path: str, width: int, height: int,
+                       preprocess: bool):
+    """Turn a source image into the control hint for ControlNet.
+
+    If preprocess is True, run the matching controlnet_aux detector (skeleton /
+    depth / canny). If False, the image is assumed to ALREADY be a control hint
+    (e.g. a hand-made OpenPose skeleton) and is only resized. Returns a PIL.Image.
+    """
+    from PIL import Image  # noqa: PLC0415
+
+    img = Image.open(path).convert("RGB")
+    if not preprocess:
+        log(f"control[{ctype}]: using {path} as a pre-made hint (no detector)")
+        return img.resize((width, height))
+
+    pp = CONTROLNETS[ctype]["preprocess"]
+    if pp == "openpose":
+        from controlnet_aux import OpenposeDetector  # noqa: PLC0415
+        det = OpenposeDetector.from_pretrained("lllyasviel/Annotators")
+        hint = det(img, hand_and_face=True)
+    elif pp == "depth":
+        from controlnet_aux import MidasDetector  # noqa: PLC0415
+        det = MidasDetector.from_pretrained("lllyasviel/Annotators")
+        hint = det(img)
+    elif pp == "canny":
+        import cv2  # noqa: PLC0415
+        import numpy as np  # noqa: PLC0415
+        arr = cv2.Canny(np.array(img), 100, 200)
+        hint = Image.fromarray(arr).convert("RGB")
+    else:
+        raise ValueError(f"no preprocessor for {ctype}")
+    log(f"control[{ctype}]: preprocessed {path} with {pp} detector")
+    return hint.resize((width, height))
+
+
 def run_local(
     key: str,
     offload: bool,
@@ -484,6 +576,9 @@ def run_local(
     out: str,
     lora: list[str] | None = None,
     lora_scale: list[float] | None = None,
+    control: list[str] | None = None,
+    control_weight: list[float] | None = None,
+    control_preprocess: bool = True,
 ) -> int:
     import torch  # noqa: PLC0415
     from diffusers import (  # noqa: PLC0415
@@ -494,6 +589,16 @@ def run_local(
     m = MODELS[key]
     repo = m["repo"]
     want_cls = m["pipeline"]
+
+    # --- ControlNet gating ----------------------------------------------------
+    # ControlNet is SDXL-only here. If --control is given on a non-SDXL backend,
+    # warn and ignore it (the base run still proceeds). On SDXL, we build a
+    # StableDiffusionXLControlNetPipeline instead of the plain SDXL pipeline.
+    control_specs: list[tuple[str, str]] = _parse_control_specs(control)
+    if control_specs and want_cls != "StableDiffusionXLPipeline":
+        log(f"{key}: --control ignored ({want_cls} is not an SDXL pipeline)")
+        control_specs = []
+    use_controlnet = bool(control_specs)
 
     # The newer pipelines (Qwen-Image, FLUX.2, Z-Image) are diffusers git-main
     # only. Import them lazily/defensively so older diffusers still loads the
@@ -539,6 +644,39 @@ def run_local(
     # Z-Image's loader is happier with low_cpu_mem_usage disabled (per model card).
     if want_cls == "ZImagePipeline":
         from_kwargs["low_cpu_mem_usage"] = False
+
+    # --- ControlNet: load the control models and swap to the CN-aware SDXL
+    # pipeline. We pass the ControlNetModel(s) into from_pretrained so the rest
+    # of the load path (scheduler swap, LoRA fuse, compel, offload) is identical
+    # to the plain SDXL path below — only the pipeline class and the call kwargs
+    # differ. Build control hints AFTER we know the target size.
+    control_models = []
+    control_hints = []
+    cn_weights: list[float] = []
+    if use_controlnet:
+        from diffusers import (  # noqa: PLC0415
+            ControlNetModel,
+            StableDiffusionXLControlNetPipeline,
+        )
+        weights = control_weight or []
+        if len(weights) == 1:
+            weights = weights * len(control_specs)
+        while len(weights) < len(control_specs):
+            weights.append(0.9)
+        for (ctype, cpath), w in zip(control_specs, weights):
+            cn_repo = CONTROLNETS[ctype]["repo"]
+            control_models.append(
+                ControlNetModel.from_pretrained(cn_repo, torch_dtype=torch.bfloat16)
+            )
+            control_hints.append(
+                _make_control_hint(ctype, cpath, width, height, control_preprocess)
+            )
+            cn_weights.append(w)
+            log(f"{key}: ControlNet {ctype} ({cn_repo}) weight={w}")
+        pipe_cls = StableDiffusionXLControlNetPipeline
+        from_kwargs["controlnet"] = (
+            control_models[0] if len(control_models) == 1 else control_models
+        )
 
     # 4-bit quantization (bitsandbytes) for models too big for 48GB even with
     # offload (e.g. FLUX.2-dev, 32B+Mistral3). Quantizes the heavy components
@@ -655,6 +793,16 @@ def run_local(
     }
     if gen is not None:
         kwargs["generator"] = gen
+
+    # ControlNet call kwargs: the SDXL ControlNet pipeline takes `image` as the
+    # control hint(s) and `controlnet_conditioning_scale` as the per-net weight.
+    if use_controlnet:
+        kwargs["image"] = (
+            control_hints[0] if len(control_hints) == 1 else control_hints
+        )
+        kwargs["controlnet_conditioning_scale"] = (
+            cn_weights[0] if len(cn_weights) == 1 else cn_weights
+        )
 
     # --- Long-prompt handling for SDXL (Pony/NoobAI/Manga-Vision/SDXL) --------
     # CLIP truncates at 77 tokens; Pony-style prompts (score tags + character
@@ -811,6 +959,31 @@ def build_parser() -> argparse.ArgumentParser:
         help="weight per --lora (same order). Single value applies to all. Default 1.0.",
     )
     p.add_argument(
+        "--control",
+        action="append",
+        default=None,
+        metavar="TYPE=IMG",
+        help="ControlNet hint for SDXL backends, e.g. openpose=pose.png or "
+        "depth=ref.jpg (bare path defaults to openpose). Repeatable to STACK "
+        "multiple ControlNets (openpose+depth is the default for complex / "
+        "entangled / multi-person panels). Ignored by non-SDXL pipelines.",
+    )
+    p.add_argument(
+        "--control-weight",
+        type=float,
+        action="append",
+        default=None,
+        metavar="W",
+        help="conditioning scale per --control (same order). Single value "
+        "applies to all. Default 0.9.",
+    )
+    p.add_argument(
+        "--no-control-preprocess",
+        action="store_true",
+        help="treat each --control image as an ALREADY-MADE hint (skeleton/depth "
+        "map) and skip the detector. Default: run the matching detector.",
+    )
+    p.add_argument(
         "--margin",
         type=float,
         default=DEFAULT_MARGIN,
@@ -885,6 +1058,9 @@ def main(argv: list[str] | None = None) -> int:
             out=args.out,
             lora=args.lora,
             lora_scale=args.lora_scale,
+            control=args.control,
+            control_weight=args.control_weight,
+            control_preprocess=not args.no_control_preprocess,
         )
     except Exception as exc:  # noqa: BLE001
         log(f"LOCAL generation failed: {type(exc).__name__}: {exc}")
