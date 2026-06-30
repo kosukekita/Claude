@@ -17,7 +17,9 @@ metadata:
    - ★気づき: 「絵画NSFWの新base」を待つより **NoobAI(手元)に油彩/厚塗り系スタイルLoRAを足す**のが費用対効果最大。
 2. **油彩/写実寄りの絵画NSFW = Chroma 一択**(`lodestones/Chroma1-HD`、手元)。代替の決定打は見つからず。ユーザー実機でも絵画露骨で破綻しなかった唯一格。
 
-**反証された主張(信じない)**: Z-Imageが絵画NSFWに強い→**反証**(実機で絵画露骨が破綻、ユーザー指摘と一致)。FLUX.1/SD3.5/Qwen-Imageの「絵画NSFW向き」は一次情報で裏付け弱い(SD3.5は検閲+ライセンス制約、Qwenはテキスト描画が強みでNSFW絵画の定評薄)。
+**新アーキ実験枠 = Anima**(`circlestone-labs/Anima`、Civitai 2458426): NVIDIA Cosmos-Predict2-2Bベースの**非SDXL/非FLUX**新アーキ、アニメ/イラスト/painterly特化(realism非対応)。`safe/sensitive/nsfw/explicit`の4タグでNSFW制御(ハード検閲でない)、2B・6-8GB VRAM、2026-05リリース。**ただし独立レビュー(lilting.ch)は批判的**: SDXL比で実用優位ほぼなし・推論約10倍遅・手の破綻・テキストエンコーダ弱(0.6B Qwen3)・エコシステム未成熟・非商用のみ・preview段階。→ 試す価値はあるが現状スタックの置き換え根拠なし。
+
+**反証された主張(信じない)**: Z-Imageが絵画NSFWに強い→**反証**(実機で絵画露骨が破綻、ユーザー指摘と一致)。FLUX.1/SD3.5/Qwen-Imageの「絵画NSFW向き」は一次情報で裏付け弱い(SD3.5は検閲+ライセンス制約、Qwenはテキスト描画が強みでNSFW絵画の定評薄)。Pony V7/Illustrious優劣やWAI-Illustriousのcensored/uncensored両版主張は検証で全てrefuted/無投票→不採用(=Pony追加候補の確証は今回得られず、SKILL.md表からは外す)。Z-ImageのNSFW可否/絵画適性/ライセンスは一次ソース未確認のまま(中核3軸不明)。
 
 **限界**: Civitaiは認証必須でアクセス制限、直近1–2ヶ月の新規/Civitai限定公開モデルは取りこぼし可能性あり。次にやるなら NoobAI用の油彩/厚塗りスタイルLoRA探索が有望。ライセンス: NoobAI=Fair AI Public、Pony=独自、Chroma=Apache-2.0。
 
