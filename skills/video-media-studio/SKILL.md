@@ -142,6 +142,19 @@ codex exec --skip-git-repo-check --sandbox workspace-write \
 - **ポリシー差（重要）**: Codex(OpenAI) は身体表現に厳格で「巨乳」「Fカップ+色っぽい+妖艶」等の複合を `sexualized content` で拒否することがある（婉曲表現で通る場合あり）。**そういう表現は Grok かローカル（Z-Image/FLUX）が確実**。Grok・ローカルは制限が緩い。
 - さらに上の品質が要るとき → `reference/models.md` のモデル表（Qwen-Image 20B 等）。cloud は `cloud_modal.py` / `cloud_fal.py`。
 
+### NSFW 画像のモデル使い分け（実機検証ベース・必読）
+
+NSFW 人物のフォトリアル/絵画生成は**ローカル一択**（Codex/Grok とも盗撮+裸+実写偽装の複合 NSFW を明示拒否し、画像が出ない／無言空終了）。用途別の最適は実機で割れる:
+
+| 用途 | 推奨モデル | コマンド | 備考 |
+|---|---|---|---|
+| **絵画/イラスト調 NSFW（露骨な行為込み）** | **★Chroma が最良** | `gen_image.py --backend chroma` | 2026-06-30 実証。アニメ/イラスト寄りの絵画で露骨な性行為描写を素直に出す。フォトリアル指定だと逆に絵画調へ倒れる癖があるが、**絵画指定なら最適**。`painting/oil painting/visible brush strokes` をポジティブ、`photo/photorealistic` をネガティブに |
+| 絵画 NSFW（油彩・写実寄り絵画） | Z-Image-Turbo | `gen_image.py --backend z-image-turbo` | 露骨な行為も素直に描く。Chroma よりリアル寄りの絵画 |
+| フォトリアル NSFW（盗撮構図・写実） | ★Klein True-V3 | `scripts/gen_klein.py` | 盗撮構図+写実を両立できる唯一格。ただし**露骨な性的動作には保守的**（着衣に留め行為を描かないことがある）。導入詳細は記憶 flux2-klein-truev3-setup |
+| 白黒漫画 NSFW | NoobAI-XL(vpred) / Manga Vision IL | `gen_image.py --backend noobai-xl-vpred / manga-vision-il` | モノクロ・トーン・コマ |
+
+要点: **露骨な行為描写が要る絵画 NSFW は Chroma か Z-Image、画力・構図重視のソフト NSFW は Klein**。Klein は画力最良だが行為を描かない傾向（フォトリアル/絵画とも再現）。長い日本語プロンプトは英語主体に直すと人物が安定（chroma/klein とも日本語長文で人物消失・別シーン化の事故あり）。入れ墨除去は z-image/sdxl/chroma はネガティブ `tattoo, tattoos, body ink, lettering on skin`、klein/FLUX 系はポジティブに明示（negative 非対応）。
+
 ### 人物画像のプロンプト構成テンプレート（必読・固定）
 
 **人物画像を生成するときは、プロンプトを必ず次の6要素の順で構成する**（ユーザー要望）。1枚絵でも複数バリエーションでも同じ枠組みで書く。
