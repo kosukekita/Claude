@@ -62,27 +62,51 @@ def load_img(p):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Qwen-Image-Edit-2509 reference-conditioned image gen")
+    ap = argparse.ArgumentParser(description="Qwen-Image-Edit (2509/2511) reference-conditioned image gen")
     ap.add_argument("--image", action="append", required=True,
                     help="reference image (repeat 1-3 times; e.g. man + woman + scene)")
     ap.add_argument("--prompt", required=True)
     ap.add_argument("--negative-prompt", default=DEFAULT_NEG)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--repo", default=REPO,
+                    help="HF repo of the base editor. Default Qwen/Qwen-Image-Edit-2509. "
+                         "Qwen/Qwen-Image-Edit-2511 has less drift + better identity consistency.")
+    ap.add_argument("--lora", action="append", default=None,
+                    help="HF id or local path of a LoRA to stack on the base (repeatable). "
+                         "e.g. prithivMLmods/Qwen-Image-Edit-2511-Anime for real->anime keeping pose/identity.")
+    ap.add_argument("--lora-scale", type=float, default=1.0,
+                    help="strength applied to the stacked LoRA(s). Default 1.0.")
     ap.add_argument("--size", default=None, help="WxH for output (default: keep ref aspect)")
-    ap.add_argument("--steps", type=int, default=40)
+    ap.add_argument("--steps", type=int, default=40,
+                    help="inference steps. The anime LoRA is a 4-step lightning model; "
+                         "use ~4-8 steps + low cfg with it.")
     ap.add_argument("--guidance", type=float, default=4.0, help="true_cfg_scale")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--offload", choices=["none", "model", "sequential"], default="model")
     args = ap.parse_args()
 
     if len(args.image) > 3:
-        log(f"WARN: {len(args.image)} images given; Qwen-Edit-2509 is tuned for 1-3. Using first 3.")
+        log(f"WARN: {len(args.image)} images given; Qwen-Edit is tuned for 1-3. Using first 3.")
         args.image = args.image[:3]
     imgs = [load_img(p) for p in args.image]
     log(f"refs={len(imgs)} sizes={[im.size for im in imgs]}")
 
-    log(f"loading {REPO} (bf16); offload={args.offload}")
-    pipe = QwenImageEditPlusPipeline.from_pretrained(REPO, torch_dtype=torch.bfloat16)
+    log(f"loading {args.repo} (bf16); offload={args.offload}")
+    pipe = QwenImageEditPlusPipeline.from_pretrained(args.repo, torch_dtype=torch.bfloat16)
+
+    # Optional LoRA stack (e.g. anime stylization that keeps pose/identity). Load
+    # BEFORE offload so weights merge on the right device.
+    if args.lora:
+        for i, lora in enumerate(args.lora):
+            name = f"lora{i}"
+            log(f"loading LoRA {lora} (adapter={name}, scale={args.lora_scale})")
+            pipe.load_lora_weights(lora, adapter_name=name)
+        try:
+            pipe.set_adapters([f"lora{i}" for i in range(len(args.lora))],
+                              adapter_weights=[args.lora_scale] * len(args.lora))
+        except Exception as exc:  # noqa: BLE001
+            log(f"set_adapters failed ({exc}); LoRA loaded at default weight")
+
     if args.offload == "model":
         pipe.enable_model_cpu_offload()
     elif args.offload == "sequential":
