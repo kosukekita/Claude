@@ -481,6 +481,8 @@ def run_local(
     guidance: float | None,
     seed: int | None,
     out: str,
+    lora: list[str] | None = None,
+    lora_scale: list[float] | None = None,
 ) -> int:
     import torch  # noqa: PLC0415
     from diffusers import (  # noqa: PLC0415
@@ -761,6 +763,22 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--steps", type=int, default=None, help="override inference steps")
     p.add_argument("--guidance", type=float, default=None, help="override guidance scale")
     p.add_argument("--seed", type=int, default=None, help="random seed (reproducible)")
+    p.add_argument(
+        "--lora",
+        action="append",
+        default=None,
+        metavar="PATH",
+        help="LoRA .safetensors to stack on an SDXL backend (Pony/NoobAI/SDXL). "
+        "Repeatable for multiple LoRAs. Ignored by non-SDXL pipelines.",
+    )
+    p.add_argument(
+        "--lora-scale",
+        type=float,
+        action="append",
+        default=None,
+        metavar="W",
+        help="weight per --lora (same order). Single value applies to all. Default 1.0.",
+    )
     p.add_argument(
         "--margin",
         type=float,
