@@ -148,11 +148,12 @@ NSFW 人物のフォトリアル/絵画生成は**ローカル一択**（Codex/G
 
 | 用途 | 推奨モデル | コマンド | 備考 |
 |---|---|---|---|
-| **絵画/イラスト調 NSFW（露骨な行為込み）** | **★Chroma 一択（現状これだけ）** | `gen_image.py --backend chroma` | 2026-06-30 実証。**絵画露骨 NSFW で破綻せず描けるのは現状 Chroma だけ**。Z-Image / Klein は同条件で破綻 or 行為を描かない（下記）。`painting/oil painting/visible brush strokes` をポジティブ、`photo/photorealistic` をネガティブに。フォトリアル指定だと逆に絵画調へ倒れる癖があるので、絵画用途に限定して使う |
+| **★非リアル系 NSFW（アニメ/漫画/絵画調・露骨な行為込み）の既定セット** | **Chroma(manga, paint) ＋ Pony V6XL(anime, manga) の4本** | `gen_image.py --backend chroma` / `--backend pony` | **2026-06-30 9枚グリッド実機比較でユーザー確定。非リアル系 NSFW を出すときはこの4組み合わせを既定で出す**（NoobAI は同条件で見劣りしたため不採用）。配分: 油彩＝Chroma paint（厚塗り写実・破綻なし）、白黒漫画＝Chroma manga（きれいなペン画＋トーン）と Pony manga（濃いトーン・俯瞰）、カラーアニメ＝Pony anime（厚塗りアニメ）。Pony は `score_9, score_8_up, score_7_up, score_6_up,` + **`source_anime`（`source_pony` は furry 化するので禁止）**＋ furry ネガ。詳細は記憶 [nonreal-nsfw-default-set] |
+| **絵画/イラスト調 NSFW（露骨な行為込み）** | **★Chroma（油彩は現状これが最良）** | `gen_image.py --backend chroma` | 2026-06-30 実証。**絵画露骨 NSFW で破綻せず描けるのは現状 Chroma だけ**。Z-Image / Klein は同条件で破綻 or 行為を描かない（下記）。`painting/oil painting/visible brush strokes` をポジティブ、`photo/photorealistic` をネガティブに。フォトリアル指定だと逆に絵画調へ倒れる癖があるので、絵画用途に限定して使う |
 | フォトリアル NSFW（盗撮構図・写実） | ★Klein True-V3 | `scripts/gen_klein.py` | 盗撮構図+写実を両立できる唯一格。ただし**露骨な性的動作には保守的**（着衣に留め行為を描かないことがある）。導入詳細は記憶 flux2-klein-truev3-setup |
-| 白黒漫画 NSFW | NoobAI-XL(vpred) / Manga Vision IL | `gen_image.py --backend noobai-xl-vpred / manga-vision-il` | モノクロ・トーン・コマ |
+| 白黒漫画 NSFW | **Chroma(manga) / Pony(manga)**（上の既定セット）/ NoobAI-XL(vpred) / Manga Vision IL | `gen_image.py --backend chroma / pony / noobai-xl-vpred / manga-vision-il` | モノクロ・トーン・コマ。**2026-06-30 比較で Chroma manga と Pony manga が NoobAI より良かった**ので白黒漫画も既定はこの2本。NoobAI/Manga Vision IL は予備 |
 
-要点: **絵画の露骨 NSFW は現状 Chroma だけが実用**（Z-Image-Turbo は同じ絵画露骨プロンプトで手の構造等が破綻、Klein True-V3 は画力最良だが行為自体を描かず着衣に留める）。フォトリアルで構図重視のソフト NSFW は Klein。長い日本語プロンプトは英語主体に直すと人物が安定（chroma/klein とも日本語長文で人物消失・別シーン化の事故あり）。入れ墨除去は z-image/sdxl/chroma はネガティブ `tattoo, tattoos, body ink, lettering on skin`、klein/FLUX 系はポジティブに明示（negative 非対応）。
+要点: **非リアル系（アニメ/漫画/絵画調）NSFW は Chroma(manga,paint)＋Pony(anime,manga) の4本を既定で出す**（NoobAI 不採用＝2026-06-30 ユーザー判定）。**絵画の露骨 NSFW は油彩なら現状 Chroma だけが実用**（Z-Image-Turbo は同じ絵画露骨プロンプトで手の構造等が破綻、Klein True-V3 は画力最良だが行為自体を描かず着衣に留める）。フォトリアルで構図重視のソフト NSFW は Klein。長い日本語プロンプトは英語主体に直すと人物が安定（chroma/klein とも日本語長文で人物消失・別シーン化の事故あり）。入れ墨除去は z-image/sdxl/chroma/pony はネガティブ `tattoo, tattoos, body ink, lettering on skin`、klein/FLUX 系はポジティブに明示（negative 非対応）。
 
 > **絵画 NSFW モデルの deep research 結論（2026-06-30）**: Chroma を「明確に上回る」絵画 NSFW 新 base は確認できず。今後の方向は2軸 — ①**アニメ/イラスト調の露骨 = SDXL系（NoobAI-XL 手元 / Illustrious-XL / Pony V6XL）＋ 油彩/厚塗りスタイル LoRA** が業界主流（新 base を待つより手元 NoobAI に画風 LoRA を足すのが費用対効果最大）、②**油彩/写実寄りの絵画 = Chroma**。新アーキ実験枠に **Anima**(`circlestone-labs/Anima`, Cosmos-2B, painterly特化, 4タグNSFW)があるが推論10倍遅・手破綻・非商用で現状置き換え不可。詳細は記憶 nsfw-painterly-models-research。
 
