@@ -64,9 +64,9 @@ compel long-prompt path (Pony score-tag prompts blow past 77 tokens).
 
 TEMPORAL FLICKER is intrinsic to per-frame img2img. The anti-drift levers
 (borrowed from chain_video.py) are: ONE fixed seed for every frame, the SAME
-style prompt + model + negative for every frame, a LOW img2img strength so the
-source motion is respected, ControlNet (pose+depth) pinning the motion, and
---blend-prev mixing the previous transformed frame into the next init image.
+style prompt + model + negative for every frame, ControlNet (pose+depth) pinning
+the motion, --blend-prev mixing the previous transformed frame into the next
+init image, and optional face-only refinement for tiny faces.
 
 Backend: local-single on ONE A6000. Defaults to the freest GPU (or --gpu N).
 Pin to GPU 1 with --gpu 1 when GPU 0 is busy (training etc.).
@@ -290,7 +290,7 @@ def main() -> int:
             "  gen_v2v_style.py --in real.mp4 --out anime.mp4 \\\n"
             "      --style-model pony --gpu 1 \\\n"
             "      --face-ref char_face.png --face-scale 0.7 \\\n"
-            "      --controlnet openpose,depth --strength 0.5 \\\n"
+            "      --controlnet openpose,depth --strength 0.72 \\\n"
             "      --prompt 'score_9, score_8_up, source_anime, 1girl, anime style, ...'\n\n"
             "  # print the chosen backend/GPU and exit (no generation)\n"
             "  gen_v2v_style.py --in real.mp4 --out a.mp4 --prompt '...' --print-decision\n"
@@ -429,6 +429,152 @@ def main() -> int:
         if c not in CONTROLNETS:
             log(f"unknown controlnet '{c}'; valid: {list(CONTROLNETS)}")
             return 2
+    if args.strength < 0.65 and args.style_model in {"pony", "noobai-xl", "noobai-xl-vpred", "manga-vision-il"}:
+        log(f"warning: --strength {args.strength} is low for real->anime face redraw; "
+            "0.7-0.8 is usually safer when the source face is small or photoreal")
+
+    def clamp_box(box: tuple[int, int, int, int], w: int, h: int) -> tuple[int, int, int, int]:
+        x1, y1, x2, y2 = box
+        x1 = max(0, min(w - 1, x1))
+        y1 = max(0, min(h - 1, y1))
+        x2 = max(x1 + 1, min(w, x2))
+        y2 = max(y1 + 1, min(h, y2))
+        return x1, y1, x2, y2
+
+    def expand_square_box(
+        box: tuple[int, int, int, int],
+        image_size: tuple[int, int],
+        pad: float,
+    ) -> tuple[int, int, int, int]:
+        w, h = image_size
+        x1, y1, x2, y2 = box
+        cx = (x1 + x2) / 2.0
+        cy = (y1 + y2) / 2.0
+        side = max(x2 - x1, y2 - y1) * max(1.0, pad)
+        side = min(side, float(max(w, h)))
+        nx1 = int(round(cx - side / 2.0))
+        ny1 = int(round(cy - side / 2.0))
+        nx2 = int(round(cx + side / 2.0))
+        ny2 = int(round(cy + side / 2.0))
+        if nx1 < 0:
+            nx2 -= nx1
+            nx1 = 0
+        if ny1 < 0:
+            ny2 -= ny1
+            ny1 = 0
+        if nx2 > w:
+            nx1 -= nx2 - w
+            nx2 = w
+        if ny2 > h:
+            ny1 -= ny2 - h
+            ny2 = h
+        return clamp_box((nx1, ny1, nx2, ny2), w, h)
+
+    def detect_face_box(img: Image.Image) -> tuple[int, int, int, int] | None:
+        """Detect the most useful face box with OpenCV cascades; no insightface."""
+        try:
+            import cv2  # noqa: PLC0415
+        except Exception as exc:  # noqa: BLE001
+            log(f"OpenCV unavailable for face detection ({exc})")
+            return None
+
+        rgb = np.array(img.convert("RGB"))
+        gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+        h, w = gray.shape[:2]
+        candidates: list[tuple[float, tuple[int, int, int, int]]] = []
+
+        cascade_names = [
+            ("haarcascade_frontalface_alt2.xml", False),
+            ("haarcascade_frontalface_default.xml", False),
+            ("haarcascade_profileface.xml", False),
+            ("haarcascade_profileface.xml", True),
+        ]
+        for name, flipped in cascade_names:
+            path = Path(cv2.data.haarcascades) / name
+            if not path.exists():
+                continue
+            cascade = cv2.CascadeClassifier(str(path))
+            if cascade.empty():
+                continue
+            base = cv2.flip(gray, 1) if flipped else gray
+            for up in (1.0, 1.5, 2.0):
+                if up == 1.0:
+                    scaled = base
+                else:
+                    scaled = cv2.resize(base, None, fx=up, fy=up, interpolation=cv2.INTER_CUBIC)
+                min_face = max(20, int(min(w, h) * 0.035 * up))
+                faces = cascade.detectMultiScale(
+                    scaled,
+                    scaleFactor=1.06,
+                    minNeighbors=4,
+                    flags=cv2.CASCADE_SCALE_IMAGE,
+                    minSize=(min_face, min_face),
+                )
+                for x, y, fw, fh in faces:
+                    ox1 = int(round(x / up))
+                    oy1 = int(round(y / up))
+                    ox2 = int(round((x + fw) / up))
+                    oy2 = int(round((y + fh) / up))
+                    if flipped:
+                        ox1, ox2 = w - ox2, w - ox1
+                    box = clamp_box((ox1, oy1, ox2, oy2), w, h)
+                    bx1, by1, bx2, by2 = box
+                    area = (bx2 - bx1) * (by2 - by1)
+                    upper_bias = 1.25 if (by1 + by2) / 2.0 < h * 0.62 else 1.0
+                    candidates.append((area * upper_bias, box))
+        if not candidates:
+            return None
+        return max(candidates, key=lambda item: item[0])[1]
+
+    def fallback_upper_face_crop(img: Image.Image) -> Image.Image:
+        w, h = img.size
+        side = min(w, max(256, int(round(h * 0.48))))
+        x1 = max(0, (w - side) // 2)
+        y1 = 0
+        return img.crop(clamp_box((x1, y1, x1 + side, y1 + side), w, h))
+
+    def make_face_ref_image(img: Image.Image) -> Image.Image:
+        if args.face_ref_crop == "none":
+            log(f"face-ref crop disabled; using full reference image {img.size}")
+            return img
+        box = detect_face_box(img)
+        if box:
+            crop_box = expand_square_box(box, img.size, args.face_ref_crop_pad)
+            crop = img.crop(crop_box)
+            log(f"face-ref cropped from {img.size} to {crop.size} using detected face box {box}")
+            return crop
+        if args.face_ref_crop == "auto":
+            crop = fallback_upper_face_crop(img)
+            log(f"face-ref face detection failed; using upper fallback crop {crop.size} from {img.size}")
+            return crop
+        log("face-ref face detection failed; using full reference image")
+        return img
+
+    def scale_box(
+        box: tuple[int, int, int, int],
+        sx: float,
+        sy: float,
+        size: tuple[int, int],
+    ) -> tuple[int, int, int, int]:
+        x1, y1, x2, y2 = box
+        w, h = size
+        return clamp_box(
+            (int(round(x1 * sx)), int(round(y1 * sy)), int(round(x2 * sx)), int(round(y2 * sy))),
+            w,
+            h,
+        )
+
+    def paste_feathered(base: Image.Image, patch: Image.Image, box: tuple[int, int, int, int]) -> Image.Image:
+        x1, y1, x2, y2 = box
+        patch = patch.resize((x2 - x1, y2 - y1), Image.LANCZOS)
+        mask = Image.new("L", patch.size, 0)
+        draw = ImageDraw.Draw(mask)
+        feather = max(8, min(patch.size) // 10)
+        draw.rectangle((feather, feather, patch.size[0] - feather, patch.size[1] - feather), fill=255)
+        mask = mask.filter(ImageFilter.GaussianBlur(radius=max(2, feather // 2)))
+        merged = base.copy()
+        merged.paste(patch, (x1, y1), mask)
+        return merged
 
     # ---- frame extraction ----
     work_dir = Path(args.work_dir).expanduser().resolve() if args.work_dir \
@@ -460,7 +606,13 @@ def main() -> int:
         maps = []
         for c in cn_names:
             if c == "openpose":
-                maps.append(pose_anno(frame_img, include_hand=True, include_face=True))
+                maps.append(
+                    pose_anno(
+                        frame_img,
+                        include_hand=True,
+                        include_face=bool(args.openpose_include_face),
+                    )
+                )
             elif c == "depth":
                 maps.append(depth_anno(frame_img))
             elif c == "canny":
@@ -524,7 +676,8 @@ def main() -> int:
         pipe.load_ip_adapter(IPADAPTER_REPO, subfolder="sdxl_models",
                              weight_name=IPADAPTER_FACE_WEIGHT)
         pipe.set_ip_adapter_scale(args.face_scale)
-        face_ref_img = ImageOps.exif_transpose(Image.open(args.face_ref)).convert("RGB")
+        face_ref_src = ImageOps.exif_transpose(Image.open(args.face_ref)).convert("RGB")
+        face_ref_img = make_face_ref_image(face_ref_src)
 
     # ---- compel long-prompt embeddings (Pony score-tag prompts > 77 tokens) ----
     prompt_embeds = pooled = neg_embeds = neg_pooled = None
@@ -547,8 +700,6 @@ def main() -> int:
         log("compel long-prompt embeddings (no 77-token truncation)")
     except Exception as exc:  # noqa: BLE001
         log(f"compel unavailable ({exc}); falling back to truncated prompt strings")
-
-    gen = torch.Generator("cpu").manual_seed(args.seed)
 
     def text_kwargs() -> dict:
         if used_compel:
@@ -575,6 +726,61 @@ def main() -> int:
     base_text = text_kwargs()
     prev_out = None
     n_done = 0
+    face_refine_steps = args.face_refine_steps if args.face_refine_steps is not None else max(12, steps // 2)
+    face_refine_size = snap8(args.face_refine_size)
+
+    def pipe_call_kwargs(
+        image: Image.Image,
+        strength: float,
+        generator_seed: int,
+        num_steps: int,
+        control_images=None,
+        control_scales=None,
+    ) -> dict:
+        kw = dict(base_text)
+        kw.update(
+            image=image,
+            strength=strength,
+            num_inference_steps=num_steps,
+            guidance_scale=guidance,
+            generator=torch.Generator("cpu").manual_seed(generator_seed),
+        )
+        if control_images is not None:
+            kw["control_image"] = control_images
+            kw["controlnet_conditioning_scale"] = control_scales
+        if face_ref_img is not None:
+            kw["ip_adapter_image"] = face_ref_img
+        return kw
+
+    def refine_face_if_needed(
+        out_img: Image.Image,
+        detected_face_box: tuple[int, int, int, int] | None,
+    ) -> Image.Image:
+        if args.face_refine == "off" or detected_face_box is None:
+            return out_img
+        fw = detected_face_box[2] - detected_face_box[0]
+        should_refine = args.face_refine == "on" or fw < max(args.min_face_px, 1) * 1.35
+        if not should_refine:
+            return out_img
+
+        crop_box = expand_square_box(detected_face_box, out_img.size, args.face_refine_pad)
+        face_init = out_img.crop(crop_box).resize((face_refine_size, face_refine_size), Image.LANCZOS)
+        refine_kwargs = pipe_call_kwargs(
+            image=face_init,
+            strength=args.face_refine_strength,
+            generator_seed=args.seed + 100_003,
+            num_steps=face_refine_steps,
+        )
+        if controlnets:
+            blank = Image.new("RGB", (face_refine_size, face_refine_size), (0, 0, 0))
+            refine_maps = [blank.copy() for _ in cn_names]
+            refine_kwargs["control_image"] = refine_maps if len(refine_maps) > 1 else refine_maps[0]
+            zero_scales = [0.0 for _ in cn_names]
+            refine_kwargs["controlnet_conditioning_scale"] = (
+                zero_scales if len(zero_scales) > 1 else zero_scales[0])
+        refined = pipe(**refine_kwargs).images[0]
+        return paste_feathered(out_img, refined, crop_box)
+
     for i in range(args.start, end):
         src = src_frames[i]
         dst = out_frames_dir / f"frame_{i:06d}.png"
@@ -582,18 +788,40 @@ def main() -> int:
             prev_out = ImageOps.exif_transpose(Image.open(dst)).convert("RGB")
             continue
 
-        frame_img = ImageOps.exif_transpose(Image.open(src)).convert("RGB")
+        raw_frame_img = ImageOps.exif_transpose(Image.open(src)).convert("RGB")
+        raw_face_box = detect_face_box(raw_frame_img) if (
+            args.min_face_px > 0
+            or args.face_refine != "off"
+            or args.face_ref_crop != "none"
+        ) else None
         # size: scale longest side to --max-side, snap to /8. Shrink-only by
         # default — upscaling a low-res source feeds a blurry init into img2img
         # and wastes VRAM; pass --allow-upscale to scale small sources up to
         # SDXL's ~1024 sweet spot when you want that.
-        w, h = frame_img.size
+        w, h = raw_frame_img.size
         scale = args.max_side / max(w, h)
         if not args.allow_upscale:
             scale = min(1.0, scale)
+        if (
+            raw_face_box is not None
+            and args.min_face_px > 0
+            and not args.no_face_safe_resize
+        ):
+            raw_fw = raw_face_box[2] - raw_face_box[0]
+            if raw_fw > 0 and raw_fw * scale < args.min_face_px:
+                face_scale = args.min_face_px / raw_fw
+                if not args.allow_upscale:
+                    face_scale = min(1.0, face_scale)
+                if face_scale > scale:
+                    log(f"frame {i}: preserving small face ({raw_fw * scale:.0f}px -> "
+                        f"{raw_fw * face_scale:.0f}px); effective max-side "
+                        f"{round(max(w, h) * face_scale)} overrides requested {args.max_side}")
+                    scale = face_scale
         ow, oh = snap8(round(w * scale)), snap8(round(h * scale))
+        frame_img = raw_frame_img
         if (ow, oh) != (w, h):
-            frame_img = frame_img.resize((ow, oh), Image.LANCZOS)
+            frame_img = raw_frame_img.resize((ow, oh), Image.LANCZOS)
+        frame_face_box = scale_box(raw_face_box, ow / w, oh / h, (ow, oh)) if raw_face_box else None
 
         # init image: optionally blend the previous transformed frame in (temporal carry)
         init_img = frame_img
@@ -601,23 +829,20 @@ def main() -> int:
             pv = prev_out.resize((ow, oh), Image.LANCZOS)
             init_img = Image.blend(frame_img, pv, args.blend_prev)
 
-        call_kwargs = dict(base_text)
-        call_kwargs.update(
+        call_kwargs = pipe_call_kwargs(
             image=init_img,
             strength=args.strength,
-            num_inference_steps=steps,
-            guidance_scale=guidance,
-            generator=gen,
+            generator_seed=args.seed,
+            num_steps=steps,
         )
         if controlnets:
             maps = [m.resize((ow, oh), Image.LANCZOS) for m in make_control_maps(frame_img)]
             call_kwargs["control_image"] = maps if len(maps) > 1 else maps[0]
             call_kwargs["controlnet_conditioning_scale"] = (
                 cn_scales if len(cn_scales) > 1 else cn_scales[0])
-        if face_ref_img is not None:
-            call_kwargs["ip_adapter_image"] = face_ref_img
 
         out_img = pipe(**call_kwargs).images[0]
+        out_img = refine_face_if_needed(out_img, frame_face_box)
         out_img.save(dst)
         prev_out = out_img
         n_done += 1
