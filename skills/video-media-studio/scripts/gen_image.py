@@ -231,6 +231,11 @@ MODELS: dict[str, dict] = {
         "gated": False,
         "license": "Fair-AI-public-1.0 (anime; score tags)",
         "vpred": False,
+        # votepurchase/ponyDiffusionV6XL ships model_index.json defaulting to
+        # EDMDPMSolverMultistepScheduler, but Pony V6 is a normal eps/scaled_linear
+        # SDXL model — the EDM scheduler ignores its betas and produces PURE NOISE.
+        # Force a standard Euler (scaled_linear, epsilon) scheduler at load time.
+        "force_euler": True,
     },
     # Manga Vision IL — Illustrious-XL (same booru-tag family as NoobAI, uncensored)
     # finetune SPECIALIZED for black-and-white MANGA pages: auto ink + screentones
@@ -332,7 +337,7 @@ def select_model(
         return _fit_or_offload("sdxl", best_free, want_offload, margin)
 
     if backend in {"qwen-image", "flux.2-dev", "z-image-turbo", "flux.1-krea-dev",
-                   "chroma", "noobai-xl", "noobai-xl-vpred", "manga-vision-il"}:
+                   "chroma", "noobai-xl", "noobai-xl-vpred", "manga-vision-il", "pony"}:
         return _fit_or_offload(backend, best_free, want_offload, margin)
 
     # auto --------------------------------------------------------------------
@@ -565,6 +570,22 @@ def run_local(
         )
         log(f"{key}: scheduler set to v_prediction + zero-SNR")
 
+    # Some SDXL checkpoints (e.g. Pony V6) ship a model_index.json that defaults to
+    # EDMDPMSolverMultistepScheduler, which silently ignores the model's scaled_linear
+    # betas and renders pure rainbow noise. Swap to a vanilla Euler scheduler built
+    # from the standard SDXL beta schedule (epsilon, scaled_linear).
+    if m.get("force_euler"):
+        from diffusers import EulerDiscreteScheduler  # noqa: PLC0415
+        pipe.scheduler = EulerDiscreteScheduler(
+            beta_start=0.00085,
+            beta_end=0.012,
+            beta_schedule="scaled_linear",
+            prediction_type="epsilon",
+            steps_offset=1,
+            timestep_spacing="leading",
+        )
+        log(f"{key}: scheduler forced to EulerDiscreteScheduler (eps/scaled_linear)")
+
     # Chroma's stock FlowMatchEuler runs uniform sigmas with no shift, which is
     # the main cause of soft/low-quality output. Switch to beta sigmas + flux-style
     # dynamic shifting (base 0.5 / max 1.15) — the diffusers equivalent of ComfyUI's
@@ -657,7 +678,7 @@ def build_parser() -> argparse.ArgumentParser:
         choices=[
             "auto", "flux", "sdxl", "grok", "openrouter",
             "qwen-image", "flux.2-dev", "z-image-turbo", "flux.1-krea-dev",
-            "chroma", "noobai-xl", "noobai-xl-vpred", "manga-vision-il",
+            "chroma", "noobai-xl", "noobai-xl-vpred", "manga-vision-il", "pony",
         ],
         default="auto",
         help="generation backend (default: auto). qwen-image/flux.2-dev/"
