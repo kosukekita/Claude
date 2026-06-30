@@ -81,6 +81,8 @@ def parse_size(s: str) -> tuple[int, int]:
 def main() -> int:
     p = argparse.ArgumentParser(prog="gen_klein.py")
     p.add_argument("--prompt", required=True)
+    p.add_argument("--negative-prompt", default=None,
+                   help="klein (Flux2KleinPipeline) accepts a negative prompt")
     p.add_argument("--out", required=True)
     p.add_argument("--size", default="832x1216", help="WxH (FLUX.2 likes /32)")
     p.add_argument("--seed", type=int, default=None)
@@ -100,7 +102,13 @@ def main() -> int:
     width, height = parse_size(args.size)
 
     import torch  # noqa: PLC0415
-    from diffusers import Flux2Pipeline, Flux2Transformer2DModel  # noqa: PLC0415
+    # klein-9B uses a Qwen3 text encoder, NOT Mistral3 like FLUX.2-dev, so it
+    # needs the dedicated Flux2KleinPipeline (diffusers main). The generic
+    # Flux2Pipeline hardcodes the Mistral3 chat template and crashes on klein.
+    from diffusers import (  # noqa: PLC0415
+        Flux2KleinPipeline,
+        Flux2Transformer2DModel,
+    )
 
     free = free_vram_gb()
     log(f"free VRAM: {free:.1f}GB; base={args.base_repo}; "
@@ -108,8 +116,8 @@ def main() -> int:
     # 9B bf16 ~30GB; offload if we are not comfortably above that.
     offload = args.offload or (free and free < 34.0)
 
-    log(f"loading base pipeline {args.base_repo} (bf16)")
-    pipe = Flux2Pipeline.from_pretrained(
+    log(f"loading base pipeline {args.base_repo} (Flux2KleinPipeline, bf16)")
+    pipe = Flux2KleinPipeline.from_pretrained(
         args.base_repo, torch_dtype=torch.bfloat16
     )
 
@@ -139,15 +147,19 @@ def main() -> int:
         gen = torch.Generator("cpu").manual_seed(args.seed)
 
     log(f"generating {width}x{height} steps={args.steps} "
-        f"guidance={args.guidance} seed={args.seed}")
-    image = pipe(
+        f"guidance={args.guidance} seed={args.seed} "
+        f"neg={'yes' if args.negative_prompt else 'no'}")
+    call_kwargs: dict = dict(
         prompt=args.prompt,
         width=width,
         height=height,
         num_inference_steps=args.steps,
         guidance_scale=args.guidance,
         generator=gen,
-    ).images[0]
+    )
+    if args.negative_prompt:
+        call_kwargs["negative_prompt"] = args.negative_prompt
+    image = pipe(**call_kwargs).images[0]
 
     out_dir = os.path.dirname(os.path.abspath(args.out))
     if out_dir:
