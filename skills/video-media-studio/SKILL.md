@@ -26,6 +26,7 @@ allowed-tools: Bash, Read, Write, Glob, SendUserFile, AskUserQuestion
 | (1) 動画生成 t2v/i2v | テキスト/静止画から動画を作る、b-roll、静止画を動かす、連続クリップ | `gen_video.py`（probe 内蔵・Wan/LTX-Video）or `gen_video_ltx2.py`（LTX-2.3）|
 | (2) 画像生成 | テキストから静止画、frame 素材、画中テキスト | `gen_image.py`（probe 内蔵）|
 | (3) 動画編集 | 既存動画のトリム/連結/速度/字幕/音声/リサイズ/GIF 等 | `reference/ffmpeg-recipes.md` + `edit_video.py`（GPU/バックエンド判定不要・完全ローカル）|
+| (4) 動画スタイル変換 v2v | **既存動画**を別スタイルに変換（リアル↔アニメ等）し、**同じ人物を固定**したまま動きを保つ。NSFW 可 | `gen_v2v_style.py`（SDXL img2img + ControlNet + IP-Adapter Plus-Face・フレーム別・ComfyUI 不要） |
 
 ## バックエンド自動選択（THE core decision）
 
@@ -81,6 +82,7 @@ flowchart TD
 | cloud-fal | wan/ltx/flux hosted | all | hosted | n/a | grok |
 | grok（delegate） | image_gen / image_to_video / reference_to_video | t2i,i2v,(t2v=2段) | none（subscription） | n/a | terminal |
 | ffmpeg（local） | n/a | trim/concat/speed/subs/overlay/audio/resize/fps/frames/gif/thumb/reencode | CPU/GPU | YES | — |
+| local-single(fp16) | SDXL base + xinsir ControlNet + IP-Adapter Plus-Face | v2v style transfer（キャラ固定・NSFW 可） | ~12-16GB fp16 | YES（`gen_v2v_style.py`・`--gpu N`） | offload → cloud |
 
 各モデルの frame/dim ルール・install・最小 python・license は `reference/models.md` と各スクリプトの `--help` を参照。
 
@@ -112,6 +114,49 @@ source scripts/env.sh
     --first-clip s0.mp4 --model wan2.2-i2v-a14b --start 1 --end 8
   ```
 - Grok での t2v が欲しい場合 → **grok-media**（image_gen → image_to_video の 2 段）。
+
+## 動画スタイル変換フロー（v2v・キャラ固定・NSFW 可）
+
+**既存動画を別スタイル（リアル↔アニメ等）に変換し、同じ人物を固定したまま動きを保つ。** ComfyUI ガイドの「アプローチA（フレーム別 img2img + 強力リファレンス制御）」を **ComfyUI 非依存の diffusers 直書き**に移植したもの。入口は `gen_v2v_style.py`。
+
+**何が何に対応するか**（ComfyUI ノード → このスキル）:
+
+| ガイド（ComfyUI） | このスキルの実装 | なぜ |
+|---|---|---|
+| アニメ側ベース（Pony / Illustrious） | `--style-model pony / noobai-xl / noobai-xl-vpred / manga-vision-il` | 既存の SDXL レジストリを再利用。SDXL ControlNet/IP-Adapter はアーキ共通でそのまま載る |
+| リアル側ベース（AbsoluteReality 等） | `--style-model sdxl`（or `--style-repo <実写SDXLチェックポイント>`） | 実写寄り SDXL に差し替え可 |
+| ControlNet OpenPose + Depth（動き保持） | `xinsir/controlnet-{openpose,depth}-sdxl-1.0` + `controlnet_aux`（OpenposeDetector/MidasDetector） | xinsir が現行最良の SDXL ControlNet。`--controlnet openpose,depth`（canny も可） |
+| IP-Adapter FaceID + Reference Only（顔固定） | `ip-adapter-plus-face_sdxl_vit-h.bin`（CLIP ViT-H・`--face-ref`） | **insightface 不要**で `pipe.load_ip_adapter()` に直接載る。FaceID/InstantID は insightface(antelopev2) 必須でビルドが詰まるので**意図的に外した**（顔固定は Plus-Face + ControlNet で代替） |
+| VHS 分解 / 再合成 | ffmpeg 抽出（ロスレス PNG）+ `export`/`libx264` 再合成 | 完全ローカル |
+| シームレス接続 / RIFE | `--blend-prev`（前フレームの変換結果を次の init に混合）+ seed/model/style/negative 固定 | temporal flicker 抑制の中心策 |
+
+**コマンド例**:
+```bash
+source scripts/env.sh
+# 0.（任意）GPU/バックエンド判定だけ見る（torch ロードしない）
+"$UV" run scripts/gen_v2v_style.py --in real.mp4 --out anime.mp4 --prompt "..." --print-decision
+
+# 1. リアル動画 → アニメ（Pony）。pose+depth で動き拘束、顔参照で人物固定、GPU 1 に固定
+"$UV" run scripts/gen_v2v_style.py --in real.mp4 --out anime.mp4 \
+  --style-model pony --gpu 1 \
+  --face-ref char_face.png --face-scale 0.7 \
+  --controlnet openpose,depth --strength 0.5 --blend-prev 0.25 \
+  --prompt "score_9, score_8_up, score_7_up, source_anime, 1girl, anime style, white t-shirt, jeans, bright room"
+```
+
+**重要な設定（ガイドの「重要な設定ポイント」に対応）**:
+- **`--strength`（denoise）= 0.35〜0.55**: 低いほど元の動き・構図を尊重、高いほどスタイル変換が強い。既定 0.5。
+- **`--face-scale`（IP-Adapter 重み）= 0.5〜0.9**: 高いほど顔の同一性が強い。既定 0.7。
+- **`--cn-scale`（ControlNet 重み）**: 既定は pose=1.0 / depth・canny=0.6。`--controlnet` と同じ並び・同じ個数でカンマ列挙。
+- **temporal flicker 抑制（フレーム別 img2img の宿命）**: ①全フレームで **seed 固定**（`--seed`）②全フレームで**同一 prompt・同一 model・同一 negative**③`--strength` を低め④**ControlNet(pose+depth) で動きを拘束**⑤`--blend-prev` で前フレーム変換結果を次の init に混合。固定 negative は chain_video.py の `DEFAULT_NEGATIVE`（color drift / flicker / morphing / warping 禁止）をそのまま採用。
+- **scheduler**: Pony は EulerDiscrete 強制、NoobAI v-pred は v_prediction+zero-SNR（gen_image.py と同じ分岐を移植）。長プロンプト（Pony score タグ＋人物固定ブロック）は **compel==2.0.3** で 77 トークン超を全部使う。
+- **解像度**: `--max-side`（既定 1024。SDXL は ~1024 が最良）。寸法は /8 に丸め。
+
+**長尺・resume**: フレーム PNG は `<out>.frames/` に出力し、**既存 PNG と既存 `--out` をスキップ**（resume-safe）。`--start`/`--end` でフレーム範囲を区切れる。長尺は 5〜8 秒単位に `edit_video.py trim` で割ってから各セグメントを変換し `edit_video.py concat` で結合（ガイドの「長尺は分割→結合」に対応）。
+
+**初回 DL（数 GB）**: xinsir ControlNet（openpose ~5GB + depth）、IP-Adapter Plus-Face + ViT-H エンコーダ、`madebyollin/sdxl-vae-fp16-fix`、`lllyasviel/Annotators`（OpenPose/MiDaS）、スタイルベース（Pony 等。多くは既存キャッシュにある）。2 回目以降はキャッシュ。
+
+**バックエンド**: local-single（A6000 1 枚・fp16）。GPU 0 が学習等で塞がっているときは **`--gpu 1`** で空き GPU に固定する（`gen_v2v_style.py` は既定で nvidia-smi の最空き GPU を選ぶ）。VRAM が厳しければ `--offload`。
 
 ## 画像生成フロー
 
@@ -259,6 +304,11 @@ bash scripts/grok_delegate.sh    # grok-media の契約を表示して委譲（�
 - **FLUX.2 / Z-Image を stable diffusers で読む** → `Flux2Pipeline/ZImagePipeline` が無いと失敗。diffusers git main が必要。
 - **diffusers で単一クリップ multi-GPU** → 不可。Wan 公式 torchrun のみ。
 - **Grok の空応答を失敗と誤認** → ファイルは生成済みのことが多い。grok-media の出力回収（session dir glob / `grok -r`）に従う。
+- **v2v スタイル変換で IP-Adapter の image_encoder フォルダを取り違える** → Plus-Face（`ip-adapter-plus-face_sdxl_vit-h.bin`）は **ViT-H**（subfolder `models/image_encoder`）。`ip-adapter_sdxl.bin` の ViT-bigG（`sdxl_models/image_encoder`）と混同すると config.json not found 等で落ちる。`gen_v2v_style.py` は ViT-H を明示ロード済み。
+- **v2v でキャラ固定に FaceID/InstantID を使おうとする** → insightface(antelopev2) のビルドが詰まりやすく重い。`gen_v2v_style.py` は **insightface 不要の Plus-Face + ControlNet** で人物固定する方針（顔の同一性が足りない時だけ重い代替として FaceID/InstantID を検討）。
+- **v2v で Pony/NoobAI を base にして真っ黒/虹色ノイズ** → Pony は EulerDiscrete 強制、NoobAI v-pred は v_prediction+zero-SNR が要る（gen_image.py と同じ。`gen_v2v_style.py` の `--style-model` 選択で自動適用）。
+- **v2v のちらつき（temporal flicker）を放置** → フレーム別 img2img の宿命。seed/model/style/negative を全フレーム固定し、`--strength` を低め、ControlNet で動き拘束、`--blend-prev` で前フレームを次 init に混合する（独立フレーム生成にしない）。
+- **v2v を塞がっている GPU で走らせる** → 学習中の GPU と取り合うと OOM/激遅。`gen_v2v_style.py --gpu N` で空き GPU に固定（既定は最空き GPU を自動選択）。
 
 ## Setup（初回のみ）
 

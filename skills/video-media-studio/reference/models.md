@@ -97,3 +97,33 @@ Notes (reference-only):
 **Backend ladder (probe descends):** local-single → local-offload → local-multi (Wan torchrun only) → cloud-modal → cloud-fal → grok. On this 96 GB rig almost everything is local; cloud/Grok are last resort.
 
 **Commercial-use cheat sheet:** OK = Wan (Apache), LTX-Video 0.9.8 (Apache), flux.1-schnell (Apache), z-image-turbo/qwen-image (Apache). **Not OK / restricted** = flux.1-dev, flux.2-dev (non-commercial), sd3.5-large & ltx-2.3 (community/gated — check terms), sdxl (OpenRAIL++ — permissive but read the use restrictions).
+
+## 5. Video-to-video style transfer (v2v, `gen_v2v_style.py`)
+
+Per-frame SDXL img2img + ControlNet + IP-Adapter Plus-Face. ComfyUI-free, diffusers-native. `local-single` on one A6000, fp16, ~12–16 GB.
+
+**Style base (`--style-model`)** — any plain SDXL checkpoint accepts the SDXL ControlNet/IP-Adapter:
+
+| key | repo | scheduler quirk | use for |
+|---|---|---|---|
+| `pony` | `votepurchase/ponyDiffusionV6XL` | force Euler (eps/scaled_linear) | anime (needs `score_9, score_8_up, ... , source_anime`) |
+| `noobai-xl` | `Laxhar/noobai-XL-1.1` | none (eps) | anime / booru tags |
+| `noobai-xl-vpred` | `Laxhar/noobai-XL-Vpred-1.0` | v_prediction + zero-SNR | sharper anime |
+| `manga-vision-il` | `John6666/manga-vision-il-v1-sdxl` | none | B/W manga pages |
+| `sdxl` | `stabilityai/stable-diffusion-xl-base-1.0` | none | real-ish base (swap real-photo SDXL via `--style-repo`) |
+
+**Control / reference weights** (auto-downloaded on first run):
+
+| role | HF id | note |
+|---|---|---|
+| ControlNet OpenPose | `xinsir/controlnet-openpose-sdxl-1.0` | motion lock (pose). default scale 1.0 |
+| ControlNet Depth | `xinsir/controlnet-depth-sdxl-1.0` | motion lock (depth). default scale 0.6 |
+| ControlNet Canny | `xinsir/controlnet-canny-sdxl-1.0` | optional edge lock |
+| Annotators | `lllyasviel/Annotators` (via `controlnet_aux`) | OpenposeDetector / MidasDetector preprocessors |
+| SDXL VAE | `madebyollin/sdxl-vae-fp16-fix` | avoids fp16 black frames |
+| IP-Adapter Plus-Face | `h94/IP-Adapter` → `sdxl_models/ip-adapter-plus-face_sdxl_vit-h.bin` | character/face lock, **no insightface** |
+| IP-Adapter encoder | `h94/IP-Adapter` → `models/image_encoder` (ViT-H) | required for Plus-Face (NOT `sdxl_models/image_encoder`) |
+
+**Knobs:** `--strength` 0.35–0.55 (denoise; low = keep motion), `--face-scale` 0.5–0.9 (identity strength), `--cn-scale` (per-ControlNet, matches `--controlnet` order), `--blend-prev` 0–0.5 (temporal carry), `--seed` fixed across frames, `--gpu N` (pin), `--max-side` 1024. Anti-flicker = fixed seed/model/style/negative + low strength + ControlNet + `--blend-prev`.
+
+**License note:** SDXL ControlNet (xinsir, OpenRAIL) + IP-Adapter (Apache) are permissive; the **style base license dominates** (Pony/NoobAI = Fair-AI public; SDXL = OpenRAIL++). NSFW use is local-only by design.
