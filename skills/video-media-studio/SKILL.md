@@ -155,6 +155,8 @@ NSFW 人物のフォトリアル/絵画生成は**ローカル一択**（Codex/G
 
 要点: **非リアル系（アニメ/漫画/絵画調）NSFW は Chroma(manga,paint)＋Pony(anime,manga) の4本を既定で出す**（NoobAI 不採用＝2026-06-30 ユーザー判定）。**絵画の露骨 NSFW は油彩なら現状 Chroma だけが実用**（Z-Image-Turbo は同じ絵画露骨プロンプトで手の構造等が破綻、Klein True-V3 は画力最良だが行為自体を描かず着衣に留める）。フォトリアルで構図重視のソフト NSFW は Klein。長い日本語プロンプトは英語主体に直すと人物が安定（chroma/klein とも日本語長文で人物消失・別シーン化の事故あり）。入れ墨除去は z-image/sdxl/chroma/pony はネガティブ `tattoo, tattoos, body ink, lettering on skin`、klein/FLUX 系はポジティブに明示（negative 非対応）。
 
+> **SDXL系（Pony/NoobAI/Manga-Vision/SDXL）の長プロンプト（77トークン超）対応＝compel 自動適用（2026-06-30 実装）**: CLIP は 77 トークンで打ち切るため、Pony 流の「score タグ＋人物固定ブロック＋衣装＋ポーズ＋背景＋光」を並べると後半（衣装/ポーズ/背景）が**無言で切り捨てられ**、指定が効かない（実機事故: 白T＋デニム指定が着物風に化け、バストアップ指定が座り全身に化けた）。`gen_image.py` は SDXL 系のとき **compel==2.0.3** で `prompt_embeds`/`pooled_prompt_embeds`（負も同様）を作って 77 トークン超を全部使う（`compel long-prompt embeddings (no 77-token truncation)` とログ）。ログに出る `(160 > 77)` は内部 tokenizer の情報行で、compel が 77 窓に分割して結合するので**切り捨てではない**。**同一人物を狙う量産はこれが前提**: 人物記述ブロックを全枚で一字一句共通にし、seed と 構図/角度/衣装タグだけ振る（compel が無いと共通ブロックの末尾が消えて同一性も崩れる）。compel 未導入や失敗時は truncated prompt にフォールバック（ログ `compel unavailable`）。FLUX/Qwen/Z-Image/Chroma は native の prompt 経路のまま（長プロンプト対応の拡張は必要時に pipeline 別 builder で）。
+
 > **絵画 NSFW モデルの deep research 結論（2026-06-30）**: Chroma を「明確に上回る」絵画 NSFW 新 base は確認できず。今後の方向は2軸 — ①**アニメ/イラスト調の露骨 = SDXL系（NoobAI-XL 手元 / Illustrious-XL / Pony V6XL）＋ 油彩/厚塗りスタイル LoRA** が業界主流（新 base を待つより手元 NoobAI に画風 LoRA を足すのが費用対効果最大）、②**油彩/写実寄りの絵画 = Chroma**。新アーキ実験枠に **Anima**(`circlestone-labs/Anima`, Cosmos-2B, painterly特化, 4タグNSFW)があるが推論10倍遅・手破綻・非商用で現状置き換え不可。詳細は記憶 nsfw-painterly-models-research。
 
 ### 人物画像のプロンプト構成テンプレート（必読・固定）

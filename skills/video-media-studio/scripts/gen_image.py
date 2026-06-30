@@ -643,15 +643,22 @@ def run_local(
                 requires_pooled=[False, True],
                 truncate_long_prompts=False,
             )
-            pe, pooled = compel(prompt)
-            embeds = {"prompt_embeds": pe, "pooled_prompt_embeds": pooled}
+            prompt_embeds, pooled_prompt_embeds = compel(prompt)
+            embeds = {
+                "prompt_embeds": prompt_embeds,
+                "pooled_prompt_embeds": pooled_prompt_embeds,
+            }
             if negative:
-                ne, npooled = compel(negative)
+                negative_prompt_embeds, negative_pooled_prompt_embeds = compel(negative)
                 # pad +/- to equal length so diffusers can stack them
-                pe, ne = compel.pad_conditioning_tensors_to_same_length([pe, ne])
-                embeds["prompt_embeds"] = pe
-                embeds["negative_prompt_embeds"] = ne
-                embeds["negative_pooled_prompt_embeds"] = npooled
+                prompt_embeds, negative_prompt_embeds = (
+                    compel.pad_conditioning_tensors_to_same_length(
+                        [prompt_embeds, negative_prompt_embeds]
+                    )
+                )
+                embeds["prompt_embeds"] = prompt_embeds
+                embeds["negative_prompt_embeds"] = negative_prompt_embeds
+                embeds["negative_pooled_prompt_embeds"] = negative_pooled_prompt_embeds
             kwargs.update(embeds)
             used_compel = True
             log(f"{key}: compel long-prompt embeddings (no 77-token truncation)")
