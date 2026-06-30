@@ -18,6 +18,8 @@
 #   "pillow",
 #   "einops",
 #   "timm",
+#   "matplotlib",
+#   "scikit-image",
 # ]
 #
 # # cu121 torch: this rig's driver is CUDA 12.2; default wheels target newer CUDA
