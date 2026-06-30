@@ -268,10 +268,11 @@ MODELS: dict[str, dict] = {
 # already cached on this rig. openpose locks limb count/joint positions; depth
 # locks front/back ordering for overlaps (entangled / restraint / multi-person
 # panels). Both stack on the same StableDiffusionXLControlNetPipeline.
-#   preprocess:
+#   preprocess (the detector run on the source image; can be skipped per-run
+#   with --no-control-preprocess when the image is ALREADY a control hint):
 #     "openpose" -> controlnet_aux OpenposeDetector (skeleton from a photo/pose)
 #     "depth"    -> controlnet_aux MidasDetector / DPT (depth map from an image)
-#     "none"     -> the image is ALREADY a control hint (skeleton/depth), pass through
+#     "canny"    -> cv2.Canny edge map
 # --------------------------------------------------------------------------- #
 CONTROLNETS: dict[str, dict] = {
     "openpose": {
@@ -502,6 +503,24 @@ def parse_size(size: str) -> tuple[int, int]:
     return rw, rh
 
 
+def _expand_weights(
+    weights: list[float] | None, n: int, default: float
+) -> list[float]:
+    """Normalize a per-item weight list to length n.
+
+    A single value applies to all items; a short list is padded with `default`;
+    a long list is truncated. Shared by --lora-scale and --control-weight so the
+    two paths normalize identically.
+    """
+    out = list(weights or [])
+    if len(out) == 1:
+        out = out * n
+    out = out[:n]
+    while len(out) < n:
+        out.append(default)
+    return out
+
+
 def _parse_control_specs(
     control: list[str] | None,
 ) -> list[tuple[str, str]]:
@@ -530,8 +549,8 @@ def _parse_control_specs(
     return specs
 
 
-def _make_control_hint(ctype: str, path: str, width: int, height: int,
-                       preprocess: bool):
+def _prepare_control_hint(ctype: str, path: str, width: int, height: int,
+                          preprocess: bool):
     """Turn a source image into the control hint for ControlNet.
 
     If preprocess is True, run the matching controlnet_aux detector (skeleton /
@@ -652,33 +671,24 @@ def run_local(
     # of the load path (scheduler swap, LoRA fuse, compel, offload) is identical
     # to the plain SDXL path below — only the pipeline class and the call kwargs
     # differ. Build control hints AFTER we know the target size.
-    control_models = []
-    control_hints = []
-    cn_weights: list[float] = []
+    # nets holds one (ControlNetModel, hint_image, weight) tuple per --control,
+    # so the parallel model/hint/weight arrays stay aligned by construction.
+    nets: list[tuple] = []
     if use_controlnet:
         from diffusers import (  # noqa: PLC0415
             ControlNetModel,
             StableDiffusionXLControlNetPipeline,
         )
-        weights = control_weight or []
-        if len(weights) == 1:
-            weights = weights * len(control_specs)
-        while len(weights) < len(control_specs):
-            weights.append(0.9)
+        weights = _expand_weights(control_weight, len(control_specs), 0.9)
         for (ctype, cpath), w in zip(control_specs, weights):
             cn_repo = CONTROLNETS[ctype]["repo"]
-            control_models.append(
-                ControlNetModel.from_pretrained(cn_repo, torch_dtype=torch.bfloat16)
-            )
-            control_hints.append(
-                _make_control_hint(ctype, cpath, width, height, control_preprocess)
-            )
-            cn_weights.append(w)
+            model = ControlNetModel.from_pretrained(cn_repo, torch_dtype=torch.bfloat16)
+            hint = _prepare_control_hint(ctype, cpath, width, height, control_preprocess)
+            nets.append((model, hint, w))
             log(f"{key}: ControlNet {ctype} ({cn_repo}) weight={w}")
         pipe_cls = StableDiffusionXLControlNetPipeline
-        from_kwargs["controlnet"] = (
-            control_models[0] if len(control_models) == 1 else control_models
-        )
+        models = [n[0] for n in nets]
+        from_kwargs["controlnet"] = models[0] if len(models) == 1 else models
 
     # 4-bit quantization (bitsandbytes) for models too big for 48GB even with
     # offload (e.g. FLUX.2-dev, 32B+Mistral3). Quantizes the heavy components
@@ -757,16 +767,12 @@ def run_local(
         if want_cls != "StableDiffusionXLPipeline":
             log(f"{key}: --lora ignored ({want_cls} is not an SDXL pipeline)")
         else:
-            scales = lora_scale or []
-            if len(scales) == 1:
-                scales = scales * len(lora)
-            elif scales and len(scales) != len(lora):
+            if lora_scale and len(lora_scale) not in (1, len(lora)):
                 log(
-                    f"{key}: {len(scales)} --lora-scale for {len(lora)} --lora; "
+                    f"{key}: {len(lora_scale)} --lora-scale for {len(lora)} --lora; "
                     f"padding/truncating to match"
                 )
-            while len(scales) < len(lora):
-                scales.append(1.0)
+            scales = _expand_weights(lora_scale, len(lora), 1.0)
             names = []
             for i, lp in enumerate(lora):
                 adapter = f"lora_{i}"
@@ -799,9 +805,9 @@ def run_local(
     # ControlNet call kwargs: the SDXL ControlNet pipeline takes `image` as the
     # control hint(s) and `controlnet_conditioning_scale` as the per-net weight.
     if use_controlnet:
-        kwargs["image"] = (
-            control_hints[0] if len(control_hints) == 1 else control_hints
-        )
+        hints = [n[1] for n in nets]
+        cn_weights = [n[2] for n in nets]
+        kwargs["image"] = hints[0] if len(hints) == 1 else hints
         kwargs["controlnet_conditioning_scale"] = (
             cn_weights[0] if len(cn_weights) == 1 else cn_weights
         )
@@ -1020,6 +1026,10 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         width, height = parse_size(args.size)
+        # Validate --control here (same layer as --size) so a bad type / missing
+        # image fails fast with exit 2, instead of raising inside run_local and
+        # getting swallowed by the generic except -> spurious grok fallback.
+        _parse_control_specs(args.control)
     except argparse.ArgumentTypeError as exc:
         log(str(exc))
         return 2
