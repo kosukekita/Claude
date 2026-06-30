@@ -215,6 +215,23 @@ MODELS: dict[str, dict] = {
         "license": "Fair-AI-public-1.0 (anime; booru tags)",
         "vpred": True,
     },
+    # Pony Diffusion V6 XL — SDXL-based, the other huge NSFW anime/illustration
+    # base (separate lineage from Illustrious/NoobAI). REQUIRES its own score tags
+    # in the prompt: `score_9, score_8_up, score_7_up, ...` for quality, and
+    # `source_anime / source_pony / source_furry` to steer the style. diffusers
+    # format (votepurchase mirror) so it drops into the standard SDXL pipeline.
+    "pony": {
+        "repo": "votepurchase/ponyDiffusionV6XL",
+        "pipeline": "StableDiffusionXLPipeline",
+        "vram_bf16_gb": 12.0,
+        "vram_offload_floor_gb": 8.0,
+        "default_steps": 28,
+        "default_guidance": 7.0,
+        "turbo": False,
+        "gated": False,
+        "license": "Fair-AI-public-1.0 (anime; score tags)",
+        "vpred": False,
+    },
     # Manga Vision IL — Illustrious-XL (same booru-tag family as NoobAI, uncensored)
     # finetune SPECIALIZED for black-and-white MANGA pages: auto ink + screentones
     # without needing monochrome/greyscale tags. Best for 白黒漫画 NSFW. diffusers
