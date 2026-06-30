@@ -26,7 +26,7 @@ allowed-tools: Bash, Read, Write, Glob, SendUserFile, AskUserQuestion
 | (1) 動画生成 t2v/i2v | テキスト/静止画から動画を作る、b-roll、静止画を動かす、連続クリップ | `gen_video.py`（probe 内蔵・Wan/LTX-Video）or `gen_video_ltx2.py`（LTX-2.3）|
 | (2) 画像生成 | テキストから静止画、frame 素材、画中テキスト | `gen_image.py`（probe 内蔵）|
 | (3) 動画編集 | 既存動画のトリム/連結/速度/字幕/音声/リサイズ/GIF 等 | `reference/ffmpeg-recipes.md` + `edit_video.py`（GPU/バックエンド判定不要・完全ローカル）|
-| (4) 動画スタイル変換 v2v | **既存動画**を別スタイルに変換（リアル↔アニメ等）し、**同じ人物を固定**したまま動きを保つ。NSFW 可 | `gen_v2v_style.py`（SDXL img2img + ControlNet + IP-Adapter Plus-Face・フレーム別・ComfyUI 不要） |
+| (4) 動画スタイル変換 v2v | **既存動画**を別スタイルに変換（リアル↔アニメ等）し、**同じ人物を固定**したまま動きを保つ。NSFW 可 | **★NSFW リアル動画→アニメ動画は `gen_v2v_qwen.py`（Qwen-Image-Edit + アニメ LoRA・実機実証の本命）が第一選択**。汎用スタイル変換や動きの強い拘束が要る場合のみ `gen_v2v_style.py`（SDXL img2img + ControlNet + IP-Adapter）。下の「動画スタイル変換フロー」参照 |
 
 ## バックエンド自動選択（THE core decision）
 
@@ -82,7 +82,8 @@ flowchart TD
 | cloud-fal | wan/ltx/flux hosted | all | hosted | n/a | grok |
 | grok（delegate） | image_gen / image_to_video / reference_to_video | t2i,i2v,(t2v=2段) | none（subscription） | n/a | terminal |
 | ffmpeg（local） | n/a | trim/concat/speed/subs/overlay/audio/resize/fps/frames/gif/thumb/reencode | CPU/GPU | YES | — |
-| local-single(fp16) | SDXL base + xinsir ControlNet + IP-Adapter Plus-Face | v2v style transfer（キャラ固定・NSFW 可） | ~12-16GB fp16 | YES（`gen_v2v_style.py`・`--gpu N`） | offload → cloud |
+| local-single(offload) | **Qwen-Image-Edit-2511 + アニメ LoRA** | **★NSFW リアル動画→アニメ v2v（本命・同一人物保持）** | bf16 ~40GB（`--offload model`） | YES（`gen_v2v_qwen.py`・`--gpu N`・両GPU並列で時短） | — |
+| local-single(fp16) | SDXL base + xinsir ControlNet + IP-Adapter Plus-Face | v2v style transfer（汎用・動き強拘束。リアル→アニメは別人化するので非推奨） | ~12-16GB fp16 | YES（`gen_v2v_style.py`・`--gpu N`） | offload → cloud |
 
 各モデルの frame/dim ルール・install・最小 python・license は `reference/models.md` と各スクリプトの `--help` を参照。
 
@@ -115,7 +116,44 @@ source scripts/env.sh
   ```
 - Grok での t2v が欲しい場合 → **grok-media**（image_gen → image_to_video の 2 段）。
 
-## 動画スタイル変換フロー（v2v・キャラ固定・NSFW 可）
+## ★NSFW リアル動画 → アニメ動画（本命・実機実証 2026-06-30）= `gen_v2v_qwen.py`
+
+**リアルな人物動画をフレームごとにアニメ化し、同じ人物を保ったまま 1 本の動画にする用途は、これが第一選択。** `gen_v2v_qwen.py`（Qwen-Image-Edit + アニメ LoRA、フレーム別、ComfyUI 不要、完全ローカル＝NSFW 可）。
+
+```bash
+source scripts/env.sh
+# 入力動画を 24fps でアニメ化（同一人物保持）。両GPU空きなら --gpu で分担並列。
+"$UV" run scripts/gen_v2v_qwen.py \
+  --in real.mp4 --out anime.mp4 \
+  --repo "Qwen/Qwen-Image-Edit-2511" --lora "prithivMLmods/Qwen-Image-Edit-2511-Anime" --lora-scale 1.0 \
+  --prompt "Transform into anime." --fps 24 \
+  --steps 8 --guidance 1.0 --seed 12345 --max-side 1280 --offload model --gpu 1
+# 長尺で時短: フレーム範囲を2分割し別GPUで並走（--work-dir を共有、--start/--end で分担）→ 最後に全フレームを手動で concat 結合
+```
+
+**なぜ Qwen-Edit でフレーム間の人物が統一できるのか（核心・実証済み）**:
+- **Qwen-Image-Edit は「編集」モデル**＝入力画像そのものを条件に「この画像をアニメに」と*変換*する。各フレームが元の実写フレームを土台にするので、**顔・髪・体型が入力から直接受け継がれ、同一人物が保たれる**。
+- 対照的に **SDXL+IP-Adapter（gen_v2v_style.py）は「新規生成＋顔を薄くヒント」**なので、毎フレーム別の顔を描いて**別人化・量産アニメ顔**になる（2026-06-30 に実機で確認：Pony+IP-Adapter は前髪が消え面長の別人になった）。**だから NSFW リアル→アニメは必ず Qwen 経路を使う。**
+- 補強: ①元動画が連続（隣フレームがほぼ同じ→出力も連続）②全フレームで seed・prompt・model・LoRA を固定（ランダム揺れ排除）。
+
+**設定（実証値・既定）**:
+- **ベース `--repo Qwen/Qwen-Image-Edit-2511`**（2509 比で image drift 軽減・キャラ一貫性向上。`gen_qwen_edit.py`/`gen_v2v_qwen.py` 既定）。
+- **アニメ LoRA `prithivMLmods/Qwen-Image-Edit-2511-Anime`**（トリガー `"Transform into anime."`、4-8 step の lightning、cfg≈1.0。**「元のポーズ・プロポーション・視点を保持」と設計**＝フレーム単位に最適）。NSFW 表現が要るショットは `ScottzillaSystems/qwen-image-edit-plus-nsfw-lora` を 2 枚目に重ねる（`--lora` 複数指定可）。
+- **★アニメ LoRA は必須**: 入れないと（2509 単体）アニメにはなるが**入力の表情・ポーズを勝手に作り変える**（A/B で実証）。LoRA ありで入力に忠実になる。
+- `--steps 8 --guidance 1.0`（lightning LoRA は低 step・低 cfg）。`--seed` は全フレーム固定。`--max-side 1280`（~1MP）。
+- **`--offload model` 必須級**: Qwen 20B+LoRA は `--offload none`（フルロード）だと 1280px で 48GB OOM（実機確認）。offload で 1 枚 ~30-40 秒。
+- **fps の決め方**: 元 60fps を全部変換は非現実的（554 枚で両 GPU 並列でも ~3h）。**24fps が画質・滑らかさ・時間のバランス良。8-12fps はリミテッドアニメ調で更に速い**。出力は元の尺に合わせて再結合（フレーム間引いても尺は縮まない）。
+- **後処理ブレンドはしない**: `minterpolate=blend` 等の補間は輪郭が二重にボケて**画質が落ちる**（ユーザー確定 2026-06-30、raw>smoothed）。**生成フレームを無加工で結合（raw）が最高画質**。ちらつきは seed/prompt/model 固定で抑え、補間に頼らない。
+
+**残る限界（正直に）**: フレーム別編集なので**わずかなちらつき**（髪・陰影の揺れ）は残る＝フレーム単位画像編集の宿命。fps を上げる（24fps）と目立ちにくい。**元動画に画面録画 UI 等のオーバーレイがあるとアニメ化されて写り込む**ので、必要なら該当フレームをトリム/クロップ。
+
+**手順（実務）**: ①入力動画を確認（縦長スマホ動画等は `--max-side` で ~1MP に縮小される）②`gen_v2v_qwen.py` で 24fps 生成（長尺は 2 分割並列）③全フレーム揃ったら無加工で 24fps 結合 ④目視で全編の同一性を確認してから納品（フレーム数点の顔タイルで一貫性チェック）。NSFW は完全ローカルで外部送信しない。
+
+> 関連スクリプト: `gen_qwen_edit.py`（1 枚の参照編集・`--repo`/`--lora` 対応済み、A/B 比較用）、`gen_v2v_qwen.py`（動画全フレーム・モデル 1 回ロードで連続処理）。**逆方向（アニメ→実写 NSFW）**も同じ枠組みで、アニメ LoRA を `Hyperccino/Qwen-Edit-2511-Anime-to-Photoreal-v1.1`（or `WarmBloodAban/Anything_to_Real_Characters_2511`）＋ NSFW LoRA に差し替えれば可（準実写まで・同一性 moderate・NSFW はローカル一択／編集 API は全て NSFW 拒否）。
+
+## 動画スタイル変換フロー（SDXL 経路・汎用 / 動きの強拘束用）
+
+> ⚠️ **NSFW リアル動画→アニメは上の Qwen 経路（`gen_v2v_qwen.py`）を使う。** この SDXL 経路は別人化しやすいので、汎用スタイル変換や ControlNet で動きを強く拘束したい用途に限る。
 
 **既存動画を別スタイル（リアル↔アニメ等）に変換し、同じ人物を固定したまま動きを保つ。** ComfyUI ガイドの「アプローチA（フレーム別 img2img + 強力リファレンス制御）」を **ComfyUI 非依存の diffusers 直書き**に移植したもの。入口は `gen_v2v_style.py`。
 
@@ -314,6 +352,10 @@ bash scripts/grok_delegate.sh    # grok-media の契約を表示して委譲（�
 - **★v2v で顔だけ「のっぺりお化け」になる** → 主因は**出力解像度が低く顔が潜在上 8〜10px しかない**こと（SDXL 潜在=1/8）。**`--max-side` を 1024 以上**にし、立ち構図の小顔は `--face-ref-crop auto`（顔だけクロップして IP-Adapter へ）と `--face-refine auto`（顔 hires-fix 二段＝ADetailer 相当）で底上げする。`gen_v2v_style.py` は既定で全部 ON。768 解像度で顔が崩れた実機事故あり。
 - **★v2v 後半フレームで顔崩壊＋背景の虹ノイズが進行** → `--blend-prev`（前フレーム→次 init 混合）の**劣化累積**。各フレームが自分の劣化出力を食い続け雪だるま式に悪化する。**既定 0（OFF）にしてある。ちらつきは seed/model/negative 固定＋ControlNet で抑え、`--blend-prev` には頼らない**（実機で 0.25→後半崩壊、0→全フレーム健全を確認）。
 - **v2v を塞がっている GPU で走らせる** → 学習中の GPU と取り合うと OOM/激遅。`gen_v2v_style.py --gpu N` で空き GPU に固定（既定は最空き GPU を自動選択）。
+- **★NSFW リアル動画→アニメに SDXL 経路（`gen_v2v_style.py`）を使う** → **別人化する**。SDXL+IP-Adapter は「新規生成＋顔を薄くヒント」なので毎フレーム別の顔を描き、前髪が消え面長の量産アニメ顔になる（2026-06-30 実機）。**リアル→アニメは必ず `gen_v2v_qwen.py`（Qwen-Image-Edit が入力画像を*編集*するので同一人物が保たれる）を使う。**
+- **Qwen v2v を `--offload none` で回す** → Qwen 20B+LoRA は 1280px で 48GB OOM（実機）。**`--offload model` 必須**（1 枚 ~30-40 秒）。
+- **アニメ LoRA を付けずに Qwen-Edit でアニメ化** → アニメにはなるが**入力の表情・ポーズを勝手に作り変える**（A/B 実証）。`prithivMLmods/Qwen-Image-Edit-2511-Anime`（トリガー `"Transform into anime."`）を必ず重ねる＝入力に忠実になる。
+- **v2v 出力に `minterpolate=blend` 等の補間ブレンドをかける** → 輪郭が二重にボケて**画質が落ちる**（ユーザー確定: raw>smoothed）。**生成フレームは無加工で結合（raw）が最高画質**。fps を上げて滑らかさを稼ぐ方が良い。
 
 ## Setup（初回のみ）
 

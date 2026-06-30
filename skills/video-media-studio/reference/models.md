@@ -98,7 +98,22 @@ Notes (reference-only):
 
 **Commercial-use cheat sheet:** OK = Wan (Apache), LTX-Video 0.9.8 (Apache), flux.1-schnell (Apache), z-image-turbo/qwen-image (Apache). **Not OK / restricted** = flux.1-dev, flux.2-dev (non-commercial), sd3.5-large & ltx-2.3 (community/gated — check terms), sdxl (OpenRAIL++ — permissive but read the use restrictions).
 
-## 5. Video-to-video style transfer (v2v, `gen_v2v_style.py`)
+## 5a. ★NSFW real video → anime (v2v, `gen_v2v_qwen.py`) — THE recommended path
+
+Per-frame **Qwen-Image-Edit + anime LoRA**. Keeps the SAME person (the edit model conditions on the input frame itself, so identity transfers — unlike SDXL+IP-Adapter which regenerates a different face). ComfyUI-free, diffusers-native, fully local (NSFW OK). `local-single` w/ `--offload model` (`--offload none` OOMs at 1280px on 48GB).
+
+| role | HF id | note |
+|---|---|---|
+| edit base | `Qwen/Qwen-Image-Edit-2511` | less drift + better identity than 2509. `QwenImageEditPlusPipeline`, bf16 ~40GB w/ offload |
+| anime LoRA | `prithivMLmods/Qwen-Image-Edit-2511-Anime` | trigger `"Transform into anime."`, 4-8 step lightning, cfg≈1. Preserves pose/proportions/viewpoint. **Required** (without it the edit reinvents pose/expression) |
+| NSFW LoRA (optional) | `ScottzillaSystems/qwen-image-edit-plus-nsfw-lora` | stack as 2nd `--lora` for explicit shots |
+| anime→real LoRA (reverse) | `Hyperccino/Qwen-Edit-2511-Anime-to-Photoreal-v1.1` or `WarmBloodAban/Anything_to_Real_Characters_2511` | reverse direction; semi-realistic, identity moderate; pair with NSFW LoRA |
+
+**Knobs:** `--steps 8 --guidance 1.0` (lightning LoRA), `--seed` fixed across frames (coherence), `--max-side 1280` (~1MP), `--offload model`, `--gpu N`, `--fps 24` (8-12 = limited-anime, faster; output restored to source duration). **Verified 2026-06-30:** 23s clip @24fps (554 frames) kept the same person end-to-end. **Don't post-blend** (`minterpolate=blend` softens/doubles edges — raw > smoothed); raise fps for smoothness instead. Residual per-frame flicker is inherent to image-edit-per-frame. Long clips: split frame range across both GPUs (`--work-dir` shared, `--start/--end`), concat all frames manually at the end.
+
+## 5b. Video-to-video style transfer (v2v, `gen_v2v_style.py`) — SDXL path (general / strong motion lock)
+
+> ⚠️ For NSFW real→anime use 5a (Qwen). This SDXL path regenerates faces → **identity drifts** (real→anime gives a generic different anime face). Use only for generic style transfer or when you need strong ControlNet motion lock.
 
 Per-frame SDXL img2img + ControlNet + IP-Adapter Plus-Face. ComfyUI-free, diffusers-native. `local-single` on one A6000, fp16, ~12–16 GB.
 
