@@ -326,7 +326,11 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=12345, help="FIXED across all frames (anti-drift).")
     ap.add_argument("--fps", type=float, default=None, help="resample source to this fps before/after (default: keep source).")
     ap.add_argument("--max-side", type=int, default=1024,
-                    help="longest output side in px (SDXL likes ~1024). Default 1024.")
+                    help="longest output side in px (SDXL likes ~1024). Default 1024. "
+                         "Shrink-only unless --allow-upscale.")
+    ap.add_argument("--allow-upscale", action="store_true",
+                    help="allow scaling sources SMALLER than --max-side up to it "
+                         "(default: only shrink larger sources, never upscale).")
     ap.add_argument("--gpu", type=int, default=None, help="pin to this physical GPU (default: freest).")
     ap.add_argument("--offload", action="store_true", help="cpu-offload the pipeline (slower, less VRAM).")
     ap.add_argument("--work-dir", default=None,
@@ -426,7 +430,7 @@ def main() -> int:
         maps = []
         for c in cn_names:
             if c == "openpose":
-                maps.append(pose_anno(frame_img, hand_and_face=True))
+                maps.append(pose_anno(frame_img, include_hand=True, include_face=True))
             elif c == "depth":
                 maps.append(depth_anno(frame_img))
             elif c == "canny":
@@ -530,7 +534,7 @@ def main() -> int:
 
     # default conditioning scales: pose strong, depth/canny softer
     if args.cn_scale:
-        cn_scales = [float(x) for x in args.cn_scale.split(",")]
+        cn_scales = [float(x) for x in args.cn_scale.split(",") if x.strip()]
         if len(cn_scales) != len(cn_names):
             log(f"--cn-scale count {len(cn_scales)} != controlnet count {len(cn_names)}")
             return 2
@@ -549,11 +553,17 @@ def main() -> int:
             continue
 
         frame_img = ImageOps.exif_transpose(Image.open(src)).convert("RGB")
-        # size: scale longest side to --max-side, snap to /8
+        # size: scale longest side to --max-side, snap to /8. Shrink-only by
+        # default — upscaling a low-res source feeds a blurry init into img2img
+        # and wastes VRAM; pass --allow-upscale to scale small sources up to
+        # SDXL's ~1024 sweet spot when you want that.
         w, h = frame_img.size
         scale = args.max_side / max(w, h)
+        if not args.allow_upscale:
+            scale = min(1.0, scale)
         ow, oh = snap8(round(w * scale)), snap8(round(h * scale))
-        frame_img = frame_img.resize((ow, oh), Image.LANCZOS)
+        if (ow, oh) != (w, h):
+            frame_img = frame_img.resize((ow, oh), Image.LANCZOS)
 
         # init image: optionally blend the previous transformed frame in (temporal carry)
         init_img = frame_img
@@ -584,15 +594,32 @@ def main() -> int:
         if n_done == 1 or n_done % 10 == 0 or i == end - 1:
             log(f"frame {i - args.start + 1}/{end - args.start} (idx {i}) -> {dst.name}")
 
-    # ---- reassemble (only the processed range, in order) ----
-    log(f"reassembling {end - args.start} frames @ {src_fps:.3f}fps -> {out_path}")
-    # Build from the full out dir if we processed everything; else just the range.
-    have = sorted(out_frames_dir.glob("frame_*.png"))
-    if not have:
-        raise RuntimeError("no output frames were produced")
+    # ---- reassemble (exactly the processed range, in order) ----
+    # Use a concat-demuxer list of the EXACT frames in [start, end) rather than an
+    # image2 sequence + -start_number: the sequence demuxer stops at the first gap,
+    # so a resumed/partial run with a hole would silently truncate or drop the tail.
+    # The explicit list is gap-proof and fails loudly if a frame in the range is
+    # missing instead of producing a short/holed video.
+    expected = [out_frames_dir / f"frame_{i:06d}.png" for i in range(args.start, end)]
+    missing = [p.name for p in expected if not (p.exists() and p.stat().st_size > 0)]
+    if missing:
+        raise RuntimeError(
+            f"{len(missing)} output frame(s) missing in [{args.start},{end}); "
+            f"first few: {missing[:5]}. Re-run the missing range before reassembly."
+        )
+    log(f"reassembling {len(expected)} frames @ {src_fps:.3f}fps -> {out_path}")
+    concat_list = out_frames_dir / "_concat.txt"
+    # concat demuxer needs a duration per still + a fps filter to realise it.
+    dur = 1.0 / src_fps if src_fps else 1.0 / 24.0
+    lines = []
+    for p in expected:
+        lines.append(f"file {sh(str(p))}")
+        lines.append(f"duration {dur:.6f}")
+    lines.append(f"file {sh(str(expected[-1]))}")  # last frame repeated (concat quirk)
+    concat_list.write_text("\n".join(lines) + "\n")
     cmd = [FFMPEG, "-hide_banner", "-loglevel", "error", "-y",
-           "-framerate", f"{src_fps}", "-start_number", f"{args.start}",
-           "-i", str(out_frames_dir / "frame_%06d.png"),
+           "-f", "concat", "-safe", "0", "-i", str(concat_list),
+           "-vsync", "cfr", "-r", f"{src_fps}",
            "-vf", "scale=-2:trunc(ih/2)*2,setsar=1", "-pix_fmt", "yuv420p",
            "-c:v", "libx264", "-crf", "17", "-preset", "slow",
            "-movflags", "+faststart", str(out_path)]
