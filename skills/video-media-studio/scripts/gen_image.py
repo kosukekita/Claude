@@ -14,6 +14,7 @@
 #     "bitsandbytes",
 #     "scipy",
 #     "compel==2.0.3",
+#     "peft",
 # ]
 #
 # # Pin torch to the CUDA 12.1 build: this rig's NVIDIA driver is CUDA 12.2
@@ -607,6 +608,36 @@ def run_local(
         except Exception as exc:  # noqa: BLE001
             log(f"{key}: chroma scheduler tweak failed ({exc}); using stock scheduler")
 
+    # Stack character/style LoRAs on SDXL backends (Pony/NoobAI/SDXL). diffusers
+    # loads each as a named adapter, then fuses them with per-LoRA weights so the
+    # base weights carry the LoRA at inference (no runtime adapter dispatch). Must
+    # happen AFTER scheduler swaps and BEFORE offload/to(cuda) so the fused weights
+    # land on the right device. Non-SDXL pipelines ignore --lora with a warning.
+    if lora:
+        if want_cls != "StableDiffusionXLPipeline":
+            log(f"{key}: --lora ignored ({want_cls} is not an SDXL pipeline)")
+        else:
+            scales = lora_scale or []
+            if len(scales) == 1:
+                scales = scales * len(lora)
+            elif scales and len(scales) != len(lora):
+                log(
+                    f"{key}: {len(scales)} --lora-scale for {len(lora)} --lora; "
+                    f"padding/truncating to match"
+                )
+            while len(scales) < len(lora):
+                scales.append(1.0)
+            names = []
+            for i, lp in enumerate(lora):
+                adapter = f"lora_{i}"
+                pipe.load_lora_weights(lp, adapter_name=adapter)
+                names.append(adapter)
+                log(f"{key}: loaded LoRA {adapter}={lp} scale={scales[i]}")
+            pipe.set_adapters(names, adapter_weights=scales[: len(names)])
+            pipe.fuse_lora(adapter_names=names, lora_scale=1.0)
+            pipe.unload_lora_weights()
+            log(f"{key}: fused {len(names)} LoRA(s) into base weights")
+
     if offload:
         pipe.enable_model_cpu_offload()
     else:
@@ -852,6 +883,8 @@ def main(argv: list[str] | None = None) -> int:
             guidance=args.guidance,
             seed=args.seed,
             out=args.out,
+            lora=args.lora,
+            lora_scale=args.lora_scale,
         )
     except Exception as exc:  # noqa: BLE001
         log(f"LOCAL generation failed: {type(exc).__name__}: {exc}")
