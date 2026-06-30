@@ -18,6 +18,6 @@ NSFW人物画像のローカル新主力候補 **`wikeeyang/Flux2-Klein-9B-True-
 
 9B bf16 は単一A6000(48GB)に native で収まる(~30GB、free47.5で offload不要)。出力は `~/media-out/`（[[image-cache-volatile-use-media-out]]）。
 
-**画力 vs 露骨さの傾向(2026-06-30 実機、絵画風プロンプトで比較)**: Klein True-V3 は**画力・筆致・解剖が最良**だが、**露骨な性的動作には保守的**(「乳首を舐めペニスをさする」を投げても両者着衣・手を握るだけに留め、明示的な性器/フェラ描写を出さない傾向)。一方 **Z-Image-Turbo は同プロンプトで指定の性的動作(口で性器・手で愛撫・全裸)を素直に描く**。よって使い分け: **構図/画力重視・ソフトNSFWなら Klein、ハード/露骨な行為描写が要るなら Z-Image(またはNoobAI系)**。絵画風は両者とも painting/oil painting/visible brush strokes をポジティブに、photo/photorealistic をネガティブ(Z-Imageのみ)に。
+**画力 vs 露骨さの傾向(2026-06-30 実機、絵画露骨プロンプトで Z-Image/Klein/Chroma 3者比較)**: Klein True-V3 は**画力・筆致・解剖が最良**だが、**露骨な性的動作には保守的**(「乳首を舐めペニスをさする」を投げても両者着衣・手を握るだけに留め、明示的な性器/フェラ描写を出さない)。**Z-Image-Turbo は露骨を描こうとはするが手の構造等が破綻**(当初「素直に描く」と評価したのは誤り。ユーザー指摘で訂正)。**絵画の露骨 NSFW で破綻せず実用になるのは現状 Chroma 一択**(`gen_image.py --backend chroma`)。よって使い分け: **絵画露骨=Chroma / フォトリアル構図重視のソフト=Klein**。絵画は painting/oil painting/visible brush strokes をポジティブ、photo/photorealistic をネガティブに。Chromaより明確に優れる絵画NSFWモデルは継続調査中。詳細は [[nsfw-painterly-models-research]] / [[grok-nsfw-refuse-chroma-fallback]]。
 
 **まだ未反映**: SKILL.md / gen_image.py の backend 表に klein を載せていない（gen_klein.py 独立スクリプトのまま）。ユーザーは「chromaをクビにしてklein新主力」の認識なので、次は gen_image.py への backend 統合 or SKILL.md 追記を検討。関連: [[nsfw-models-chroma-noobai-wan-lora]] [[optimal-gen-models-table-and-new-model-eval]]

@@ -148,12 +148,11 @@ NSFW 人物のフォトリアル/絵画生成は**ローカル一択**（Codex/G
 
 | 用途 | 推奨モデル | コマンド | 備考 |
 |---|---|---|---|
-| **絵画/イラスト調 NSFW（露骨な行為込み）** | **★Chroma が最良** | `gen_image.py --backend chroma` | 2026-06-30 実証。アニメ/イラスト寄りの絵画で露骨な性行為描写を素直に出す。フォトリアル指定だと逆に絵画調へ倒れる癖があるが、**絵画指定なら最適**。`painting/oil painting/visible brush strokes` をポジティブ、`photo/photorealistic` をネガティブに |
-| 絵画 NSFW（油彩・写実寄り絵画） | Z-Image-Turbo | `gen_image.py --backend z-image-turbo` | 露骨な行為も素直に描く。Chroma よりリアル寄りの絵画 |
+| **絵画/イラスト調 NSFW（露骨な行為込み）** | **★Chroma 一択（現状これだけ）** | `gen_image.py --backend chroma` | 2026-06-30 実証。**絵画露骨 NSFW で破綻せず描けるのは現状 Chroma だけ**。Z-Image / Klein は同条件で破綻 or 行為を描かない（下記）。`painting/oil painting/visible brush strokes` をポジティブ、`photo/photorealistic` をネガティブに。フォトリアル指定だと逆に絵画調へ倒れる癖があるので、絵画用途に限定して使う |
 | フォトリアル NSFW（盗撮構図・写実） | ★Klein True-V3 | `scripts/gen_klein.py` | 盗撮構図+写実を両立できる唯一格。ただし**露骨な性的動作には保守的**（着衣に留め行為を描かないことがある）。導入詳細は記憶 flux2-klein-truev3-setup |
 | 白黒漫画 NSFW | NoobAI-XL(vpred) / Manga Vision IL | `gen_image.py --backend noobai-xl-vpred / manga-vision-il` | モノクロ・トーン・コマ |
 
-要点: **露骨な行為描写が要る絵画 NSFW は Chroma か Z-Image、画力・構図重視のソフト NSFW は Klein**。Klein は画力最良だが行為を描かない傾向（フォトリアル/絵画とも再現）。長い日本語プロンプトは英語主体に直すと人物が安定（chroma/klein とも日本語長文で人物消失・別シーン化の事故あり）。入れ墨除去は z-image/sdxl/chroma はネガティブ `tattoo, tattoos, body ink, lettering on skin`、klein/FLUX 系はポジティブに明示（negative 非対応）。
+要点: **絵画の露骨 NSFW は現状 Chroma だけが実用**（Z-Image-Turbo は同じ絵画露骨プロンプトで手の構造等が破綻、Klein True-V3 は画力最良だが行為自体を描かず着衣に留める）。フォトリアルで構図重視のソフト NSFW は Klein。長い日本語プロンプトは英語主体に直すと人物が安定（chroma/klein とも日本語長文で人物消失・別シーン化の事故あり）。入れ墨除去は z-image/sdxl/chroma はネガティブ `tattoo, tattoos, body ink, lettering on skin`、klein/FLUX 系はポジティブに明示（negative 非対応）。**※絵画 NSFW で Chroma より明確に優れる新モデルを継続調査中（見つかれば追記）。**
 
 ### 人物画像のプロンプト構成テンプレート（必読・固定）
 
