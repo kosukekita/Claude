@@ -17,6 +17,8 @@
 #     "peft",
 #     "controlnet-aux",
 #     "Pillow",
+#     "matplotlib",
+#     "opencv-python-headless",
 # ]
 #
 # # Pin torch to the CUDA 12.1 build: this rig's NVIDIA driver is CUDA 12.2
