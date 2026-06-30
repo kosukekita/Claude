@@ -313,13 +313,38 @@ def main() -> int:
     ap.add_argument("--cn-scale", default=None,
                     help="comma list of conditioning scales matching --controlnet "
                          "(default 1.0 for pose, 0.6 for depth/canny).")
-    ap.add_argument("--strength", type=float, default=0.5,
-                    help="img2img denoise (0.35-0.55 keeps motion; higher = more restyle). Default 0.5.")
+    ap.add_argument("--openpose-include-face", action="store_true",
+                    help="include OpenPose face landmarks. Default off: tiny real-video face keypoints "
+                         "often fight anime face synthesis on Pony/SDXL.")
+    ap.add_argument("--strength", type=float, default=0.72,
+                    help="img2img denoise. 0.65-0.8 is safer for real->anime faces; "
+                         "0.35-0.55 keeps more source texture. Default 0.72.")
     ap.add_argument("--face-ref", default=None,
                     help="reference still of the character's FACE (locks identity via IP-Adapter "
                          "Plus-Face). Omit to skip face-lock.")
     ap.add_argument("--face-scale", type=float, default=0.7,
                     help="IP-Adapter scale 0.5-0.9 (higher = stronger identity). Default 0.7.")
+    ap.add_argument("--face-ref-crop", choices=["auto", "detect", "none"], default="auto",
+                    help="crop --face-ref to the detected face before feeding IP-Adapter. "
+                         "auto falls back to an upper-body crop if detection fails. Default auto.")
+    ap.add_argument("--face-ref-crop-pad", type=float, default=2.4,
+                    help="face-ref crop expansion multiplier around the detected face. Default 2.4.")
+    ap.add_argument("--min-face-px", type=int, default=96,
+                    help="avoid shrinking frames when a detected face would fall below this width. "
+                         "0 disables. Default 96.")
+    ap.add_argument("--no-face-safe-resize", action="store_true",
+                    help="do not override --max-side shrinking to preserve tiny detected faces.")
+    ap.add_argument("--face-refine", choices=["auto", "on", "off"], default="auto",
+                    help="ADetailer-like second img2img pass on the detected face crop. "
+                         "auto enables it for small faces. Default auto.")
+    ap.add_argument("--face-refine-size", type=int, default=512,
+                    help="square working size for face refinement, snapped to /8. Default 512.")
+    ap.add_argument("--face-refine-strength", type=float, default=0.5,
+                    help="denoise for face-only refinement. Default 0.5.")
+    ap.add_argument("--face-refine-steps", type=int, default=None,
+                    help="steps for face-only refinement (default: max(12, --steps//2)).")
+    ap.add_argument("--face-refine-pad", type=float, default=2.0,
+                    help="face crop expansion multiplier for face-only refinement. Default 2.0.")
     ap.add_argument("--blend-prev", type=float, default=0.25,
                     help="fraction of the PREVIOUS transformed frame blended into the next init "
                          "image (0-0.5; anti-flicker temporal carry). 0 = independent frames. Default 0.25.")
@@ -353,6 +378,9 @@ def main() -> int:
             "style_repo": args.style_repo or STYLE_MODELS[args.style_model]["repo"],
             "controlnets": [c for c in args.controlnet.split(",") if c],
             "face_lock": bool(args.face_ref),
+            "face_ref_crop": args.face_ref_crop,
+            "face_refine": args.face_refine,
+            "openpose_include_face": bool(args.openpose_include_face),
             "gpu": gpu,
             "offload": bool(args.offload),
             "strength": args.strength,
@@ -378,7 +406,7 @@ def main() -> int:
     # ---- imports (now that GPU is pinned and LD is clean) ----
     import numpy as np  # noqa: PLC0415
     import torch  # noqa: PLC0415
-    from PIL import Image, ImageOps  # noqa: PLC0415
+    from PIL import Image, ImageDraw, ImageFilter, ImageOps  # noqa: PLC0415
     from diffusers import (  # noqa: PLC0415
         AutoencoderKL,
         ControlNetModel,
