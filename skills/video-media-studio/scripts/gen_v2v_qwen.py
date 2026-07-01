@@ -143,9 +143,12 @@ def main() -> int:
     ap.add_argument("--in", dest="input", required=True, help="source video (real human)")
     ap.add_argument("--out", required=True, help="output mp4")
     ap.add_argument("--repo", default=DEFAULT_BASE, help=f"Qwen edit base. Default {DEFAULT_BASE}.")
-    ap.add_argument("--lora", default=DEFAULT_ANIME_LORA,
-                    help=f"anime LoRA. Default {DEFAULT_ANIME_LORA}. '' to disable.")
-    ap.add_argument("--lora-scale", type=float, default=1.0)
+    ap.add_argument("--lora", action="append", default=None,
+                    help=f"LoRA hf-id|path. Repeatable to stack (e.g. anime + NSFW). "
+                         f"Default (if none given) {DEFAULT_ANIME_LORA}. '' to disable all.")
+    ap.add_argument("--lora-scale", action="append", type=float, default=None,
+                    help="per-LoRA strength, matched to --lora order. "
+                         "If fewer than --lora, the last value fills the rest. Default 1.0.")
     ap.add_argument("--prompt", default=ANIME_TRIGGER,
                     help=f"edit instruction (every frame). Default the LoRA trigger '{ANIME_TRIGGER}'.")
     ap.add_argument("--negative-prompt", default=DEFAULT_NEG)
@@ -207,13 +210,23 @@ def main() -> int:
 
     log(f"loading {args.repo} (bf16); offload={args.offload}")
     pipe = QwenImageEditPlusPipeline.from_pretrained(args.repo, torch_dtype=torch.bfloat16)
-    if args.lora:
-        log(f"loading anime LoRA {args.lora} (scale={args.lora_scale})")
-        pipe.load_lora_weights(args.lora, adapter_name="anime")
+    # Resolve LoRA list: default to the anime LoRA if the user gave none; '' disables all.
+    lora_ids = args.lora if args.lora is not None else [DEFAULT_ANIME_LORA]
+    lora_ids = [x for x in lora_ids if x]  # drop '' entries (disable)
+    if lora_ids:
+        scales = args.lora_scale or []
+        # pad scales to match: last given value fills the rest, else 1.0
+        while len(scales) < len(lora_ids):
+            scales.append(scales[-1] if scales else 1.0)
+        names = [f"lora{i}" for i in range(len(lora_ids))]
+        for name, lid in zip(names, lora_ids):
+            log(f"loading LoRA {lid} as '{name}'")
+            pipe.load_lora_weights(lid, adapter_name=name)
         try:
-            pipe.set_adapters(["anime"], adapter_weights=[args.lora_scale])
+            pipe.set_adapters(names, adapter_weights=scales[:len(names)])
+            log(f"active LoRAs: {list(zip(lora_ids, scales[:len(names)]))}")
         except Exception as exc:  # noqa: BLE001
-            log(f"set_adapters failed ({exc}); LoRA at default weight")
+            log(f"set_adapters failed ({exc}); LoRAs at default weight")
     if args.offload == "model":
         pipe.enable_model_cpu_offload()
     elif args.offload == "sequential":
