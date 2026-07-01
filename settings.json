@@ -63,7 +63,10 @@
     ],
     "defaultMode": "auto"
   },
-  "model": "opus[1m]",
+  "model": "fable[1m]",
+  "fallbackModel": [
+    "opus[1m]"
+  ],
   "hooks": {
     "PreToolUse": [
       {
