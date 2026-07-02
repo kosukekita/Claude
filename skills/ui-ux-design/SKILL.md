@@ -1,6 +1,6 @@
 ---
 name: ui-ux-design
-description: "Web/mobile UI の設計・実装・レビュー・改善で使用する。ランディングページ、ダッシュボード、デザインシステム、レスポンシブUI、ボタン・モーダル・フォーム等のコンポーネント実装に対応し、視覚階層・余白・色・タイポグラフィ・状態設計・アクセシビリティを補助する。React/Next.js/Tailwind/Vue/Svelte/HTML および Nothing 系UI参照に対応。67スタイル、96カラーパレット、59フォントペアリング、95+デザインシステム参照、60コンポーネントパターン収録。Use when user requests UI/UX work: design, build, create, implement, review, fix, improve web/mobile interfaces or UI components. Trigger phrases: ランディングページ, ダッシュボード, UI設計, フロントエンド, React, Tailwind, デザインシステム, カラーパレット, レスポンシブ, website, landing page, portfolio, SaaS, e-commerce, コンポーネント, accordion, modal, datepicker, drawer, button, tabs, dialog, form, tooltip, card, table, widget, Nothing style, Nothing design, monochrome industrial, モノクロ, きれい, デザイン感度, LP, UI作成, Swiss design, International Typographic Style, グリッドシステム, grid system, editorial, magazine layout, 雑誌風, Vignelli, Müller-Brockmann, ミュラー・ブロックマン, wayfinding, サイン計画, グリッド検証, baseline grid. 横スクロール, 横はみ出し, overscroll, ゴムのように揺れる, iOS Safari, touch-action, モバイル横ずれ, スライダーが動かない. File types: .html, .tsx, .jsx, .vue, .svelte."
+description: "Web/mobile UI の設計・実装・レビュー・改善で使用する。ランディングページ、ダッシュボード、デザインシステム、レスポンシブUI、ボタン・モーダル・フォーム等のコンポーネント実装に対応し、視覚階層・余白・色・タイポグラフィ・状態設計・アクセシビリティを補助する。React/Next.js/Tailwind/Vue/Svelte/HTML および Nothing 系UI参照に対応。67スタイル、プロダクト別カラートークン、実用フォント選定、デザイントークン、UI意思決定データ、95+デザインシステム参照、60コンポーネントパターン収録。Use when user requests UI/UX work: design, build, create, implement, review, fix, improve web/mobile interfaces or UI components. Trigger phrases: ランディングページ, ダッシュボード, UI設計, フロントエンド, React, Tailwind, デザインシステム, カラーパレット, レスポンシブ, website, landing page, portfolio, SaaS, e-commerce, コンポーネント, accordion, modal, datepicker, drawer, button, tabs, dialog, form, tooltip, card, table, widget, Nothing style, Nothing design, monochrome industrial, モノクロ, きれい, デザイン感度, LP, UI作成, Swiss design, International Typographic Style, グリッドシステム, grid system, editorial, magazine layout, 雑誌風, Vignelli, Müller-Brockmann, ミュラー・ブロックマン, wayfinding, サイン計画, グリッド検証, baseline grid. 横スクロール, 横はみ出し, overscroll, ゴムのように揺れる, iOS Safari, touch-action, モバイル横ずれ, スライダーが動かない. File types: .html, .tsx, .jsx, .vue, .svelte."
 ---
 
 # UI/UX Design Intelligence
@@ -235,12 +235,18 @@ AVOID:       [anti-patterns for this project]
 
 - `references/styles-catalog.md` — 67スタイル完全一覧 + ダッシュボードスタイル
 - `references/color-typography.md` — カラーパレット + フォントペアリング20選 + チャート推奨
+- `references/product-color-palettes.md` — 具体的なプロダクト別カラートークン（SaaS、医療、金融、EC、モバイルアプリ等）
+- `references/advanced-style-specs.md` — Bauhaus、Monochrome、Modern Dark、Terminal、Neo Brutalism 等の実装向け詳細スタイル仕様
+- `references/google-fonts-selection.md` — Google Fonts / フォントペアリングの実用選定ガイド
+- `references/ui-decision-data.md` — LP構成、チャート選択、モーション、UX/a11y、React性能などの意思決定ルール
+- `references/design-tokens.md` — primitive → semantic → component の3層トークン設計とTailwind連携
 - `references/components.md` — 60コンポーネントパターン（セマンティックHTML、ARIA、キーボードナビ、複雑度）
 - `references/design-systems.md` — 95+プロダクションデザインシステム（スタック別索引、Best-in-Class一覧）
 - `references/nothing-design.md` — Nothing Design System 完全仕様（哲学、トークン、コンポーネント、プラットフォーム対応）
 - `references/swiss-modernism.md` — Swiss / International Typographic Style 完全仕様（Vignelli Canon の規律＋Müller-Brockmann のモジュラーグリッド。subgrid bands・baseline ロック・optical alignment・0px グリッド検証まで）
 - `references/vibe-coding.md` — AI UI生成のベストプラクティス（スケッチ優先、スクショ活用、ムードボード等）
 - `references/mobile-web-pitfalls.md` — モバイルWeb の横はみ出し / iOS Safari 横バウンス / タッチ操作奪取の切り分け手順と対処（visualViewport 実測、100vw・min-width:0、overflow:clip が fixed に効かない件、`touch-action: pan-y pinch-zoom`。a11y を壊さず横揺れを止める）
+- `references/third-party-notices.md` — 取り込み元MITライセンスの著作権・許諾表示
 
 ### SCRIPTS（`references/swiss-modernism.md` から使用）
 
