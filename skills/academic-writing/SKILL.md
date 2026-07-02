@@ -157,6 +157,7 @@ Results は結果を淡々と記述し、過大主張（over-claim）も過小�
 - パーセンテージ: 小数点以下1桁に統一
 - 略語: 初出時にフルスペル `sodium-glucose cotransporter 2 (SGLT2)`
 - **Abstract 内の略語ルール**: Abstract 内で **3回以上** 使用される略語のみ定義する。1-2回しか使わない略語はフルスペルのまま記載し、略語定義しない。Abstract は独立した文章であり、本文の略語定義とは別に判断する
+- **略語を定義なしで使う判断は自分でしない — 必ずユーザーに相談する**（最重要）: 「この略語は周知だから定義不要」という判断を **AI が独断で行ってはいけない**。周知度の感覚は分野・国・世代でズレる（例: RA=rheumatoid arthritis や JAK=Janus kinase は医療者には当然でも世間一般では通じない。AI や DNA のような真に世間一般の共通認識とは水準が違う）。**原則として全ての略語は初出でフルスペル定義する**。定義を省いて略語をそのまま使いたい候補が出たら、**省いてよいかをユーザーに確認してから決める**（勝手に「周知」と判定して省略しない）。Abstract の 1-2回ルールと組み合わせる: Abstract で1-2回なら略語を導入せずフルスペルのまま書く。判断に迷ったら定義する側に倒す（定義しすぎのコストより、未定義で読者が詰まるコストの方が大きい）。査読者が「専門外の読者」への配慮を求めている場合は特に厳守する。
 - **Figure Legends 内の略語ルール**: Figure Legends は本文とは独立したユニットであり、**略語は再定義が必要**。Legend テキスト内では本文と同じルール（2回まではフルスペル、3回以上で略語を使用）を適用する。**Figure 内に表示される略語**は、Legend の初出時から「略語（フルスペル）」で定義する。Legend テキストで説明されなかった Figure 内の略語は、Legend 末尾に `Abbreviations:` として一覧記載する
   - 例: `Figure 1. Changes in BMD from baseline to 12 months.` → 末尾に `Abbreviations: BMD, bone mineral density; BP, bisphosphonate; PTH, parathyroid hormone.`
 
@@ -462,6 +463,7 @@ Author 2: First Name: Kosuke | Last Name: Ebina
 - [ ] Abstract が構造化されている（Objective / Methods / Results / Conclusions）
 - [ ] 略語は全て初出時にフルスペルで定義
 - [ ] Abstract 内の略語は3回以上使用されるもののみ定義（1-2回はフルスペルのまま）
+- [ ] 「周知だから定義不要」は世間一般で共通認識の略語（AI/DNA/WHO 等）に限定した。特定専門領域内だけで通じる略語（JAK/SHAP/IPTW/CDAI 等）は世間一般で周知でない限り初出フルスペル定義した（分野内の当たり前を理由に省いていない）
 - [ ] Figure Legends 内の略語は本文とは独立して再定義されている（Figure 内の略語は Legend 末尾に Abbreviations として一覧記載）
 - [ ] 統計値に 95% CI と P 値が付記されている
 - [ ] 引用は具体的（曖昧な "Studies show" がない）。引用なき一般化がない
