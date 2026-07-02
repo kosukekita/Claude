@@ -1,4 +1,10 @@
-# Color Palettes, Typography & Charts
+# Color Selection Guidelines
+
+Color theory and role-based color selection only. For everything else, use the dedicated references:
+
+- **Font choice / typography pairings** → `google-fonts-selection.md`
+- **Chart / data-visualization choice** → `chart-selection.md` (comprehensive) or `ui-decision-data.md` (Chart Choice quick rules)
+- **Concrete color token values (hex) by product type** → `product-color-palettes.md`
 
 ---
 
@@ -11,65 +17,23 @@
 4. **Background**: 主要背景色
 5. **Text**: 本文テキスト色（背景とのコントラスト比 4.5:1 以上）
 
-### 業界別カラームード
-- **SaaS/Tech**: `#2563EB`(Blue) / `#7C3AED`(Violet) / Dark backgrounds
-- **Healthcare**: `#059669`(Green) / `#0284C7`(Calm Blue) / Light, clean
-- **Fintech**: `#1E293B`(Navy) / `#10B981`(Green profit) / `#EF4444`(Red loss)
-- **E-commerce**: Brand-specific + `#F97316`(Orange CTA) or `#EF4444`(Red CTA)
-- **Wellness**: `#E8B4B8`(Soft Pink) / `#A8D5BA`(Sage) / `#D4AF37`(Gold)
-- **Education**: `#F59E0B`(Warm Yellow) / `#8B5CF6`(Purple) / Bright, friendly
-- **Gaming**: `#00F0FF`(Cyan) / `#FF00FF`(Magenta) / Dark backgrounds
-- **Nothing / Technical**: Monochrome grayscale (`#000`→`#111`→`#1A1A1A`→`#222`→`#333`→`#666`→`#999`→`#E8E8E8`→`#FFF`), `#D71921`(accent red), `#4A9E5C`(success), `#D4A843`(warning)
+### 業界別カラームード（色の方向性）
+
+具体的なトークン値（hex）は `product-color-palettes.md` を参照。ここでは色の方向性を言語で示すのみ。
+
+- **SaaS/Tech**: 信頼感のあるブルー系を primary に、補色にバイオレット。ダーク背景も選択肢。
+- **Healthcare**: 落ち着いたグリーンと穏やかなブルー。明るくクリーンな背景。
+- **Fintech**: 権威あるネイビーを基調に、利益=グリーン / 損失=レッドで状態を明示。
+- **E-commerce**: ブランド固有色 + 目立つ CTA（オレンジまたはレッド）。
+- **Wellness**: 柔らかいピンク、セージグリーン、ゴールドの上品な組み合わせ。ネオンは避ける。
+- **Education**: 温かみのあるイエローとパープル。明るくフレンドリーな配色。
+- **Gaming**: シアンとマゼンタなど高彩度のネオン。ダーク背景で映えさせる。
+- **Nothing / Technical**: モノクロのグレースケール階調を主体に、アクセントとして最小限のレッド、状態色にグリーン（success）とアンバー（warning）。
 
 ---
 
-## TYPOGRAPHY PAIRINGS (Top 22)
+## 参照先まとめ
 
-| Heading | Body | Mood | Best For |
-|---------|------|------|----------|
-| Inter | Inter | Clean, neutral | SaaS, dashboards, tech |
-| Playfair Display | Source Sans Pro | Elegant, editorial | Luxury, editorial, blogs |
-| Space Grotesk | DM Sans | Modern, geometric | Startups, tech, portfolios |
-| Cormorant Garamond | Montserrat | Sophisticated, luxury | Wellness, beauty, premium |
-| Sora | Inter | Friendly, modern | Apps, SaaS, education |
-| Poppins | Open Sans | Friendly, clean | E-commerce, marketing |
-| Clash Display | Satoshi | Bold, contemporary | Agencies, portfolios |
-| DM Serif Display | DM Sans | Classic meets modern | Editorial, brands |
-| Bricolage Grotesque | Geist | Unique, tech-forward | AI products, dev tools |
-| Manrope | Geist | Geometric, minimal | Dashboards, fintech |
-| Fraunces | Work Sans | Expressive, warm | Non-profit, artisan |
-| Cabinet Grotesk | General Sans | Sharp, professional | B2B, enterprise |
-| Plus Jakarta Sans | Plus Jakarta Sans | Balanced, versatile | All-purpose |
-| Outfit | Outfit | Clean, modern | SaaS, mobile apps |
-| Urbanist | Urbanist | Sleek, geometric | Fintech, real estate |
-| Lora | Merriweather | Readable, traditional | Blogs, long-form reading |
-| Archivo | Inter | Strong, no-nonsense | News, data-heavy sites |
-| Quicksand | Nunito | Soft, rounded | Education, kids, wellness |
-| JetBrains Mono | Inter | Technical, precise | Developer tools, code |
-| Bebas Neue | Open Sans | Impact, display | Landing pages, headlines |
-| Doto | Space Grotesk | Monochrome, industrial, mechanical | Developer tools, hardware apps, Nothing style |
-| Space Grotesk | Space Mono | Technical, precise, Swiss | Data-heavy UIs, technical products, Nothing style |
-
----
-
-## CHART RECOMMENDATIONS (for Dashboards)
-
-| Chart Type | Best For |
-|-----------|---------|
-| Line Chart | Trends over time |
-| Bar Chart | Category comparison |
-| Pie / Donut | Part-of-whole (≤6 segments) |
-| Area Chart | Volume over time |
-| Scatter Plot | Correlation |
-| Heatmap | Density / patterns |
-| Treemap | Hierarchical data |
-| Gauge | Single KPI |
-| Funnel | Conversion flow |
-| Candlestick | Financial OHLC data |
-| Sankey | Flow / distribution |
-| Radar | Multi-variable comparison |
-| Waterfall | Cumulative effect |
-| Bubble | 3-variable comparison |
-| Box Plot | Statistical distribution |
-
-**Libraries**: Recharts (React), Chart.js, D3.js, Apache ECharts, Plotly
+- タイポグラフィのペアリング表・フォント選定ルールは `google-fonts-selection.md` に一本化。
+- チャート種別の選定は `chart-selection.md`（詳細）/ `ui-decision-data.md`（クイック）に一本化。
+- 各プロダクト種別ごとの hex トークンは `product-color-palettes.md` に一本化。

@@ -1,6 +1,6 @@
 ---
 name: ui-ux-design
-description: "Web/mobile UI の設計・実装・レビュー・改善で使用する。ランディングページ、ダッシュボード、デザインシステム、レスポンシブUI、ボタン・モーダル・フォーム等のコンポーネント実装に対応し、視覚階層・余白・色・タイポグラフィ・状態設計・アクセシビリティを補助する。React/Next.js/Tailwind/Vue/Svelte/HTML および Nothing 系UI参照に対応。67スタイル、プロダクト別カラートークン、実用フォント選定、デザイントークン、UI意思決定データ、95+デザインシステム参照、60コンポーネントパターン収録。Use when user requests UI/UX work: design, build, create, implement, review, fix, improve web/mobile interfaces or UI components. Trigger phrases: ランディングページ, ダッシュボード, UI設計, フロントエンド, React, Tailwind, デザインシステム, カラーパレット, レスポンシブ, website, landing page, portfolio, SaaS, e-commerce, コンポーネント, accordion, modal, datepicker, drawer, button, tabs, dialog, form, tooltip, card, table, widget, Nothing style, Nothing design, monochrome industrial, モノクロ, きれい, デザイン感度, LP, UI作成, Swiss design, International Typographic Style, グリッドシステム, grid system, editorial, magazine layout, 雑誌風, Vignelli, Müller-Brockmann, ミュラー・ブロックマン, wayfinding, サイン計画, グリッド検証, baseline grid. 横スクロール, 横はみ出し, overscroll, ゴムのように揺れる, iOS Safari, touch-action, モバイル横ずれ, スライダーが動かない. File types: .html, .tsx, .jsx, .vue, .svelte."
+description: "Web/mobile UI の設計・実装・レビュー・改善で使用する。ランディングページ、ダッシュボード、デザインシステム、レスポンシブUI、ボタン・モーダル・フォーム等のコンポーネント実装に対応し、視覚階層・余白・色・タイポグラフィ・状態設計・アクセシビリティを補助する。React/Next.js/Tailwind/Vue/Svelte/HTML および Nothing 系UI参照に対応。68スタイル(50 UI+8 LP+10 DB)、プロダクト別カラートークン、実用フォント選定、デザイントークン、UI意思決定データ、95+デザインシステム参照、60コンポーネントパターン収録。Use when user requests UI/UX work: design, build, create, implement, review, fix, improve web/mobile interfaces or UI components. Trigger phrases: ランディングページ, ダッシュボード, UI設計, フロントエンド, React, Tailwind, デザインシステム, カラーパレット, レスポンシブ, website, landing page, portfolio, SaaS, e-commerce, コンポーネント, accordion, modal, datepicker, drawer, button, tabs, dialog, form, tooltip, card, table, widget, Nothing style, Nothing design, monochrome industrial, モノクロ, きれい, デザイン感度, LP, UI作成, Swiss design, International Typographic Style, グリッドシステム, grid system, editorial, magazine layout, 雑誌風, Vignelli, Müller-Brockmann, ミュラー・ブロックマン, wayfinding, サイン計画, グリッド検証, baseline grid. 横スクロール, 横はみ出し, overscroll, ゴムのように揺れる, iOS Safari, touch-action, モバイル横ずれ, スライダーが動かない. File types: .html, .tsx, .jsx, .vue, .svelte."
 ---
 
 # UI/UX Design Intelligence
@@ -59,9 +59,9 @@ description: "Web/mobile UI の設計・実装・レビュー・改善で使用�
 新規設計時のみ以下の5要素を決定して提示：
 
 1. **Pattern** — ランディングページ構造 / レイアウトパターン
-2. **Style** — UIスタイル（67種から選択。詳細は `references/styles-catalog.md`）
-3. **Colors** — カラーパレット（詳細は `references/color-typography.md`）
-4. **Typography** — フォントペアリング（詳細は `references/color-typography.md`）
+2. **Style** — UIスタイル（68スタイル(50 UI+8 LP+10 DB)から選択。詳細は `references/styles-catalog.md`）
+3. **Colors** — カラー選定（色理論は `references/color-typography.md`、hex トークンは `references/product-color-palettes.md`）
+4. **Typography** — フォントペアリング（詳細は `references/google-fonts-selection.md`）
 5. **Key Effects** — アニメーション・インタラクション
 
 > **Nothing Style 選択時**（RULE PRECEDENCE 3 が適用）：`references/nothing-design.md` の完全なトークン・コンポーネント仕様に従う。通常の Colors/Typography 選択をスキップし、Nothing トークンシステムをそのまま適用する。
@@ -233,12 +233,17 @@ AVOID:       [anti-patterns for this project]
 
 ## REFERENCES
 
-- `references/styles-catalog.md` — 67スタイル完全一覧 + ダッシュボードスタイル
-- `references/color-typography.md` — カラーパレット + フォントペアリング20選 + チャート推奨
+- `references/styles-catalog.md` — 68スタイル完全一覧（50 UI + 8 LP + 10 DB）
+- `references/color-typography.md` — カラー選定理論のみ（色理論・役割・業界別の色の方向性）。フォントは google-fonts-selection.md、チャートは chart-selection.md、hex トークンは product-color-palettes.md を参照
 - `references/product-color-palettes.md` — 具体的なプロダクト別カラートークン（SaaS、医療、金融、EC、モバイルアプリ等）
 - `references/advanced-style-specs.md` — Bauhaus、Monochrome、Modern Dark、Terminal、Neo Brutalism 等の実装向け詳細スタイル仕様
 - `references/google-fonts-selection.md` — Google Fonts / フォントペアリングの実用選定ガイド
 - `references/ui-decision-data.md` — LP構成、チャート選択、モーション、UX/a11y、React性能などの意思決定ルール
+- `references/ui-reasoning-rules.md` — UIカテゴリ別の推論バンドル（推奨パターン・スタイル優先度・色/フォントのムード・key effects・機械可読な Decision_Rules JSON・アンチパターン）
+- `references/icon-import-map.md` — アイコンの正確な import 文と JSX（Phosphor 既定、Heroicons フォールバック、スタイル別オーバーライド）
+- `references/motion-gsap.md` — GSAP アニメーション実装パターン（Subtle/Standard/Complex の3段階、snippet・trigger・easing・性能注意）
+- `references/chart-selection.md` — データ形状別のチャート選定（SVG/Canvas 閾値、hex 指針、推奨ライブラリ、a11y グレードとフォールバック）
+- `references/code-patterns.md` — UI/UX・React/Next.js の Good vs Bad コードパターン（逐語 snippet、Do/Don't、severity）
 - `references/design-tokens.md` — primitive → semantic → component の3層トークン設計とTailwind連携
 - `references/components.md` — 60コンポーネントパターン（セマンティックHTML、ARIA、キーボードナビ、複雑度）
 - `references/design-systems.md` — 95+プロダクションデザインシステム（スタック別索引、Best-in-Class一覧）

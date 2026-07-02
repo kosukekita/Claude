@@ -7,7 +7,7 @@ This skill incorporates summarized and adapted material from external MIT-licens
 - Source: `ui-ux-pro-max-skill`
 - Copyright: Copyright (c) 2024 Next Level Builder
 - License: MIT License
-- Imported scope: summarized design/style/color/font/UI decision references from the local source repository at `/tmp/claude-1002/.../scratchpad/ui-ux-pro-max/`.
+- Imported scope: summarized design/style/color/font/UI decision references from the local source repository (session-local source; upstream: github.com/nextlevelbuilder/ui-ux-pro-max-skill).
 
 MIT permission notice:
 
@@ -21,6 +21,14 @@ furnished to do so, subject to the following conditions:
 
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 ```
 
 ## Excluded Assets

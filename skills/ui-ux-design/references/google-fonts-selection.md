@@ -65,11 +65,26 @@ Use this file when choosing fonts for a UI. It compresses the Google Fonts metad
 | Archivo + Inter | Sans + Sans | News, data-heavy publishing |
 | JetBrains Mono + Inter | Mono + Sans | Developer tools |
 | Doto + Space Grotesk | Display + Sans | Nothing/industrial style |
+| Space Grotesk + Space Mono | Display Sans + Mono | Data-heavy/technical UIs, Swiss, Nothing style |
 | EB Garamond + Crimson Text | Serif + Serif | Academic/archival |
 | Syncopate + Space Mono | Display + Mono | Kinetic/futuristic |
 | Orbitron + JetBrains Mono | Tech Display + Mono | Cyberpunk/HUD |
 | Nunito + DM Sans | Rounded Display + Sans | Claymorphism, children/education |
+| Quicksand + Nunito | Rounded + Rounded | Education, kids, wellness (soft) |
+| Poppins + Open Sans | Geometric Sans + Sans | E-commerce, marketing, friendly |
+| Manrope + Geist | Sans + Sans | Fintech, dashboards, geometric minimal |
+| Urbanist + Urbanist | Sans + Sans | Fintech, real estate (sleek geometric) |
+| Lora + Merriweather | Serif + Serif | Blogs, long-form reading (traditional) |
 | Kalam + Patrick Hand | Handwritten + Handwritten | Sketch/journaling, not dense UI |
+
+## Non-Google Font Pairings
+
+These pairings appeared in the legacy typography table but use fonts distributed **outside Google Fonts** (Fontshare / self-host). Included for completeness; verify licensing and self-host if used.
+
+| Pairing | Category | Best For | Source |
+|---|---|---|---|
+| Clash Display + Satoshi | Display + Sans | Agencies, portfolios (bold, contemporary) | Fontshare (not Google Fonts) |
+| Cabinet Grotesk + General Sans | Sans + Sans | B2B, enterprise (sharp, professional) | Fontshare (not Google Fonts) |
 
 ## Avoid
 
