@@ -455,6 +455,18 @@ Author 2: First Name: Kosuke | Last Name: Ebina
   - 「結果」と「定義/凡例」の線引き: **判定ラベル**（significant / present / no modifier 等、実データへの評価）は本文へ。**判定規則そのものの定義**（"HTE was classified as present when both AUTOC and Cochran's Q met P<0.05" のように、何をもってそのカテゴリとするかの機械的ルール）は脚注に置いてよい。✓ 等の記号は「statistically significant」と書かず "95% CI lower bound exceeded 0" のような機械的条件で定義する。
 - **収載基準と表内容の整合**: 「有意な変数のみ掲載」と脚注に書くなら、非該当アウトカムに min P 値の行を載せている等の矛盾を残さない。「該当が無い場合は最小 P 値を示す」まで脚注で明示して整合させる。
 
+## 査読対応（Point-by-Point Response）の姿勢
+
+査読コメントへの回答（rebuttal / point-by-point response）を書くときの基本規律。
+
+- **査読者がわざわざ書いた提案には、たとえ弱い言い回し（"consider …", "the authors may wish to …", "it would be helpful to …"）でも、Response で必ず言及する**（最重要）。`should consider adding X` は文法上は「Xの追加を検討せよ」という任意提案で、`must add`/`should add` より弱く著者に裁量を残す。しかし**査読者が明示的に挙げた具体策を Response で黙って無視すると、「見落とした」「都合よく無視した」と読まれ心証を損なう**。採用しないなら「拒否」ではなく「**検討したうえで、別の方法で同じ懸念に対応した**（あるいは、望まれれば対応する用意がある）」と1文で位置づける。「常識」として、言及されたポイントは残らず拾う。
+- **1つのコメントに複数の要求が並列されていたら、その全部に触れる**（例: "consider adding a table, reducing X, and ensuring Y" は table/reducing/ensuring の3点すべてに応答する。1つでも黙って落とさない）。文法上 `consider` が全項目にかかっていても、実務上は各項目が独立の要求として扱われうるので、項目ごとに対応状況を述べる。
+- **正面から答える**: 各コメントに対し「求められた変更をした（どこを・どう変えたか）／しない場合はその理由」を明示する。無視・部分回答・論点ずらしをしない。
+- **反論しない・防御的にならない**: 査読者の指摘が妥当なら素直に認めて直す（"We agree …", "The Reviewer is correct …"）。dismissive/defensive なトーンは避ける。指摘が事実誤認でも、攻撃せず丁寧に事実を示す。
+- **本文を触ったら Response の引用と実ファイルを一致させる**: Response に「the revised text now reads: "…"」と引用したら、その文字列が実際の manuscript/supplement に**verbatim で存在する**こと（末尾の参照番号を落とす程度の整形は可、内容は一致）。提出前に Response の全引用を実ファイルと照合する。
+- **プロジェクト固有ルールがあれば優先**: n数を Response に書かない／他査読者に言及しない／本文変更の記載は簡潔に、等はプロジェクトごとに指示され得る。ユーザーの既存ルールを確認して従う。
+- **本文の変更はユーザー承認を得てから**。Response に「本文を〜修正した」と書く前に、実際にその修正を（承認のうえで）入れる。
+
 ---
 
 ## 投稿前チェックリスト
