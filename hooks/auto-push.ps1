@@ -17,6 +17,20 @@ try {
     $remote = git remote 2>&1
     if (-not $remote) { exit 0 }
 
+    # Never commit onto a detached HEAD: the commit would attach to no branch,
+    # the push would publish nothing, and it would float forever while origin/main
+    # stalls (the exact divergence trap auto-pull also guards). Reattach to main,
+    # fast-forwarding main up to the detached commit only when main is an ANCESTOR
+    # of HEAD (so no main-only history is discarded); otherwise check out main and
+    # leave the detached commits safe in the reflog.
+    $branch = (git rev-parse --abbrev-ref HEAD 2>&1)
+    if ($branch -eq "HEAD") {
+        $detached = (git rev-parse HEAD 2>&1)
+        git merge-base --is-ancestor main HEAD 2>$null
+        if ($LASTEXITCODE -eq 0) { git branch --force main $detached 2>$null }
+        git checkout main 2>$null
+    }
+
     # Stage changed files (shared config/docs/skills/hooks + memory stores).
     # git add also stages new (untracked) files. Memory stores live at
     # projects/<slug>--claude/memory and are un-ignored by .gitignore; the slug
@@ -26,7 +40,7 @@ try {
     $memTargets = @(Get-ChildItem "projects" -Directory -ErrorAction SilentlyContinue |
         Where-Object { $_.Name -match '^[cC]--Users-.+--claude$' } |
         ForEach-Object { "projects/$($_.Name)/memory" })
-    $addTargets = @(".gitignore", ".mcp.json", "CLAUDE.md", "settings.json", "skills/", "hooks/", "agents/") + $memTargets
+    $addTargets = @(".gitignore", ".mcp.json", "CLAUDE.md", "settings.json", "skills/", "hooks/", "agents/", "bin/") + $memTargets
     foreach ($t in $addTargets) {
         if (Test-Path $t) { git add $t 2>$null }
     }

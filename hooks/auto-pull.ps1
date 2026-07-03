@@ -17,6 +17,22 @@ try {
     $remote = git remote 2>&1
     if (-not $remote) { exit 0 }
 
+    # Recover from a detached HEAD. A detached HEAD (from an interrupted rebase,
+    # a manual checkout of a commit, etc.) is the divergence trap: auto-push then
+    # commits onto no branch, the push has nothing to publish, and the commit
+    # floats forever while origin/main silently stalls. Reattach to main before
+    # doing anything. Only fast-forward main up to the detached commit when main
+    # is an ANCESTOR of it (so the detached commits sit on top of main and no
+    # main-only history is discarded); otherwise just check out main and let the
+    # rebase below reconcile, leaving the detached commits safe in the reflog.
+    $branch = (git rev-parse --abbrev-ref HEAD 2>&1)
+    if ($branch -eq "HEAD") {
+        $detached = (git rev-parse HEAD 2>&1)
+        git merge-base --is-ancestor main HEAD 2>$null
+        if ($LASTEXITCODE -eq 0) { git branch --force main $detached 2>$null }
+        git checkout main 2>$null
+    }
+
     # Stash dirty TRACKED files before rebasing. We must exclude untracked
     # files: 'git stash push' does not stash untracked by default, so an
     # untracked-only dirty state (e.g. chrome/ or paste-cache/) would set
