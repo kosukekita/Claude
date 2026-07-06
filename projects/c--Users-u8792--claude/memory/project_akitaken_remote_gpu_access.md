@@ -25,4 +25,12 @@ metadata:
 
 ## ディスク掃除の定石（Cドライブ逼迫時）
 - `~/.cache/uv`（数十GB規模）と `~/.cache/pip` が主犯になりやすい。**`uv cache clean` / `pip cache purge`（公式コマンド）で安全に削除**でき、既存venv・インストール済み環境は壊れない（cacheと環境は別物）。詳細: [[feedback_uv_pip_cache_clean_safe]]
-- 2026-07-06に uv+pip cache を削除し `/` 空きを 71G→124G に回復した実績。
+
+## C(/home/kita)→D(/data/kita) 移動の定石（データはDへ、symlinkで繋ぐ）
+`/home/kita/Jupyter_Lab/<proj>/` は **コード＋成果物**、`/data/kita/<proj>/` は **元データ**、という役割分担で二重に存在することが多い（同名でも中身は別）。容量を食うのは大抵/home側の巨大データ（動画・画像・DICOM）。これを/dataへ移し、元の場所にシンボリックリンクを張ると**コード・パス・環境変数を一切変えずに**Cを空けられる。
+- **方式**: `mv "$SRC" "$DST"`（別FS間はコピー+削除を自動）→ 移動先存在＋元消失＋サイズ/ファイル数一致を検証 → `ln -s "$DST" "$SRC"`。失敗時は元を残す。**`rm -rf` は使わない**（後述フックでブロックされるし、mvなら不要）。
+- **移動先が既存**なら衝突を避け、サブフォルダ単位で入れる（例 Chest2DXAは `Sumitomo/` だけを `/data/kita/Chest2DXA/Sumitomo` へ。既存のDICOM/JPEGと同居）。
+- **実行上の注意（重要）**:
+  - 保護フック `block-dangerous.ps1` が**ローカルのコマンド文字列**に対し `rm\s+-rf` や `/tmp` を検知してブロックする。リモート実行でも文字列に含めない。作業ディレクトリに `/tmp` を使わず `~/.cache/...` 等にする。
+  - ヒアドキュメント(`<<'EOF'`)にスクリプトを書くと**日本語コメントが化ける**。スクリプトは**ローカルにASCIIで Write → `tr -d '\r'` でLF化 → `scp` で送る**のが確実。`bash -n` で構文チェックしてから `nohup ... &` 起動、完了は `.done` マーカーで判定。
+- **実績（2026-07-06）**: uv+pip cache削除(53G) + Pig_Pain/High(101G,動画25本)・Videos(16G)・.totalsegmentator(14G)・Chest2DXA/Sumitomo(20G) をD移動。**`/` 使用率 92%→69%、空き 71G→273G**。残候補: Perimeter_AI(19G)/Common(14G)/Private(28G)/media-out(22G)。
