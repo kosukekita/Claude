@@ -25,10 +25,13 @@ import path from "node:path";
 
 const KEY_PATH = path.join(os.homedir(), ".config", "openrouter.key");
 const API = "https://openrouter.ai/api/v1";
-// 既定は非reasoningの claude-sonnet-5(max-tokens 内で必ず content を返す)。
-// gpt-5.5-pro / o3-pro 等の reasoning モデルは max-tokens が小さいと推論トークンで消費され
-// content が空になるため、それらを使うときは --max-tokens を大きく(8000+)する。
-const DEFAULT_MODEL = "anthropic/claude-sonnet-5";
+// 🔑 既定は openai/gpt-5.5(Codex=OpenAI系の代替、= "Claude 以外の独立視点")。
+//   ※Claude 系の知見でよいなら OpenRouter を使わず Claude Code 自身(このセッション)が答える
+//     こと。OpenRouter で anthropic/claude-* を呼ぶのは Claude 契約と OpenRouter の二重課金で無駄。
+//     OpenRouter フォールバックは「Codex/Grok がレート制限 かつ Claude 以外の視点が要る」ときだけ。
+//   gpt-5.5(proでない)は少トークンで content を返し空応答が起きにくい。pro/o3-pro 等の重い
+//   reasoning モデルは max-tokens を大きく(12000+)しないと content が空になる。
+const DEFAULT_MODEL = "openai/gpt-5.5";
 
 function readKey() {
   try {

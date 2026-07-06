@@ -107,23 +107,26 @@ owner: ○○            # 任意（担当・部門）
 
 ## 外部AI相談のフォールバック（Codex/Grok がレート制限・障害で使えないとき）
 
-Codex（`codex:rescue` / `codex-consult`）や Grok CLI がレート制限・障害で使えないときは、**OpenRouter 経由で代替モデルに相談を続ける**。専用ラッパー `~/.claude/bin/or-consult.mjs`（Node、CLI 非依存で OpenRouter API を直接叩く）を使う。
+🔴 **大前提（無駄な二重課金を避ける）**: **Claude 系の知見でよい相談は、OpenRouter を使わず Claude Code 自身（＝いま動いているこのセッション）が答える。** OpenRouter で `anthropic/claude-*` を呼ぶのは Claude 契約と OpenRouter API の**二重課金で無駄**。OpenRouter フォールバックが価値を持つのは「**Codex/Grok がレート制限・障害 かつ、Claude とは違う独立視点（OpenAI系/Grok/Gemini）が欲しい**」ときだけ。単に「別AIに聞きたい」だけなら、まず自分（Claude）が答えられないか考える。
+
+その条件を満たすときは、専用ラッパー `~/.claude/bin/or-consult.mjs`（Node、CLI 非依存で OpenRouter API を直接叩く）で Claude 以外のモデルに相談する。
 
 ```bash
-# 基本（既定モデル=anthropic/claude-sonnet-5, 非reasoningで確実に content が返る）
+# 基本（既定モデル=openai/gpt-5.5 = Codex(OpenAI系)の代替、空応答が起きにくい）
 node ~/.claude/bin/or-consult.mjs "<相談プロンプト>"
 # 長文は stdin で
-echo "<長いプロンプト>" | node ~/.claude/bin/or-consult.mjs --stdin
-# reasoningモデル(gpt-5.5-pro/o3-pro)は max-tokens を大きく（さもないと content が空になる）
-node ~/.claude/bin/or-consult.mjs "<プロンプト>" --model openai/gpt-5.5-pro --max-tokens 12000
+echo "<長いプロンプト>" | node ~/.claude/bin/or-consult.mjs --stdin --model x-ai/grok-4.3
+# 重いreasoningモデル(gpt-5.5-pro/o3-pro)は max-tokens を大きく（さもないと content が空になる）
+node ~/.claude/bin/or-consult.mjs "<プロンプト>" --model openai/o3-pro --max-tokens 12000
 node ~/.claude/bin/or-consult.mjs --list   # 主要な利用可能モデル
 ```
 
 - APIキー=`~/.config/openrouter.key`（chmod 600）。ラッパーが読む。**キーの中身は表示しない**。
-- 既定モデル=`anthropic/claude-sonnet-5`（非reasoning、max-tokens 内で必ず content を返す）。既定 `--max-tokens 4000`。
-- ⚠️ **reasoning モデル（gpt-5.5-pro / o3-pro 等）は max-tokens が小さいと推論トークンで消費され content が空（tokens は消費される）になる**。使うなら `--max-tokens 12000` 以上に。空応答が返ったらまず max-tokens を上げるか、既定の sonnet-5 に戻す。
+- 既定モデル=`openai/gpt-5.5`（Codex=OpenAI系の代替、非重reasoningで content が返りやすい）。既定 `--max-tokens 4000`。
+- **OpenRouter で Claude 系（anthropic/claude-*）は指定しない**（自分で答えれば無料なので）。使うのは gpt / grok / gemini / o3 等の Claude 以外。
+- ⚠️ **重い reasoning モデル（gpt-5.5-pro / o3-pro 等）は max-tokens が小さいと推論トークンで消費され content が空（tokens は消費される）になる**。使うなら `--max-tokens 12000` 以上に。空応答が返ったら max-tokens を上げる。
 - OpenRouter は**従量課金**（残高不足は HTTP 402 → max-tokens を下げるか残高追加）。医学研究データそのものを外部送信する相談は、Codex と同じく PII を含めない前提で使う（大腿骨 FE 等は PII なしで可）。
-- 代替モデル目安: 汎用/既定=`anthropic/claude-sonnet-5`、Codex(OpenAI系)の代替=`openai/gpt-5.5-pro`/`openai/o3-pro`(要 max-tokens 大)、Grok=`x-ai/grok-4.3`、Gemini=`google/gemini-2.5-pro`。
+- 代替モデル目安: Codex(OpenAI系)の代替=`openai/gpt-5.5`/`openai/o3-pro`(重、要 max-tokens 大)、Grok=`x-ai/grok-4.3`、Gemini=`google/gemini-2.5-pro`。
 - これは**手動フォールバック**（Claude が判断して使う）。`codex:rescue` の自動切替は未実装。Codex が「使用制限に達した」等を返したら、このツールに切り替えて相談を継続する。
 
 ## ツールコール漏洩バグへの対処
