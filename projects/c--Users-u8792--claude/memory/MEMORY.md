@@ -4,6 +4,9 @@
 - [project_skill_consolidation.md](project_skill_consolidation.md) — ~/.claude/skills統合履歴（〜2026-06-14）。achievement+career→cv-profile、Swiss-modernism→ui-ux-design、writing-skills→skill-writingリネーム。方針: 重複は同一ツールのみマージ、別レイヤー/依存関係（例 subagent-driven⊃TDD）は統合せず「依存契約の明示＋RED/GREEN実測」で締める、descriptionにworkflow要約を書かない
 - [project_matt_pocock_skills_import.md](project_matt_pocock_skills_import.md) — mattpocock/skills 全19本を精査しcaveman/diagnose/handoffの3本を移植（2026-06-15）。日本語化＋Win/Linux両対応、HITLはbash+ps1両版。残り16本は既存重複orスタック不一致で見送り。判断軸=真のギャップ/環境整合/スタック一致
 - [project_totalsegmentator_license.md](project_totalsegmentator_license.md) — TotalSegmentatorアカデミックライセンス取得済＋全15ライセンスタスクのモデルDL。ローカルはGPU無しで中断（5/15完了）、リモートGPU PCで再開予定。番号はconfig.jsonに平文・メモリ非保存
+- [project_akitaken_remote_gpu_access.md](project_akitaken_remote_gpu_access.md) — リモートGPU機akitaken(Ubuntu24.04,user=kita)への接続と環境。Tailscale+SSH鍵認証確立済、RTX A6000×2、/dataに8.8T空き(書けるのは/data/kita)、rcloneは~/.local/bin。sudoはパス必須。Cドライブ逼迫時はuv/pip cache削除で回復
+- [project_pcloud_rclone_ct_uzumasa.md](project_pcloud_rclone_ct_uzumasa.md) — pCloud認証(ヘッドレスはWindowsでrclone authorize→トークンをLinux rclone.confへstdin受け渡し、US=api.pcloud.com)とUzumasa頸部CT配置。pcloud:Data/NAIST/Uzumasa/CT/{CT_mhd2:110例,CT_mhd:85例}=195例81GB。DL先/data/kita/Uzumasa_CT
+- [feedback_uv_pip_cache_clean_safe.md](feedback_uv_pip_cache_clean_safe.md) — uv/pipのcache削除は既存環境を壊さない(cacheと環境は別物)。`uv cache clean`/`pip cache purge`公式コマンド使用。ディスク逼迫の第一手。akitakenで71G→124G回復
 
 - [project_tooluniverse_mcp_wsl_fix.md](project_tooluniverse_mcp_wsl_fix.md) — tooluniverse-osteo MCP起動失敗。081a23bはメッセージと実体が食い違い未修正→Nodeランチャーがvenvバイナリを直接spawn(bash/.sh完全排除)で恒久修正。commit 53e5674
 - [project_remote_control_default.md](project_remote_control_default.md) — Remote Control起動時デフォルト有効化。公式永続キー無し→PowerShell profileで `function claude {claude.cmd --remote-control @args}`。脱出口claude-plain
