@@ -18,4 +18,6 @@ metadata:
 
 **設計判断**: discipline-enforcing型として Iron Law・Red Flags・合理化テーブルを装備。descriptionは「いつ使うか」トリガーのみ（ワークフロー要約を書かない [[project_skill_consolidation]] の方針）。「学習目的なら検証省略」の抜け道は"推測せず本人確認"で塞いだ。
 
+**deep-research 連携を追加**（2026-07-07、ユーザー指摘で）: 原則1の市場調査をエージェントが自分で deep-research スキルを起動して実行するよう明示（REQUIRED SUB-SKILL）。RED実測=導線が無いとエージェントは素の単発WebSearchで場当たり調査し deep-research を起動しない（結果は地力で良質だが体系性・敵対的検証が欠落）。追記後GREEN=「deep-researchを起動して私自身が実行」「複数エージェントで独立一致→確度判定」と敵対的検証まで実践し、調査ドリブンのピボット提案（請求書→案件台帳）まで出た。教訓: スキルにツール/サブスキルを使わせたいなら"REQUIRED SUB-SKILL明示＋Red Flagsに未使用を禁止"の両輪が要る（言及だけでは素のツールに流れる）。
+
 関連: [[project_skill_consolidation]]（skills統合の方針・履歴）
