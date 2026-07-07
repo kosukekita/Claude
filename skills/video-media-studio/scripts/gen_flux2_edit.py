@@ -85,6 +85,11 @@ def main():
     ap.add_argument("--no-quant", action="store_true",
                     help="disable 4-bit quantization (needs >48GB; only for smaller repos)")
     ap.add_argument("--offload", choices=["none", "model", "sequential"], default="model")
+    ap.add_argument("--multi-gpu", action="store_true",
+                    help="shard the model across all visible GPUs with device_map='balanced' "
+                         "(bf16, NO quant, NO offload). On 2x48GB this fits FLUX.2-dev bf16 (~64GB) "
+                         "WITHOUT the 4-bit+offload slashing that stalls a single 48GB card. "
+                         "Do NOT set CUDA_VISIBLE_DEVICES to one GPU when using this.")
     args = ap.parse_args()
 
     if len(args.image) > 10:
@@ -99,6 +104,16 @@ def main():
         from diffusers import Flux2Pipeline as PipeCls
 
     from_kwargs = dict(torch_dtype=torch.bfloat16)
+
+    # Multi-GPU sharding: bf16 across all visible cards. This AVOIDS the 4-bit +
+    # cpu-offload path that thrashes/stalls FLUX.2-dev on a single 48GB A6000
+    # (verified: 17min at 0% GPU util). device_map='balanced' splits the 64GB
+    # bf16 model across 2x48GB. Force no quant + no offload in this mode.
+    if args.multi_gpu:
+        args.no_quant = True
+        args.offload = "none"
+        from_kwargs["device_map"] = "balanced"
+        log("multi-gpu: device_map='balanced' bf16 across all visible GPUs (no quant, no offload)")
 
     # 4-bit NF4 so the 32B (+Mistral3) fits on one 48GB card. Same config as
     # gen_image.py flux.2-dev. klein (9B) also benefits but can run bf16 if desired.
@@ -119,10 +134,13 @@ def main():
         except Exception as exc:  # noqa: BLE001
             log(f"4-bit quantization unavailable ({exc}); trying bf16 (may OOM)")
 
-    log(f"loading {args.repo} ({PipeCls.__name__}); offload={args.offload}")
+    log(f"loading {args.repo} ({PipeCls.__name__}); offload={args.offload} multi_gpu={args.multi_gpu}")
     pipe = PipeCls.from_pretrained(args.repo, **from_kwargs)
 
-    if args.offload == "model":
+    if args.multi_gpu:
+        # device_map already placed the modules across GPUs; do NOT call .to()/offload.
+        log("multi-gpu: pipeline already sharded via device_map; skipping .to()/offload")
+    elif args.offload == "model":
         pipe.enable_model_cpu_offload()
     elif args.offload == "sequential":
         pipe.enable_sequential_cpu_offload()
