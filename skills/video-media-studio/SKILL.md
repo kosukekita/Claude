@@ -1,7 +1,7 @@
 ---
 name: video-media-studio
 description: >
-  動画・画像をローカルGPU優先（フォールバックでクラウド/Grok）で生成・編集するスキル。text-to-video / image-to-video（Wan・LTX-2/LTX-Video）、ローカル画像生成（FLUX・Qwen-Image・SD3.5・Z-Image）、ffmpeg による動画編集（トリム・連結・速度・字幕・音声合成・リサイズ・GIF）、VRAM を実測してローカル単一GPU/オフロード/クラウド/Grok を自動選択する。Use when the user wants to generate a video or image locally, run text-to-video / image-to-video, animate a still, batch-generate media on own GPU, build b-roll/motion clips, OR edit/process existing video (trim, concat, change speed, add subtitles, overlay/watermark, add or mix audio, resize/crop, fps, extract frames, make GIF/thumbnail, re-encode). Trigger phrases: 動画生成, ローカルで動画, 画像から動画, テキストから動画, 静止画を動かす, b-roll, モーション素材, Wan, LTX, ローカル画像生成, FLUX, Qwen-Image, 動画編集, 動画をトリム, 動画を連結, 速度変更, 字幕を焼き込む, BGMを付ける, 音声を差し替える, ウォーターマーク, リサイズ, GIF化, サムネ抽出, 再エンコード, generate video, text-to-video, image-to-video, local image gen, edit video, ffmpeg, trim, concat, subtitles, watermark, resize, crop, gif. Do NOT trigger for: Grok 指定の単発生成のみ（grok-media を直接使う。本スキルは Grok を最終フォールバックとして内包）, スライド/PPTX 作成（slide-making）, インフォグラフィック・図解（infographic）, 学術ポスター（make-poster）, コードレビュー, 論文検索。
+  動画・画像をローカルGPU優先（フォールバックでクラウド/Grok）で生成・編集するスキル。text-to-video / image-to-video（Wan・LTX-2/LTX-Video）、ローカル画像生成（FLUX・Qwen-Image・SD3.5・Z-Image）、ffmpeg による動画編集（トリム・連結・速度・字幕・音声合成・リサイズ・GIF）、VRAM を実測してローカル単一GPU/オフロード/クラウド/Grok を自動選択する。Use when the user wants to generate a video or image locally, run text-to-video / image-to-video, animate a still, batch-generate media on own GPU, build b-roll/motion clips, OR edit/process existing video (trim, concat, change speed, add subtitles, overlay/watermark, add or mix audio, resize/crop, fps, extract frames, make GIF/thumbnail, re-encode). Trigger phrases: 動画生成, ローカルで動画, 画像から動画, テキストから動画, 静止画を動かす, b-roll, モーション素材, Wan, LTX, ローカル画像生成, FLUX, Qwen-Image, キャラクターシート, リファレンスシート, キャラ設定画, 三面図, character sheet, 動画編集, 動画をトリム, 動画を連結, 速度変更, 字幕を焼き込む, BGMを付ける, 音声を差し替える, ウォーターマーク, リサイズ, GIF化, サムネ抽出, 再エンコード, generate video, text-to-video, image-to-video, local image gen, edit video, ffmpeg, trim, concat, subtitles, watermark, resize, crop, gif. Do NOT trigger for: Grok 指定の単発生成のみ（grok-media を直接使う。本スキルは Grok を最終フォールバックとして内包）, スライド/PPTX 作成（slide-making）, インフォグラフィック・図解（infographic）, 学術ポスター（make-poster）, コードレビュー, 論文検索。
 allowed-tools: Bash, Read, Write, Glob, SendUserFile, AskUserQuestion
 ---
 
@@ -291,6 +291,16 @@ NSFW 人物のフォトリアル/絵画生成は**ローカル一択**（Codex/G
 - **Grok** — 2つの別問題を区別する（実機検証 2026-06-23）。(a) **`image_gen` はプロンプトを日本語のまま渡せば NSFW 人物でも生成成功**。英訳すると `busty`/`shirtless` 等がフィルタに当たり**無言で空終了**（画像が出ない）→ 翻訳禁止、詳細は `grok-media` Step 1 の言語ポリシー。(b) **参照画像を使う `image_edit` はヘッドレス `-p` 実行では発火しない**（無害シーンでも無応答・実機で複数回再現）。よって Grok で「画像を参照して合成」はできない。Grok で人物を出すなら **image_gen + 体型・ポーズを日本語で記述**（同一画像にはならない）。参照画像を厳密に効かせたいなら Codex `-i`、上半身裸等の指定は日本語 image_gen かローカルが確実。
 
 注意: スマホで撮った縦長写真は **EXIF で 90° 横倒し**で保存されていることがある。参照に使う前に `ffmpeg -noautorotate -i src.jpg -vf transpose=2 -map_metadata -1 up.jpg`（反時計回り）で正立を確認する（`reference/assets/male-body-reference.jpg` は補正済み）。
+
+### キャラクターシート（リファレンスシート）作成（参照画像→同一人物の設定資料）
+
+**ユーザーが「キャラクターシート」「リファレンスシート」「キャラ設定画」「三面図」「表情集」を求めたとき、または「この画像の人物/キャラを今後も同一人物として使い回したい・モデル固定したい」と言ったときは、`reference/character-sheet-template.md` の固定テンプレートを使う。** 参照画像 1 枚から、三面図＋顔アップ＋表情 8 種＋顔パーツ＋髪詳細＋別角度を 16:9 一枚絵にまとめた設定資料を生成する（プロフィール文なし・日本語短ラベルのみ）。
+
+- **テンプレートは原文のまま使う**（自己完結なので人物 6 要素の確認フローは適用しない）。パネル削減・比率変更などの**改変だけ事前にユーザー確認**。
+- **絵柄ロックが最重要**: 実写→実写調、イラスト/アニメ/漫画/3D/デフォルメ→その絵柄・線・塗り・デフォルメ度を維持。勝手に実写化・イラスト化しない（テンプレートに明記済み）。
+- **バックエンド**: 第一選択 = **Codex(GPT Image) `-i ref.png` + stdin**（参照忠実度・パネルレイアウト・画中日本語の総合力）。拒否されたら **Qwen-Image-Edit（`gen_qwen_edit.py --image`・ローカル・未実測につき初回は 1 枚試す）**。`gen_image.py` ローカル系（参照非対応）と Grok（image_edit ヘッドレス不発火）は不可。
+- **生成後の検証が必須**: 全パネルの同一人物性・絵柄維持・日本語ラベルの文字化け・顔の重複を目視してから納品。完成シートは以後の**マスターリファレンス**（Codex `-i` / Qwen-Edit / v2v `--face-ref` / i2v `--image` の参照元）になる。
+- EXIF 正立補正・入れ墨ルールとの整合（元画像に無ければ追加禁止ネガ、あれば同一性優先で再現）・16:9 近似の扱いはテンプレートファイル側の補足ルールに従う。
 
 ## 動画編集フロー（ffmpeg）
 
