@@ -7,6 +7,7 @@
 #   "diffusers @ git+https://github.com/huggingface/diffusers",
 #   "transformers>=4.56",
 #   "accelerate",
+#   "peft",
 #   "bitsandbytes",
 #   "pillow",
 #   "sentencepiece",
@@ -82,6 +83,12 @@ def main():
     ap.add_argument("--guidance", type=float, default=4.0,
                     help="guidance_scale (FLUX.2 default 4.0; try 2.5-4.0)")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--lora", action="append", default=None,
+                    help="HF id or local .safetensors of a LoRA to stack on the base (repeatable). "
+                         "e.g. an NSFW/uncensored klein LoRA to override the base's SFW training bias. "
+                         "For single-file community LoRAs pass 'repo_id::filename.safetensors'.")
+    ap.add_argument("--lora-scale", type=float, default=1.0,
+                    help="strength applied to the stacked LoRA(s). Default 1.0.")
     ap.add_argument("--no-quant", action="store_true",
                     help="disable 4-bit quantization (needs >48GB; only for smaller repos)")
     ap.add_argument("--offload", choices=["none", "model", "sequential"], default="model")
@@ -136,6 +143,26 @@ def main():
 
     log(f"loading {args.repo} ({PipeCls.__name__}); offload={args.offload} multi_gpu={args.multi_gpu}")
     pipe = PipeCls.from_pretrained(args.repo, **from_kwargs)
+
+    # Optional LoRA stack. Load BEFORE offload so weights merge on the right device.
+    # Accept "repo_id::filename.safetensors" for single-file community LoRAs, or a
+    # plain HF repo id / local path.
+    if args.lora:
+        loaded = []
+        for i, spec in enumerate(args.lora):
+            name = f"lora{i}"
+            if "::" in spec:
+                repo_id, fname = spec.split("::", 1)
+                log(f"loading LoRA {repo_id} :: {fname} (adapter={name}, scale={args.lora_scale})")
+                pipe.load_lora_weights(repo_id, weight_name=fname, adapter_name=name)
+            else:
+                log(f"loading LoRA {spec} (adapter={name}, scale={args.lora_scale})")
+                pipe.load_lora_weights(spec, adapter_name=name)
+            loaded.append(name)
+        try:
+            pipe.set_adapters(loaded, adapter_weights=[args.lora_scale] * len(loaded))
+        except Exception as exc:  # noqa: BLE001
+            log(f"set_adapters failed ({exc}); LoRA loaded at default weight")
 
     if args.multi_gpu:
         # device_map already placed the modules across GPUs; do NOT call .to()/offload.
