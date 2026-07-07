@@ -87,4 +87,12 @@ metadata:
 - **テスト**: ゲート関数をexport化(import guard付き、`import.meta.url`一致時のみmain実行)し単体テスト18件PASS。E2Eドライラン→本番実行で7/7に30日分バックログ34件(NSFW 3=10Eros系)をHFW_MAX_REPORT=40で一括送信済み（emailSent=true）。次回から週8件上限の定常運転。
 - 旧HFW_BYPASSは廃止。--window-days既定は7→30。
 
+## NSFW限定・Top1・動画実生成（2026-07-07 同日ユーザー追加要望で実装）
+バックフィル34件は「多すぎる」→ ★配信は **NSFW対応モデルのみ(HFW_NSFW_ONLY、既定ON)** かつ **速度スコアTop1のみ(HFW_MAX_REPORT既定8→1)**。Top1で実際にNSFW生成しpCloudリンクをメールに載せる:
+- **画像モデル**: 既存 eval-compare.mjs（NSFW軸優先→pCloudリンク）で従来通り。
+- **動画モデル**: 新規 `eval-video.mjs` — ①Z-ImageでNSFW静止画（nsfw_norefプロンプト流用、初期フレーム）→②公式LTX-2.3に新着LoRAを積んで gen_ltx23_lora.py i2v（LoRA単独、--nsfw-motion混ぜない=新モデルの寄与を見るため。seed42固定・121f・max-side960）→③pCloudコピー+同期待ち+リンク。exit契約はeval-compareと同じ(0=OK/2=生成失敗/3=対象外)。
+- **対象外の明示**: GGUF単体配布(10Eros系)・非LTX動画(Wan LoRA等)はexit 3→メール本文に「🎬生成サンプルなし: 生成未対応の形式…」と理由を明記（黙って省略しない）。将来課題=LTX用gguf transformer差し替え生成。
+- スコープ判定はHF siblings/tagsで機械判定（ltx必須・safetensors必須・gguf-onlyは弾く）。runEvalVideoは失敗時 {note} を返し m._compareNote に配線。
+- NSFW判定はclassify()のヒューリスティック（erosの語境界正規表現含む）。NSFW限定で取りこぼしが出たらHFW_NSFW_ONLY=0で全量に戻せる。
+
 関連: [[nsfw-models-chroma-noobai-wan-lora]]（HF探索TIPS・追跡family。Chromaは実写人物NSFWでは不安定と判明）, [[image-cache-volatile-use-media-out]]（durableデータは~/media-out）, [[optimal-gen-models-table-and-new-model-eval]]（4軸baseline。nsfw_norefのbaselineからchroma除外）, [[pcloud-public-link-api]]（リンク発行、getfilelinkが直URL）, [[gen-image-gpu-zombie-oom]]（生成前GPUゾンビkill）, [[gmail-send-smtp-attachments]]（Gmail添付メール送信の定番手順）
