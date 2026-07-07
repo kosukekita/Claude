@@ -94,5 +94,8 @@ metadata:
 - **対象外の明示**: GGUF単体配布(10Eros系)・非LTX動画(Wan LoRA等)はexit 3→メール本文に「🎬生成サンプルなし: 生成未対応の形式…」と理由を明記（黙って省略しない）。将来課題=LTX用gguf transformer差し替え生成。
 - スコープ判定はHF siblings/tagsで機械判定（ltx必須・safetensors必須・gguf-onlyは弾く）。runEvalVideoは失敗時 {note} を返し m._compareNote に配線。
 - NSFW判定はclassify()のヒューリスティック（erosの語境界正規表現含む）。NSFW限定で取りこぼしが出たらHFW_NSFW_ONLY=0で全量に戻せる。
+- **E2E実証(2026-07-07)**: chfm/nsfw-helper-multi-concept-experimental-ltx-2.3で完走。Z-Image静止画(再利用可 --still)→LTX-2.3+LoRA i2v(512x768/121f/5秒/音声aac付き)→pCloud公開リンク発行成功。途中2回のOOMから得た教訓:
+  - ★**video-media-studioのgen系スクリプトはcuda:0ハードコード**→複数ジョブ環境では必ず`CUDA_VISIBLE_DEVICES`で最空きGPUにピン留め(eval-video.mjsのwaitForGpu/pickFreestGpuが実装)。他セッションの生成ジョブは**killせず空き待ち**(最大10分)、reapするのはPPID=1の孤児ワーカーだけ。
+  - ★**LTX-2.3はポートレート121f@max-side960でA6000 48GBを自己OOM**(PyTorch44.4GB確保+追加要求)。**max-side 768なら完走**(解像度²×framesがVRAM支配、face-crop-tool-and-ltx-offloadの知見と一致)。eval-video既定=768。PYTORCH_CUDA_ALLOC_CONF=expandable_segments:Trueも付与。
 
 関連: [[nsfw-models-chroma-noobai-wan-lora]]（HF探索TIPS・追跡family。Chromaは実写人物NSFWでは不安定と判明）, [[image-cache-volatile-use-media-out]]（durableデータは~/media-out）, [[optimal-gen-models-table-and-new-model-eval]]（4軸baseline。nsfw_norefのbaselineからchroma除外）, [[pcloud-public-link-api]]（リンク発行、getfilelinkが直URL）, [[gen-image-gpu-zombie-oom]]（生成前GPUゾンビkill）, [[gmail-send-smtp-attachments]]（Gmail添付メール送信の定番手順）
