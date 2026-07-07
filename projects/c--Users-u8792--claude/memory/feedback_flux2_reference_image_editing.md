@@ -14,6 +14,10 @@ metadata:
 - **ローカルで動くオープンウェイト** = FLUX.2-dev（32B、Mistral3 text-enc、4bit で ~20GB／48GB A6000 に収まる）、FLUX.2-klein（9B、Qwen3 text-enc）。
 - **FLUX.2 [pro] / [flex] はオープンウェイトではなく API 専用**（Replicate / fal / BFL）。ローカル不可。
 - **FLUX.1 系で参照編集** = FLUX.1 Kontext（`gen_kontext.py`、`FluxKontextPipeline`、image 1枚＋指示文で人物同一性保持編集、bf16 ~24GB）。
-- NSFW（nude 等）は Codex/Grok が拒否するのでローカル（Qwen-Image-Edit / FLUX.2-dev editing / Kontext）一択。
+**実機で判明した2つの壁（akitaken 2026-07-07）**:
+1. **ロードが激重**: FLUX.2-dev は 166GB リポジトリ＋単一 `flux2-dev.safetensors`。単一48GBカードで 4bit+offload だと**GPU util 0%のまま17分スラッシング**（実質進まない）。`--multi-gpu`（device_map='balanced' bf16）にすると両GPUに配置されるが、**巨大 checkpoint の CPU デシリアライズに ~12-15分**かかる（RSS が 64GB まで増える）。ロード完了後の推論自体は GPU0 単独 util 100% で ~1-2分と速い。つまりボトルネックは推論でなくロード。実用するならロード後にパイプを保持して複数枚バッチ推論すべき（1枚ごとに再ロードは非現実的）。RAM 不足ではない（197GB空きでも遅い＝I/O とデシリアライズが律速）。
+2. **★NSFW（脱衣）を拒否**: FLUX.2-dev に「服を脱がして nude に」と参照編集を指示したら、**顔・体型の同一性は完璧に保ったまま、脱衣指示だけ無視して元の着衣（白ブラウス＋パンツ）を維持**して出力した（実機確認）。公式 gated モデルのセーフティ層のため。**よって FLUX.2-dev は nude 用途では使えない**（Codex/Grok と同じ壁）。klein も同系統なので同様の見込み。→ **NSFW（nude 等）で参照同一性を保つローカル経路は Qwen-Image-Edit 一択**（Apache/検閲なし）。FLUX 系（.2-dev / .1 Kontext とも公式 gated）は SFW 編集向き。
+
+- NSFW（nude 等）は Codex/Grok/FLUX.2-dev/Kontext がいずれも拒否 → **Qwen-Image-Edit のみ**。SFW の参照編集なら FLUX.2-dev/klein・FLUX.1 Kontext も可。
 
 関連: [[feedback_character_sheet_no_text_no_crop]] [[project_nude_reference_sheet_hayase]] [[project_akitaken_remote_gpu_access]]
