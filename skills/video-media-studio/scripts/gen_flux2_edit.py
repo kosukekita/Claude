@@ -7,6 +7,7 @@
 #   "diffusers @ git+https://github.com/huggingface/diffusers",
 #   "transformers>=4.56",
 #   "accelerate",
+#   "peft",
 #   "bitsandbytes",
 #   "pillow",
 #   "sentencepiece",
