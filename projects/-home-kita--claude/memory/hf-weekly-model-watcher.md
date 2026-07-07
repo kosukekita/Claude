@@ -73,4 +73,8 @@ metadata:
 - **★Chromaを恒久除外(ユーザー指示2026-06-29)**: nsfw_norefのbaselineを`["grok","zimage"]`に変更(chroma削除)。**Chroma1-HD(FLUX.1-schnellベースの実写無検閲)はこの実写NSFWプロンプト(iPhone/UI/画面系の語が多い)と相性が最悪**で、negative無し→アニメ化、negative追加→人物が消えiPhone設定画面風の青いUI＋文字化けに破綻、と2回連続で使い物にならず。**実写NSFW t2iの現状最適baselineはzimage(Z-Image-Turbo)**(grokはheadless不可で手動注記)。Chromaは実写人物プロンプトで不安定と判明したので今後baselineから外す。
 - **実証(2026-06-29)**: 新プロンプト+negative+chroma除外で`eval-compare --axis nsfw_noref`完走。Flux2-Klein[NEW]とzimageの2カラムとも脱衣所・上半身裸・胸を腕で隠す不意打ち表情・実写級でプロンプト忠実。pCloudリンクのみメール送信完了(NSFW添付なしルール適用)。Flux2-Klein 2回目以降キャッシュで新モデル生成36s、zimage 20s、合成+リンクまで約1分。
 
+## 週次ダイジェスト棚卸し（2026-07-07）
+- **biz-insights.timer / x-digest.timer をユーザー指示で停止・無効化**（`systemctl --user disable --now`。ユニットファイルは残置、再開は `enable --now`）。sns-trends.timer は元から無効。hf-watcher.timer のみ稼働継続（毎週月曜09:00 JST）。
+- **「NSFW動画モデルのメールが来ない」の真因は故障ではなく超厳格ゲートの構造的帰結**: 実行・SMTP は正常（7/6 も完走）。だが (1) notability=likes≥100 OR dl≥5000 OR trend≥80 は新着1週目のNSFW動画モデルにはほぼ到達不能（実測 2026-07-07: 直近8日のNSFW系動画モデル62件の最高が♥24=LTX-Best-Face-ID。LTX2.3-10Eros v1.3系・nsfw-helper-ltx-2.3等も全部drop）、(2) NSFW救済バイパスは HFW_BYPASS=1 でしか有効化されずデフォルトOFF、(3) 0件の週は「nothing new → silence」でメール自体が出ない（無音と故障が区別不能）。つまり現設定ではNSFW動画のメールは原理的にほぼ発生しない。改善するなら「NSFW動画だけ低閾値の専用ゲート」「0件でも1行ハートビートメール」等、ユーザー判断待ち。
+
 関連: [[nsfw-models-chroma-noobai-wan-lora]]（HF探索TIPS・追跡family。Chromaは実写人物NSFWでは不安定と判明）, [[image-cache-volatile-use-media-out]]（durableデータは~/media-out）, [[optimal-gen-models-table-and-new-model-eval]]（4軸baseline。nsfw_norefのbaselineからchroma除外）, [[pcloud-public-link-api]]（リンク発行、getfilelinkが直URL）, [[gen-image-gpu-zombie-oom]]（生成前GPUゾンビkill）, [[gmail-send-smtp-attachments]]（Gmail添付メール送信の定番手順）
