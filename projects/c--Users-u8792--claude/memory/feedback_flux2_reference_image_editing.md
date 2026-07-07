@@ -20,4 +20,10 @@ metadata:
 
 - NSFW（nude 等）は Codex/Grok/FLUX.2-dev/Kontext がいずれも拒否 → **Qwen-Image-Edit のみ**。SFW の参照編集なら FLUX.2-dev/klein・FLUX.1 Kontext も可。
 
+**★klein-9B の NSFW LoRA 経路を実機検証した結論（akitaken 2026-07-07）＝実用にならない**。「base の SFW 学習バイアスを NSFW LoRA で上書きすれば nude が出せる」を狙って `gen_flux2_edit.py` に `--lora`（`repo::file` 対応・PEFT 必須なので deps に `peft` 追加）を実装し klein-9B で試したが、以下で頓挫:
+1. **klein NSFW の大半は "LoRA" 名でも実体はフルモデル**。`CoopMeisterFresh/Flux2-Klein-9B-NSFW` は `load_lora_weights` が `Invalid LoRA checkpoint（'lora' substring 無し）` で拒否。safetensors のキーを検査すると全 525 キーが `model.diffusion_model.double_blocks.*`（フル transformer 重み・`lora` キー 0 個）で、メタデータの ComfyUI ワークフローが「fp8 base に 2 枚の NSFW LoRA をマージ→ModelSave した PornMaster フルモデル」だった。しかも `comfy_quant`/`weight_scale` の **ComfyUI 独自 fp8 形式**で diffusers の `from_pretrained` にもそのまま渡せない。最人気の `diroverflo/FLux_Klein_9B_NSFW`(22k DL)・`xPhoenix777/...GGUF...`(40k DL) も同系（フルモデル/GGUF）。
+2. **本物の diffusers/PEFT 形式 klein LoRA は存在はする**が特定コンセプト用。`xPhoenix777/Flux-Klein-9b-LoRA-NSFW` の `oops-slippedv1`/`mombod` は `modelspec.architecture: flux-2/lora`・`ss_base_model_version: flux2_klein_9b`・全 224 キーが `diffusion_model.*.lora_A/B.weight`（ai-toolkit 学習・LTX-2.3 と同じ `diffusion_model.` 非 diffusers プレフィックス。load_lora_weights が transformer. へ自動変換できるか要実機確認）。ただし「服がずれて露出」「体型」等のコンセプト LoRA で**完全 nude 汎用ではない**。→ **klein で参照編集(image=)＋完全 nude を汎用に出す純正 LoRA は乏しく、検証は打ち切り（ユーザー確定 2026-07-07）**。**nude 参照シートは Qwen-Image-Edit 版が最終成果物**（`gen_v2v_qwen.py`/`gen_qwen_edit.py` 系。三面図＋顔アップ多数が同一人物で一貫、文字なし・全パネル生成の固定ルール準拠）。
+
+- safetensors が LoRA か否かの見分け方（実機で使った）: `safe_open(p, framework="numpy")` でキー列挙し ①`lora` 部分文字列を含むキー数 ②`.metadata()` の `modelspec.architecture`（`*/lora` なら LoRA）を見る。`model.diffusion_model.*`(lora なし)＝フルモデル、`diffusion_model.*.lora_A/B`＝非 diffusers プレフィックス LoRA、`comfy_quant`/`weight_scale` キー＝ComfyUI fp8（diffusers 不可）。
+
 関連: [[feedback_character_sheet_no_text_no_crop]] [[project_nude_reference_sheet_hayase]] [[project_akitaken_remote_gpu_access]]
