@@ -63,7 +63,7 @@ import argparse
 import torch
 from PIL import Image, ImageOps
 from diffusers import AutoencoderKLWan, UniPCMultistepScheduler, WanVACEPipeline
-from diffusers.utils import export_to_video
+from diffusers.utils import export_to_video, load_video
 
 MODEL_ID = "Wan-AI/Wan2.1-VACE-14B-diffusers"
 
@@ -84,6 +84,18 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Wan2.1-VACE-14B reference-to-video (r2v)")
     ap.add_argument("--ref", action="append", required=True,
                     help="reference image path (repeatable; e.g. full body + face crop)")
+    # TRUE r2v needs a driving VIDEO + a MASK. VACE keeps the black(=0) mask
+    # regions from `video` and regenerates the white(=1) regions using the
+    # prompt + reference_images. Passing ONLY --ref (no video/mask) makes the
+    # pipeline default video=all-black, mask=all-white → it just re-synthesizes
+    # from the reference (i2v-like: frame0 ≈ the reference). To get identity
+    # transfer onto NEW motion you MUST supply --motion-video.
+    ap.add_argument("--motion-video", default=None,
+                    help="driving video (mp4/dir of frames) that supplies the MOTION. "
+                         "Its subject is replaced by --ref via a white mask. Required for TRUE r2v.")
+    ap.add_argument("--mask-mode", choices=["full", "video"], default="full",
+                    help="full=white mask over every frame (regenerate the whole frame from refs — "
+                         "identity transfer). video=let VACE keep the motion video and only swap.")
     ap.add_argument("--prompt", required=True, help="scene/motion for the NEW video")
     ap.add_argument("--negative-prompt", default=DEFAULT_NEG)
     ap.add_argument("--out", required=True, help="output mp4 path")
@@ -113,6 +125,26 @@ def main() -> int:
         refs.append(img)
         log(f"reference: {p} ({img.width}x{img.height})")
 
+    # Driving motion video + mask (the piece that makes this TRUE r2v, not i2v).
+    video = None
+    mask = None
+    if args.motion_video:
+        raw = load_video(args.motion_video)  # list[PIL] (mp4 or dir of frames)
+        if len(raw) >= frames:
+            drive = [f.convert("RGB").resize((width, height)) for f in raw[:frames]]
+        else:  # loop/hold the last frame if the source is shorter than num_frames
+            drive = [raw[min(i, len(raw) - 1)].convert("RGB").resize((width, height)) for i in range(frames)]
+        video = drive
+        if args.mask_mode == "full":
+            # White (255) everywhere = regenerate the ENTIRE frame from prompt +
+            # reference_images, using `video` only as the motion/pose scaffold.
+            white = Image.new("RGB", (width, height), (255, 255, 255))
+            mask = [white] * frames
+        log(f"motion video: {args.motion_video} -> {len(video)} frames, mask={args.mask_mode} (TRUE r2v)")
+    else:
+        log("WARNING: no --motion-video → video defaults to all-black, mask to all-white; "
+            "this is i2v-like re-synthesis from refs, NOT true r2v.")
+
     log(f"loading {MODEL_ID} (bf16 transformer, fp32 VAE)…")
     vae = AutoencoderKLWan.from_pretrained(MODEL_ID, subfolder="vae", torch_dtype=torch.float32)
     pipe = WanVACEPipeline.from_pretrained(MODEL_ID, vae=vae, torch_dtype=torch.bfloat16)
@@ -129,7 +161,7 @@ def main() -> int:
     gen = torch.Generator(device="cuda").manual_seed(args.seed)
     log(f"generating {width}x{height} x{frames}f steps={args.steps} cfg={args.guidance} "
         f"shift={args.flow_shift} seed={args.seed} refs={len(refs)}")
-    out = pipe(
+    call_kwargs = dict(
         prompt=args.prompt,
         negative_prompt=args.negative_prompt,
         reference_images=refs,
@@ -139,7 +171,11 @@ def main() -> int:
         num_inference_steps=args.steps,
         guidance_scale=args.guidance,
         generator=gen,
-    ).frames[0]
+    )
+    if video is not None:
+        call_kwargs["video"] = video
+        call_kwargs["mask"] = mask
+    out = pipe(**call_kwargs).frames[0]
 
     export_to_video(out, args.out, fps=args.fps)
     log(f"saved -> {args.out}")
