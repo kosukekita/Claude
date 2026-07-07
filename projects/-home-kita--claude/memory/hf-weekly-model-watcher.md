@@ -75,6 +75,16 @@ metadata:
 
 ## 週次ダイジェスト棚卸し（2026-07-07）
 - **biz-insights.timer / x-digest.timer をユーザー指示で停止・無効化**（`systemctl --user disable --now`。ユニットファイルは残置、再開は `enable --now`）。sns-trends.timer は元から無効。hf-watcher.timer のみ稼働継続（毎週月曜09:00 JST）。
-- **「NSFW動画モデルのメールが来ない」の真因は故障ではなく超厳格ゲートの構造的帰結**: 実行・SMTP は正常（7/6 も完走）。だが (1) notability=likes≥100 OR dl≥5000 OR trend≥80 は新着1週目のNSFW動画モデルにはほぼ到達不能（実測 2026-07-07: 直近8日のNSFW系動画モデル62件の最高が♥24=LTX-Best-Face-ID。LTX2.3-10Eros v1.3系・nsfw-helper-ltx-2.3等も全部drop）、(2) NSFW救済バイパスは HFW_BYPASS=1 でしか有効化されずデフォルトOFF、(3) 0件の週は「nothing new → silence」でメール自体が出ない（無音と故障が区別不能）。つまり現設定ではNSFW動画のメールは原理的にほぼ発生しない。改善するなら「NSFW動画だけ低閾値の専用ゲート」「0件でも1行ハートビートメール」等、ユーザー判断待ち。
+- **「NSFW動画モデルのメールが来ない」の真因は故障ではなく超厳格ゲートの構造的帰結**: 実行・SMTP は正常（7/6 も完走）。だが (1) notability=likes≥100 OR dl≥5000 OR trend≥80 は新着1週目のNSFW動画モデルにはほぼ到達不能（実測 2026-07-07: 直近8日のNSFW系動画モデル62件の最高が♥24=LTX-Best-Face-ID）、(2) NSFW救済バイパスはデフォルトOFF、(3) 0件の週は「nothing new → silence」でメール自体が出ない。→ 下の勾配ゲートv2で解消。
+
+## 通知ゲートv2「勾配方式」（2026-07-07、ユーザー提案+Codexレビューで再設計・実装済み）
+ユーザー提案「30日窓でlikesの絶対数でなく勾配（急上昇）を見る」を採用。Codex second-opinion（codex-consult経由）と30日実データのバックテストで設計確定。
+- **最重要修正（Codex指摘）**: 旧 `cutoff=max(last_run, now-window)` は週次運用だと前回実行以降しか走査せず「生後2〜4週で伸びたモデル」を構造的に取りこぼす → **createdAt 30日窓を毎回フル再走査**に変更（例: 6/18リリースのKrea-2-Turbo tr118が一度も通知されていなかったのを実証検出）。重複送信はseen.jsonの永続dedupが防ぐ。
+- **実測事実**: HF APIにlikes履歴なし（likersにも日付なし）→Δlikesは自前週次スナップショットでしか取れない。`downloads`は既に30日ローリング値（downloadsAllTimeと別）。`trendingScore`は直近勢い指標（2年前2225♥→tr14、2日前24♥→tr24）でHF版勾配。
+- **新ゲート**（OR、env上書き可）: A)trend≥20(HFW_MIN_TREND) B)Δ♥/週≥20(HFW_DELTA_WK、likes-snapshots.jsonの5日以上前サンプル基準) C)生後14日以内かつ♥≥5かつ♥/日≥2(初日ノイズは絶対数下駄でブロック) D)保険=♥≥100 or (⬇≥5000かつ♥≥5、♥0の⬇7kボットミラー除外) + NSFW緩和(tr≥10/Δ≥5/♥日0.5&♥3)。classify()に`eros`境界付き正規表現を追加（10Eros系がNSFW判定されなかった穴を修正）。
+- **状態**: `likes-snapshots.json`（seen.jsonと分離、tmp+rename書き込み、samples直近10件、createdAt60日/lastSeen45日でprune、破損時はΔ経路のみ無効化して続行）。
+- **安全弁（loop-engineering準拠）**: 週次通知は速度スコア上位8件キャップ(HFW_MAX_REPORT、キャップ落ちはseenに入れず翌週再浮上可)、GPU比較生成は1回3件まで(HFW_COMPARE_MAX、2h unit上限保護)、閾値未満の上位3件をnear-missとしてログに常時記録（無音週の説明可能性）。
+- **テスト**: ゲート関数をexport化(import guard付き、`import.meta.url`一致時のみmain実行)し単体テスト18件PASS。E2Eドライラン→本番実行で7/7に30日分バックログ34件(NSFW 3=10Eros系)をHFW_MAX_REPORT=40で一括送信済み（emailSent=true）。次回から週8件上限の定常運転。
+- 旧HFW_BYPASSは廃止。--window-days既定は7→30。
 
 関連: [[nsfw-models-chroma-noobai-wan-lora]]（HF探索TIPS・追跡family。Chromaは実写人物NSFWでは不安定と判明）, [[image-cache-volatile-use-media-out]]（durableデータは~/media-out）, [[optimal-gen-models-table-and-new-model-eval]]（4軸baseline。nsfw_norefのbaselineからchroma除外）, [[pcloud-public-link-api]]（リンク発行、getfilelinkが直URL）, [[gen-image-gpu-zombie-oom]]（生成前GPUゾンビkill）, [[gmail-send-smtp-attachments]]（Gmail添付メール送信の定番手順）
