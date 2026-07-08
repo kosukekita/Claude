@@ -1,4 +1,4 @@
-{
+{ "alwaysThinkingEnabled": true, 
   "permissions": {
     "allow": [
       "Bash(git init:*)",
