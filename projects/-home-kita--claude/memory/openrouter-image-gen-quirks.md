@@ -49,4 +49,9 @@ OpenRouterに**画像生成の日本語特化モデルは無い**(日本語特�
 ## 4経路比較の実体(日本語プロンプト, jp-compare, 全て成功)
 A=OpenRouter OpenAI(gpt-5-image) / B=OpenRouter Grok(grok-imagine-image-quality) / C=Grok CLI直接(grok-media, `~/.grok/bin/grok`※`.exe`でなくこの環境) / D=Codex(GPT Image image_gen, 出力は`~/.codex/generated_images/<id>/ig_*.png`に出る・cwdがread-onlyだと指定パス保存不可なのでそこから拾う)。
 
+## ★参照画像(キャラシート)対応と体型再現(実証 2026-07-08)
+- **参照画像入力(input_modalities=image)対応はGoogle Gemini画像系とOpenAI系のみ**。NSFW最寛容の`x-ai/grok-imagine-*`はテキスト入力専用＝参照不可。flux.2/recraft/riverflow/mai/seedreamも参照不可。OpenAIは水着×人物参照でも無言拒否(Codex経由で実測)→**「参照×軽NSFW」のOpenRouter枠は実質 `google/gemini-3-pro-image`(Nano Banana Pro)一択**。水着レベルは拒否なしで通る(露骨NSFWはGoogleも拒否見込み→ローカル)。
+- **★Geminiは参照シートがあっても体型を細く・顔をシャープに美化する**。「体型をシートに忠実に」だけでは Gカップが再現されない(実測v1)。**体型条件を明示ブロックでプロンプトに書く**(「バストはGカップでとても胸が大きい/水着でも一目で分かる/勝手に細くしない/美化・体型変更禁止/やや丸みのある顔立ち維持」)と忠実に再現(v2で確認)＝sheet-factoryの「胸3箇所反復」ルールは参照ありでも省略不可。
+- 同一人物の厳密さはローカルQwen-Edit(既存写真編集)が上、シーン美・ポーズ自由度はNBPが上。cloud_openrouter.py image は `--image`(繰返し可)で参照添付済み実装。
+
 関連: [[optimal-gen-models-table-and-new-model-eval]] [[grok-nsfw-refuse-chroma-fallback]] [[grok-prompt-keep-japanese]] [[image-cache-volatile-use-media-out]](出力は~/media-outへ)
