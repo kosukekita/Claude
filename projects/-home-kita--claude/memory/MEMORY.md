@@ -1,4 +1,5 @@
 - [【再開用】hf-watcher+r2vセッション](session-resume-hf-watcher-r2v.md) — 2026-07-08時点の続き。biz/X停止・勾配ゲート・NSFW限定Top1・真r2v成立まで完了。次アクション候補(HunyuanCustom導入等)と未コミット変更・教訓
+- [sheet-factory 毎朝9時SFWシート自動生成](sheet-factory-daily-sfw-loop.md) — systemd --userループ(akitaken)。Ollamaペルソナ→Codex/Grok生成→pCloud保存→Gmail通知。AppArmorは検知のみ・NSFW派生は手動限定
 - [ローカルLLM構成(Ollama)](local-llm-roster-ollama.md) — akitaken A6000x2/96GBの導入済みテキストLLM。メイン=gpt-oss:120b(65GB,100%GPU,o4-mini級,日本語実用)。qwen3:30b/qwen3.5併存。70GB超はオフロード激遅で回避
 - [academic-writing 採否基準: ストップゲート](academic-writing-stop-gate-criterion.md) — 外部(ジャーナル/査読者)に検知され弾かれる項目は残す、検知されないのにプロセスを止めるだけのゲートは入れない
 - [MCP cross-PC & .claude.json race](mcp-cross-pc-and-claude-json-race.md) — .mcp.json shared Win+Linux; approval clobbered by concurrent claude processes
