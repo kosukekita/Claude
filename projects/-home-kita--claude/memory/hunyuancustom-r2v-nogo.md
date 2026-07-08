@@ -1,32 +1,37 @@
 ---
-name: hunyuancustom-r2v-nogo
-description: HunyuanCustom(顔忠実r2v)への乗り換えは調査の結果no-go(2026-07-08、9agent実機検証)。理由と代替、goに要る判断ゲート
+name: hunyuancustom-r2v-setup
+description: HunyuanCustom r2v(参照1枚+テキスト→任意シーン動画)をローカル導入・実証(2026-07-08)。当初no-go判定は前提が誤りで撤回、導入成功。gen_hunyuan_custom.py
 metadata: 
   node_type: memory
   type: project
   originSessionId: 200959a5-a45c-4159-a506-8fc428432c92
 ---
 
-三井彩香ペルソナのNSFW r2vで「顔忠実度を上げたい」→ HunyuanCustom(tencent, arXiv 2505.04512, video-driven customization)導入を検討。Workflow 9agentで4軸(diffusers対応/VRAM・ディスク/NSFW検閲/顔忠実度主張)を並列調査+敵対的検証した結論=**no-go-stay-vace**(全面乗り換え見送り、既存 Wan2.1-VACE-14B 継続)。
+三井彩香ペルソナの「参照人物1枚+テキストで任意シーン(例:浴室でシャワー)の動画」をローカルで実現。**HunyuanCustom(tencent)をKijai ComfyUI wrapper経由で導入・実証成功(2026-07-08)**。NSFW全裸ローカル可・検閲なし。
 
-## no-goの確定事実(実機確認)
-1. **diffusers非対応**: diffusers 0.37に HunyuanCustom pipelineは無い(grep 0、t2v/i2v/framepack/skyreelsの4本のみ)。重みは`mp_rank_00_model_states.pt`のMegatron/ZeRO形式でfrom_pretrained不可。公式は`diffusers==0.33/transformers==4.41/torch==2.4/py3.10`ピン→既存envに相乗り不可。gen_wan_vace.py同型の単一diffusers.pyにならず、公式hymm_sp cloneをsubprocessで叩く薄いラッパー確定。--offload modelも公式--cpu-offloadへ手動マッピング要。
-2. **顔優位が未証明**: 論文のFace-Sim 0.204→0.627(約3倍)は比較対象が**VACE-1.3B**。ユーザー実運用の75点は**VACE-14B**で、14B相手の顔優位の一次実証は無い(アーキ説明の外挿)。
-3. **NSFW未実証**: 焼き込みフィルタは無い(gated=False, safety_checker無)が「拒否されない」だけ。base HunyuanはSFW寄り、Custom専用NSFW LoRAはHFほぼ皆無、base用NSFW LoRAはhyperscale finetuneで効かない公算大。主目的がNSFW高忠実なのでここが致命的。
-4. **モーション制御喪失**: HunyuanCustomはpose/depth control videoの入力口が無い。gen_wan_vaceの--control-mode pose/depth+全白maskの厳密モーション転写が使えない。
-5. **ディスク薄氷/実速度**: 残63GB(93%使用)。fp8最小≈46GB(fp8 tr24.5+LLaVA16.8+CLIP1.7+VAE3)はDL前に80GB確保必須。速度はA100 80GBでもcpu_offload強制1本1時間超(公式Issue#11)、A6000はfp8ネイティブ演算無く速度稼げない。
+## ★当初のno-go判定は撤回(前提が誤りだった)
+最初「VACEで足りる」前提でHunyuanCustom導入をno-go判定したが、これは誤り。**VACE r2vは別人モーション動画をOpenPose骨格化して転写する方式で、モーション元動画が無いとシャワー等の任意シーンを作れない**。ユーザーが欲しかったのは「参照人物+テキストだけで任意シーン」=subject customization=まさにHunyuanCustomの設計目的。また「ディスク残63GB」も誤認で、実際は**モデル/HFキャッシュは全部Dドライブ(/data/kita, symlink先, 空き8.5TB)** にあり退避不要だった(`~/.cache/huggingface`→`/data/kita/.cache/huggingface`)。→ 方針転換して導入、成功。教訓: no-goの前提(既存で足りるか)を疑う。
 
-## 代替(低リスク順、ユーザー判断待ち)
-1. **VACE内で顔底上げ(最優先・乗り換えゼロ)**: 顔クロップ高解像化+`--ref`複数枚、`--openpose-include-face`、480→720p、Wan NSFWキャラLoRAで顔焼き。
-2. **Stand-Inアダプタ(0.63GB)をWanに重ねる**: 顔特化ID。ただしベースWan2.1-**T2V-14Bが未キャッシュ(~70GB追加DL、今のディスクに入らない)**、単独モーション制御不可でVACE統合要。三重スタックの干渉未実証。
-3. **HunyuanCustomは判断ゲートでだけ試す**: 全面移行でなく、フェーズ0のSFW小尺プローブ1本でVACE-14BをFace-Sim(ArcFace buffalo_l)で実際に上回るか実測→上回り&NSFWも出せて初めて本実装。
+## 導入構成(Kijai ComfyUI wrapper, headless)
+- **ComfyUI**: `/data/kita/ComfyUI`(専用uv venv、★`--python-preference only-managed`でanaconda python回避。拾うとlibtinfo汚染+競合で起動しない)。custom_nodes: HunyuanVideoWrapper/KJNodes/VideoHelperSuite。torch三点cu121(torch/torchvision/**torchaudio**==2.5.1、torchaudio欠くと最新ComfyUIがModuleNotFoundError)+setuptools。
+- **モデル(~22.5GB, `hunyuan_fetch.py`)**: fp8 transformer 13GB(Kijai/HunyuanVideo_comfy)、llava fp8 8.7GB+clip_l+clip vision(Comfy-Org/HunyuanVideo_repackaged /split_files/)、VAE 493MB。★identity核=**CLIP-Vision(llava_llama3_vision)** が参照顔を全フレームに注入(pose骨格でない)。
+- **起動**: `comfyui_serve.sh --gpu N --no-sage`(sageattn未ビルド時)。`--listen 127.0.0.1`(NSFWローカル)。
+- **UI→API変換**: `ui_to_api.py`が`/object_info`でwidget順序を吸収。★3つの罠: (1)`"COMBO"`文字列型もwidget扱い(新ComfyUIはcombo=文字列型) (2)リンク済みinputはwidgets_valuesに値が残ってもlink優先 (3)リンクfrom_nodeは文字列id(整数だと/prompt KeyError)。外すと全widget1つずれ。
+- **APIテンプレ**: `reference/hunyuan_custom_api_template.json`。★Kijaiサンプルの`ImageConcatMulti`は参照と生成を左右連結するtesting用可視化→本番はバイパスしHyVideoDecode直→VHS。
 
-## 判断ゲート(goに要る、フェーズ0)
-①DL前80GB確保(Wan2.2 I2V 118GB or TI2V-5B 32GB退避、VACE-14B 70GBは絶対消さない) ②別env(0.33/4.41/2.4/3.10.9) ③公式repo clone+fp8 46GB選択DL(allow_patternsでaudio/editing変種除外、誤ると191GB全落ち即死、HF_HUB_ENABLE_HF_TRANSFER=0) ④SFWプローブ512x896/77f/30step/fp8/cpu-offload→Face-Sim比較 ⑤NSFWプローブ。
+## 実装(video-media-studioスキル)
+- **主入口 `gen_hunyuan_custom.py`**: 薄いラッパー(spawn/接続→upload_image→patch_template(class_typeで探索)→POST /prompt→poll /history→/view でmp4回収)。引数はgen_wan_vaceに揃え。torch非依存(ComfyUI venv所有)。DEFAULT_NEGにtattoo系込み。--print-workflow/べき等スキップ有。
+- **`compare_face_sim.py`**: ArcFace(insightface buffalo_l)のFace-Sim。★正面顔同士でしか公平でない。
+- **登録**: models.py/gen_video.py FALLBACK_MODELSに`hunyuan-custom-720p`(task=r2v/pipeline=comfyui/defer_to_hunyuan)、gen_video.py `--task r2v`は早期defer(probe前、emit_hunyuan_defer)、DEFAULT_MODEL_FOR_TASK[r2v]。reference/models.mdにr2v節、SKILL.mdにタスク(5)+r2vフロー+Common Mistakes。
 
-## 顔A/B比較の測り方
-ArcFace(insightface buffalo_l)のFace-Sim(コサイン類似)が主指標。SSIMは顔ID不適(補助のみ)。同参照・同モーション記述・同解像度/seedでVACE版とHunyuanCustom版を生成→各動画から等間隔Nフレーム抽出→参照顔埋め込みとのコサイン平均±SD比較。+0.05以上&SD小でgo寄り。compare_face_sim.py(insightface+numpy)を別途書く。
+## 設定・実測
+- Tencent推奨: 512x896 or 720x1280、frames 129(4k+1≈5s)、steps30、cfg7.5、flow_shift13.0、use_cfg_zero_star OFF。
+- ★VRAM/速度(A6000 1枚実測): fp8+block_swap20+text_enc fp8で512x896/129f通る。**~70s/step→129f/30step≈36分**。2枚目は別ポート+--gpuで並列。
+- ★fp8_scaledはLoRA非対応(Kijai明言)。モーションLoRAはbf16経路(未実装)。
 
-成果物: 判定レポート artifact https://claude.ai/code/artifact/4c9efc0c-9dc5-462f-909b-aa8eb21af75e
+## A/B結果(2026-07-08)
+- 顔忠実度Face-Sim(正面同士): HunyuanCustom 0.180 vs VACE 0.184=**ほぼ互角**。ただしHunyuanはstd小(0.027<0.043)でフレーム間安定、目視で顔がシャープ。
+- ★決定的差: **Hunyuanは任意シーン(シャワー等)をテキストだけで作れる、VACEはモーション元動画必須で不可**。→ 任意シーンr2vはHunyuanCustom、別人の動きを転写したいならVACE、と使い分け。
+- 成果物: hunyuan_shower_final.mp4(本番129f)、hunyuan_frontal.mp4(A/B用)、~/media-out/persona-ayaka/
 
-関連: [[session-resume-hf-watcher-r2v]], [[wan-vace-r2v-local-setup]], [[r2v-reference-to-video-models]], [[nsfw-models-chroma-noobai-wan-lora]], [[optimal-gen-models-table-and-new-model-eval]]
+関連: [[wan-vace-r2v-local-setup]], [[r2v-reference-to-video-models]], [[session-resume-hf-watcher-r2v]], [[optimal-gen-models-table-and-new-model-eval]], [[person-image-6elements-confirm-before-fill]]
