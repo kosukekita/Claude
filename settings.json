@@ -1,4 +1,4 @@
-{
+{ "alwaysThinkingEnabled": true,
   "permissions": {
     "allow": [
       "Bash(git init:*)",
@@ -148,7 +148,7 @@
       }
     }
   },
-  "alwaysThinkingEnabled": false,
+  "alwaysThinkingEnabled": true,
   "effortLevel": "xhigh",
   "ultracode": true,
   "autoUpdatesChannel": "latest",
