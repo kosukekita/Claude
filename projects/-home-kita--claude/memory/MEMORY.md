@@ -10,6 +10,7 @@
 - [video-media-studio skill](video-media-studio-skill.md) — local-GPU-first video/image gen+edit; A6000x2 96GB; probe_vram→probe_backend→gen_video chain verified; Grok delegated to grok-media
 - [LTX-2 community models are LoRAs](ltx2-community-models-are-loras.md) — HF "LTX-2.x models" usually LoRAs not bases; stack on official LTX-2.3 via gen_ltx23_lora.py (--nsfw-motion, --lora-scale)
 - [Grok: keep prompts in Japanese](grok-prompt-keep-japanese.md) — don't translate JP prompts to English for Grok; English explicit terms silently blocked; image_edit doesn't fire headless
+- [Grok prompt-json ACP画像添付](grok-prompt-json-acp-images.md) — --prompt-json+resource_link(file://)でヘッドレス画像「分析」は可能(2026-07-08)。ただし「参照して生成」は依然ハング→参照生成はCodex -i(stdin必須)/Qwen-Edit継続
 - [face_crop.py & LTX OOM真因](face-crop-tool-and-ltx-offload.md) — YuNet face-crop tool (neck-down only); LTX-2.3 OOMの真因は解像度²×frames→--max-side下げれば241f(10秒)も --offload model で完走(sequential不要、旧説は誤り); Grok needs --always-approve
 - [参照画像生成: Codex vs Qwen](reference-image-gen-codex-vs-qwen.md) — 参照画像が要る生成は SFW=Codex / NSFW=Qwen-Image-Edit。FLUX.1 Kontextは不採用。gen_qwen_edit.py はcu121ピン必須
 - [ツールコール漏洩フックがLinuxで無効](leaked-toolcall-hook-linux.md) — count/court/call+<invoke>漏洩検知の.ps1がpowershell無いLinuxで毎回失敗。node版.mjs採用(jq/python3はanaconda汚染、/usr/bin/nodeだけクリーン)。2回漏れたら/clear
