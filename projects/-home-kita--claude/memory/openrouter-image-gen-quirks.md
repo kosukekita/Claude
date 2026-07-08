@@ -50,7 +50,8 @@ OpenRouterに**画像生成の日本語特化モデルは無い**(日本語特�
 A=OpenRouter OpenAI(gpt-5-image) / B=OpenRouter Grok(grok-imagine-image-quality) / C=Grok CLI直接(grok-media, `~/.grok/bin/grok`※`.exe`でなくこの環境) / D=Codex(GPT Image image_gen, 出力は`~/.codex/generated_images/<id>/ig_*.png`に出る・cwdがread-onlyだと指定パス保存不可なのでそこから拾う)。
 
 ## ★参照画像(キャラシート)対応と体型再現(実証 2026-07-08)
-- **参照画像入力(input_modalities=image)対応はGoogle Gemini画像系とOpenAI系のみ**。NSFW最寛容の`x-ai/grok-imagine-*`はテキスト入力専用＝参照不可。flux.2/recraft/riverflow/mai/seedreamも参照不可。OpenAIは水着×人物参照でも無言拒否(Codex経由で実測)→**「参照×軽NSFW」のOpenRouter枠は実質 `google/gemini-3-pro-image`(Nano Banana Pro)一択**。水着レベルは拒否なしで通る(露骨NSFWはGoogleも拒否見込み→ローカル)。
+- **★モデル一覧の罠**: デフォルトの `GET /models` には flux/grok-imagine/seedream 等の画像専用モデルが**載らない**。`?output_modalities=image` を付けると全部出て、**flux.2-* / grok-imagine / seedream も in:[text,image]=参照対応**（当初「Gemini/OpenAIのみ参照対応」と誤認した原因）。
+- 参照対応でも実際に使えるかは別: **flux.2-pro は参照+SFWは成功するが、裸はプロンプト言語問わずプロバイダ400で全拒否**（BFLホスト版の検閲。「FLUXは裸OK」はセルフホスト版=ローカルKlein等の話）。OpenAIは水着×人物参照でも無言拒否(Codex経由で実測)。**「参照×軽NSFW(水着)」の実用枠は `google/gemini-3-pro-image`(Nano Banana Pro)**。grok-imagineの参照×NSFW耐性は未検証(候補)。**裸以上はローカル一択**（Qwen-Edit+ScottzillaSystems NSFW LoRAで既存写真から全裸編集が実用、2026-07-08実証）。
 - **★Geminiは参照シートがあっても体型を細く・顔をシャープに美化する**。「体型をシートに忠実に」だけでは Gカップが再現されない(実測v1)。**体型条件を明示ブロックでプロンプトに書く**(「バストはGカップでとても胸が大きい/水着でも一目で分かる/勝手に細くしない/美化・体型変更禁止/やや丸みのある顔立ち維持」)と忠実に再現(v2で確認)＝sheet-factoryの「胸3箇所反復」ルールは参照ありでも省略不可。
 - 同一人物の厳密さはローカルQwen-Edit(既存写真編集)が上、シーン美・ポーズ自由度はNBPが上。cloud_openrouter.py image は `--image`(繰返し可)で参照添付済み実装。
 
