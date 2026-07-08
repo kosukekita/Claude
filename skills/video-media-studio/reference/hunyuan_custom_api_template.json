@@ -110,25 +110,6 @@
       "title": "HyVideoDecode"
     }
   },
-  "71": {
-    "class_type": "ImageConcatMulti",
-    "inputs": {
-      "inputcount": 2,
-      "direction": "left",
-      "match_image_size": false,
-      "image_1": [
-        "5",
-        0
-      ],
-      "image_2": [
-        "43",
-        0
-      ]
-    },
-    "_meta": {
-      "title": "ImageConcatMulti"
-    }
-  },
   "74": {
     "class_type": "HyVideoTextEmbedBridge",
     "inputs": {
@@ -219,18 +200,6 @@
       "title": "ImageResizeKJv2"
     }
   },
-  "75": {
-    "class_type": "PreviewImage",
-    "inputs": {
-      "images": [
-        "43",
-        0
-      ]
-    },
-    "_meta": {
-      "title": "PreviewImage"
-    }
-  },
   "60": {
     "class_type": "HyVideoBlockSwap",
     "inputs": {
@@ -253,7 +222,7 @@
       "pingpong": false,
       "save_output": true,
       "images": [
-        "71",
+        "5",
         0
       ]
     },
