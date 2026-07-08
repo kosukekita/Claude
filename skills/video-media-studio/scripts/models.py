@@ -109,12 +109,29 @@ MODELS: dict[str, dict] = {
         "defer_to_ltx2": True,
         "fal_id": "fal-ai/ltx-2.3/text-to-video",
     },
+    # --- HunyuanCustom r2v (NOT diffusers; headless ComfyUI/Kijai wrapper) --- #
+    # reference image (1 person) + text -> that person in an ARBITRARY new scene
+    # (subject customization). Unlike VACE r2v it needs NO driving motion video.
+    # Runs via gen_hunyuan_custom.py against a headless ComfyUI server; this is a
+    # NAMED entry point (like OpenRouter/Grok), NOT part of the --backend auto
+    # VRAM ladder, because its runtime is a separate ComfyUI venv, not diffusers.
+    "hunyuan-custom-720p": {
+        "task": "r2v", "pipeline": "comfyui",
+        "repo": "Kijai/HunyuanVideo_comfy",  # + Comfy-Org/HunyuanVideo_repackaged
+        "vram_bf16_gb": 60, "vram_fp8_gb": 24, "vram_offload_floor_gb": 24,
+        "frame_rule": (4, 1), "dim_multiple": 16,
+        "default_steps": 30, "default_guidance": 7.5, "default_fps": 24,
+        "default_w": 512, "default_h": 896, "vae_fp32": False,
+        "flow_shift": 13.0,
+        "defer_to_hunyuan": True,
+    },
 }
 
 # Per-task default model (mirrors gen_video.py DEFAULT_MODEL_FOR_TASK).
 DEFAULT_MODEL_FOR_TASK = {
     "t2v": "wan2.1-t2v-1.3b",   # fast, fits trivially, good iteration default
     "i2v": "wan2.2-i2v-a14b",   # quality default; on 48GB use fp8/offload
+    "r2v": "hunyuan-custom-720p",  # ref image + text -> arbitrary scene (no motion video)
 }
 
 # --------------------------------------------------------------------------- #

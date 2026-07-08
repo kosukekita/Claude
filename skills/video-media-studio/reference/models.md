@@ -26,6 +26,7 @@ Conventions:
 | `ltx-video-0.9.8` | t2v | ltx · `LTXPipeline` | `Lightricks/LTX-Video` | 24 | — | 10 | **24576** | (8,1) | 32 | 50 | 3.0 | 24 | 768×512 | Apache-2.0 | YES easily | `fal-ai/ltx-2.3/text-to-video` |
 | `ltx-video-0.9.8-i2v` | i2v | ltx · `LTXImageToVideoPipeline` | `Lightricks/LTX-Video` | 24 | — | 10 | **24576** | (8,1) | 32 | 50 | 3.0 | 24 | 768×512 | Apache-2.0 | YES easily | `fal-ai/ltx-2.3/image-to-video` |
 | `ltx-2.3` | t2v | ltx2 · **NOT diffusers** → `gen_video_ltx2.py` | `Lightricks/LTX-2.3` | 42 | 20 | 18 | **43008** | (8,1) | 32 | 40 | 3.0 | 25 | 768×512 | LTX-2 (needs gated **Gemma-3**) | YES (bf16 fits one card; fp8 safer) | `fal-ai/ltx-2.3/text-to-video` |
+| `hunyuan-custom-720p` | **r2v** | comfyui · **NOT diffusers** → `gen_hunyuan_custom.py` (headless ComfyUI/Kijai) | `Kijai/HunyuanVideo_comfy` + `Comfy-Org/HunyuanVideo_repackaged` | 60 | 24 | 24 | **24576** | (4,1) | 16 | 30 | 7.5 | 24 | 512×896 | Tencent Hunyuan (no gating, no safety checker) | YES (fp8+block-swap on one card) | — |
 
 Notes (video):
 - **All Wan / LTX-Video are Apache-2.0** → commercial OK, no gating. Use the `*-Diffusers` Wan repos for the diffusers path; plain `Wan-AI/Wan2.2-*` repos are for the official `generate.py`/torchrun path.
@@ -35,6 +36,18 @@ Notes (video):
 - **LTX-Video 0.9.8** = lightest VRAM (≈10 GB with fp8+offload). T5 encoder auto-loaded, **no Gemma**. `decode_timestep=0.03`, `decode_noise_scale=0.025`. Frames `8k+1` (121/161/257), dims /32, fps up to 50.
 - **LTX-2.3** = newest LTX (22B, +audio). **Not in diffusers** → gen_video.py sets `defer_to_ltx2` and hands off to `scripts/gen_video_ltx2.py` (`ltx_pipelines`). Requires **gated Gemma-3** access on HF and ~100 GB disk. bf16 (42) fits one A6000; fp8 (20) is safer headroom.
 - **i2v default** (`DEFAULT_MODEL_FOR_TASK[i2v]`) = `wan2.2-i2v-a14b` → on this rig means fp8/offload. **t2v default** = `wan2.1-t2v-1.3b` (fast iteration).
+
+### r2v (reference-to-video) — HunyuanCustom via headless ComfyUI (`gen_hunyuan_custom.py`)
+
+**r2v = ONE reference person image + text → that person in an ARBITRARY new scene** (subject customization). This is a different task from i2v (animate a still) and from Wan-VACE r2v (transfer a *driving motion video's* pose onto a reference). **HunyuanCustom needs NO motion video** — the scene/action comes entirely from the text prompt. That is exactly what VACE cannot do (VACE requires a driving clip to produce any motion). The identity is carried into every frame by the **CLIP-Vision encoder** (`llava_llama3_vision.safetensors`), not by a pose skeleton.
+
+- **NOT a diffusers pipeline.** Runs on a headless ComfyUI server (Kijai `ComfyUI-HunyuanVideoWrapper` + `ComfyUI-KJNodes` + `ComfyUI-VideoHelperSuite`) living in its OWN venv at `/data/kita/ComfyUI/.venv` (uv-managed CPython, NOT anaconda). gen_video.py `--task r2v` defers to `gen_hunyuan_custom.py`; the wrapper spawns/queries the server over HTTP (`/upload/image` → `/prompt` → `/history` → `/view`).
+- **Setup (first run, ~22 GB, all on D drive so no eviction):** clone ComfyUI + the 3 custom nodes into `/data/kita/ComfyUI`; `hunyuan_fetch.py` downloads 5 files (fp8 transformer 13 GB, llava fp8 8.7 GB, clip_l, clip-vision, VAE) into `models/{diffusion_models,text_encoders,clip_vision,vae}`. Launch with `comfyui_serve.sh` (`--gpu N --no-sage` if sageattention isn't built).
+- **Workflow template** = `reference/hunyuan_custom_api_template.json` (API-format, produced from the Kijai sample UI JSON by `ui_to_api.py`, which resolves widget order from the live `/object_info` so it survives node-version drift). The wrapper patches ref-image / prompt / dims / steps / seed / cfg / block-swap / fps by **class_type**, not node id.
+- **Settings (Tencent-recommended):** 512×896 (low-VRAM) or 720×1280, `num_frames` 129 (≈5 s @24), steps 30, **cfg 7.5**, **flow_shift 13.0**, `use_cfg_zero_star` OFF. Frame rule `4k+1`.
+- **VRAM / speed (measured on one A6000 48 GB):** fp8 + block-swap 20 + fp8 text-encoder runs 512×896/129f fine; **~70 s/step → ~36 min for 129f/30 steps.** The 2nd GPU is for a parallel job (separate port + `--gpu`), not sharding.
+- **NSFW:** no safety checker anywhere in the wrapper; the base is uncensored → full nudity from the prompt alone (no LoRA). ★**fp8_scaled does NOT accept LoRAs** (Kijai) — a motion/NSFW LoRA would need the bf16 custom transformer (out of scope for v1).
+- **Identity fidelity vs VACE:** measure with `compare_face_sim.py` (ArcFace/insightface `buffalo_l`, cosine Face-Sim). ★**The metric is only fair when both videos show a FRONTAL face** — HunyuanCustom's action shots (e.g. shower, head turned/down) tank ArcFace even though the person is clearly the same by eye. Always confirm with the tile + full video, per the SKILL.md verification discipline.
 
 ---
 

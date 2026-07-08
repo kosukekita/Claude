@@ -193,11 +193,24 @@ FALLBACK_MODELS: dict[str, dict] = {
         "defer_to_ltx2": True,
         "fal_id": "fal-ai/ltx-2.3/text-to-video",
     },
+    # --- HunyuanCustom r2v (NOT diffusers; headless ComfyUI, gen_hunyuan_custom.py) ---
+    # ref image + text -> that person in an arbitrary new scene; NO motion video.
+    "hunyuan-custom-720p": {
+        "task": "r2v", "pipeline": "comfyui",
+        "repo": "Kijai/HunyuanVideo_comfy",
+        "vram_bf16_gb": 60, "vram_fp8_gb": 24, "vram_offload_floor_gb": 24,
+        "frame_rule": (4, 1), "dim_multiple": 16,
+        "default_steps": 30, "default_guidance": 7.5, "default_fps": 24,
+        "default_w": 512, "default_h": 896, "vae_fp32": False,
+        "flow_shift": 13.0,
+        "defer_to_hunyuan": True,
+    },
 }
 
 DEFAULT_MODEL_FOR_TASK = {
     "t2v": "wan2.1-t2v-1.3b",     # fast, fits trivially, good iteration default
     "i2v": "wan2.2-i2v-a14b",     # quality default; on 48GB use fp8/offload
+    "r2v": "hunyuan-custom-720p",  # ref image + text -> arbitrary scene (no motion video)
 }
 
 
@@ -553,6 +566,34 @@ def emit_ltx2_defer(args, spec: dict, decision: dict) -> None:
     """).strip(), file=sys.stderr)
 
 
+def emit_hunyuan_defer(args, spec: dict, decision: dict) -> None:
+    gen_hy = SCRIPT_DIR / "gen_hunyuan_custom.py"
+    print(textwrap.dedent(f"""
+    ============================================================
+    r2v (reference image + text -> arbitrary scene) — use gen_hunyuan_custom.py
+    ============================================================
+    HunyuanCustom is NOT a diffusers pipeline; it runs via a headless ComfyUI
+    server (Kijai HunyuanVideoWrapper). Unlike VACE r2v it needs NO driving
+    motion video — one reference person image + a text prompt puts that person
+    into an entirely new scene. Re-run with the dedicated script:
+
+      source {ENV_SH}
+      "$UV" run {gen_hy} \\
+        --ref {sh(args.image) if args.image else '<reference_person.png>'} \\
+        --prompt {sh(args.prompt)} \\
+        --out {sh(args.out)} \\
+        --width {args.width or spec.get('default_w')} \\
+        --height {args.height or spec.get('default_h')} \\
+        --num-frames {args.num_frames or 129} --steps {spec.get('default_steps')} \\
+        --guidance {spec.get('default_guidance')} --flow-shift {spec.get('flow_shift', 13.0)} \\
+        --gpu 1        # NSFW-capable, fully local (no safety checker)
+
+    First-run setup (ComfyUI + Kijai nodes + ~22GB models) is in
+    {SKILL_DIR / 'reference' / 'models.md'} (§ r2v).
+    ============================================================
+    """).strip(), file=sys.stderr)
+
+
 def emit_multigpu(args, spec: dict, decision: dict) -> None:
     size = f"{args.width or spec.get('default_w')}*{args.height or spec.get('default_h')}"
     task = "i2v-A14B" if args.task == "i2v" else "t2v-A14B"
@@ -722,8 +763,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--or-model", dest="or_model", default="google/veo-3.1",
                    help="OpenRouter video model id (only with --backend openrouter; "
                         "default: google/veo-3.1)")
-    p.add_argument("--task", choices=["t2v", "i2v"], default="t2v",
-                   help="text-to-video or image-to-video (default: t2v)")
+    p.add_argument("--task", choices=["t2v", "i2v", "r2v"], default="t2v",
+                   help="text-to-video, image-to-video, or reference-to-video "
+                        "(r2v = ref person + text -> arbitrary scene, defers to "
+                        "gen_hunyuan_custom.py; default: t2v)")
     p.add_argument("--prompt", default="", help="text prompt")
     p.add_argument("--image", help="input still image (required for i2v)")
     p.add_argument("--out", default="out.mp4", help="output mp4 path (default: out.mp4)")
@@ -801,6 +844,12 @@ def main() -> int:
 
     spec = load_model_spec(args.model)
 
+    # r2v / HunyuanCustom is a NAMED entry point, not part of the VRAM ladder —
+    # defer BEFORE probing (probe_backend.py doesn't know the r2v task).
+    if args.task == "r2v" or spec.get("defer_to_hunyuan") or spec.get("pipeline") == "comfyui":
+        emit_hunyuan_defer(args, spec, {"backend": "local-comfyui"})
+        return 0
+
     # Validate task/model coherence.
     if args.task == "i2v" and not args.image:
         parser.error("--task i2v requires --image")
@@ -831,6 +880,9 @@ def main() -> int:
         return 0
     if spec.get("defer_to_ltx2") or spec.get("pipeline") == "ltx2":
         emit_ltx2_defer(args, spec, decision)
+        return 0
+    if spec.get("defer_to_hunyuan") or spec.get("pipeline") == "comfyui":
+        emit_hunyuan_defer(args, spec, decision)
         return 0
 
     # ---- local diffusers run ----

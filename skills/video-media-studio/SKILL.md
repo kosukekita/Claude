@@ -27,6 +27,7 @@ allowed-tools: Bash, Read, Write, Glob, SendUserFile, AskUserQuestion
 | (2) 画像生成 | テキストから静止画、frame 素材、画中テキスト | `gen_image.py`（probe 内蔵）|
 | (3) 動画編集 | 既存動画のトリム/連結/速度/字幕/音声/リサイズ/GIF 等 | `reference/ffmpeg-recipes.md` + `edit_video.py`（GPU/バックエンド判定不要・完全ローカル）|
 | (4) 動画スタイル変換 v2v | **既存動画**を別スタイルに変換（リアル↔アニメ等）し、**同じ人物を固定**したまま動きを保つ。NSFW 可 | **★NSFW リアル動画→アニメ動画は `gen_v2v_qwen.py`（Qwen-Image-Edit + アニメ LoRA・実機実証の本命）が第一選択**。汎用スタイル変換や動きの強い拘束が要る場合のみ `gen_v2v_style.py`（SDXL img2img + ControlNet + IP-Adapter）。下の「動画スタイル変換フロー」参照 |
+| (5) r2v（参照→任意シーン動画） | **参照人物 1 枚 + テキスト**で、その人物を**全く別のシチュ**（例: 浴室でシャワー）の動画にする。**モーション元動画は不要**。NSFW 可 | **`gen_hunyuan_custom.py`（HunyuanCustom・headless ComfyUI）**。VACE r2v（`gen_wan_vace.py`）は別人モーション動画を骨格転写する方式で任意シーンは作れない＝**テキストだけで任意シーンにするなら HunyuanCustom**。下の「r2v フロー」参照 |
 
 ## バックエンド自動選択（THE core decision）
 
@@ -115,6 +116,30 @@ source scripts/env.sh
     --first-clip s0.mp4 --model wan2.2-i2v-a14b --start 1 --end 8
   ```
 - Grok での t2v が欲しい場合 → **grok-media**（image_gen → image_to_video の 2 段）。
+
+## r2v フロー（参照人物 1 枚 + テキスト → 任意シーン動画）= `gen_hunyuan_custom.py`
+
+**参照人物 1 枚と文章だけで、その人物を全く別のシチュ（例: 浴室でシャワー）の動画にする。モーション元動画は不要。** VACE r2v（`gen_wan_vace.py`）は別人のモーション動画を OpenPose 骨格化して転写する方式なので、**シャワー等の任意シーンはモーション元が無ければ作れない**。テキストだけで任意シーンを作るなら **HunyuanCustom（`gen_hunyuan_custom.py`）** を使う。NSFW（全裸）ローカル可・検閲なし。
+
+```bash
+source scripts/env.sh
+# 参照 ref.png の人物を「浴室でシャワー」の動画に(512x896/129f=5s/steps30/cfg7.5)
+"$UV" run scripts/gen_hunyuan_custom.py \
+  --ref /path/to/person.png \
+  --prompt "A nude Japanese woman taking a shower in a bathroom, wet tile walls, warm steam, water running down her body, soft window light, photorealistic, full body" \
+  --out shower.mp4 \
+  --width 512 --height 896 --num-frames 129 --steps 30 --guidance 7.5 --flow-shift 13.0 --seed 42 --fps 24 --offload 20 --gpu 1
+# gen_video.py --task r2v からも同じ経路へ defer される(専用入口・VRAM階段には混ぜない)
+```
+
+**仕組み・実装（初回セットアップと詳細は `reference/models.md` の「r2v」節）**:
+- **別ランタイム**: diffusers ではなく **headless ComfyUI サーバ**（Kijai HunyuanVideoWrapper）で動く。ComfyUI は `/data/kita/ComfyUI`（専用 uv venv・anaconda 非依存）。`gen_hunyuan_custom.py` は薄いラッパー（サーバを spawn/接続 → 参照画像 upload → API workflow POST → poll → mp4 回収）。torch は自プロセスに入れない（LTX-2.3 委譲型と同じ）。
+- **identity の核**: 参照画像の顔・体型は **CLIP-Vision（`llava_llama3_vision`）** 経由で全フレームに注入。pose 骨格ではない。
+- **★fp8_scaled は LoRA 非対応**（Kijai 明言）→ 初版は LoRA なし（無検閲ベース + プロンプトで全裸可）。モーション LoRA が要る時のみ bf16 経路（未実装）。
+- **VRAM/速度**（A6000 1 枚実測）: fp8+block-swap 20+text-enc fp8 で 512×896/129f が通る。**~70 s/step → 129f/30step で ~36 分**。2 枚目は別ポート+`--gpu` で並列。
+- **設定**: 512×896（低 VRAM）or 720×1280、`--num-frames` は 4k+1（129≈5s）、steps 30、cfg 7.5、flow_shift 13.0。frame ルールを外すとエラー。
+- **顔忠実度の A/B**: `compare_face_sim.py`（ArcFace/insightface buffalo_l の Face-Sim）。★**両動画とも正面顔のときだけ数値が公平**（HunyuanCustom の動作ショット＝横向き/俯きは同一人物でも ArcFace が下がる）。必ずタイル+動画を目視で最終判断。
+- **プロンプト規約**: 人物生成の 6 要素・入れ墨禁止（DEFAULT_NEG に tattoo 系込み）・スタイル既定リアルは他フローと同じ。シーン（背景・光・動作）は文章で明示。
 
 ## ★NSFW リアル動画 → アニメ動画（本命・実機実証 2026-06-30）= `gen_v2v_qwen.py`
 
@@ -357,6 +382,11 @@ bash scripts/grok_delegate.sh    # grok-media の契約を表示して委譲（�
 ## Common Mistakes
 
 - **conda の python で実行 → 依存が壊れる / libtinfo 汚染**。必ず `source scripts/env.sh` → `"$UV" run`。
+- **★r2v(HunyuanCustom)の ComfyUI venv が anaconda python を拾う** → `uv venv --python 3.11` は PATH 上の anaconda を掴むことがある。**`--python-preference only-managed`** で uv 管理 CPython を使う（`.venv/bin/python` の symlink 先が anaconda3 でないことを確認）。拾うと libtinfo 汚染 + ライブラリ競合で ComfyUI が起動しない。
+- **r2v で ComfyUI が `ModuleNotFoundError: torchaudio`** → 最新 ComfyUI は Lightricks audio VAE で torchaudio 必須。torch/torchvision と**同じ cu121 index で torchaudio==2.5.1 も入れる**（+ triton 用に setuptools）。
+- **★r2v の出力が「参照画像と生成が左右に並ぶ」** → Kijai サンプル `hyvideo_custom_testing_01.json` は `ImageConcatMulti` で参照と生成を横連結する *testing 用可視化*。本番テンプレでは**それをバイパスして HyVideoDecode を直接 VHS へ**繋ぐ（`reference/hunyuan_custom_api_template.json` は対応済み）。
+- **★r2v の顔忠実度を Face-Sim だけで判断** → ArcFace は**正面顔同士でしか公平でない**。HunyuanCustom の動作ショット（シャワー等で横向き/俯き）は同一人物でも数値が激落ちする。`compare_face_sim.py` は VACE と比べるなら**両方を正面立ちシーンで生成**して測る＋タイル/動画を目視。数値だけで乗り換え判断しない。
+- **r2v の UI→API 変換でノード input がずれる** → `ui_to_api.py` は `/object_info` から widget 順序を取る。widget 判定で **`"COMBO"` 文字列型もウィジェット**扱い（新 ComfyUI は combo を文字列型で返す）、**リンク接続された input は widgets_values に値が残っても link を優先**、**リンク参照の from_node は文字列 id**（整数だと `/prompt` が KeyError）。この3点を外すと全 widget が1つずつずれる。
 - **frame ルールの取り違え**: Wan は 4k+1（81）、LTX は 8k+1（121/193）、dims は /32 or /64。外すとハードエラー。
 - **VAE を bf16 にする → Wan/LTX のデコードが目に見えて劣化**。VAE は fp32 固定。
 - **turbo モデルに高 guidance / 多ステップ** → 破綻・洗い流し。schnell/z-image-turbo/distilled は guidance≈0。
