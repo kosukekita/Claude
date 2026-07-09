@@ -444,15 +444,29 @@ def _split_csv(s: str) -> list:
 
 def _resolve_media_input(key: str, ref: str) -> str:
     """Turn a media argument into something the API accepts. Public URLs, data:
-    URLs and (assumed) base64 strings pass through untouched. A LOCAL FILE path is
-    uploaded via uploadMedia to obtain a temporary URL."""
+    URLs and (assumed) base64 strings pass through untouched. A LOCAL FILE is
+    base64-encoded into a data: URL — the API accepts base64 image refs directly
+    (see schema: "provided via URLs or Base64 encode"), which is the reliable
+    path and avoids the UNVERIFIED uploadMedia endpoint."""
     if ref.startswith(("http://", "https://", "data:")):
         return ref
     p = Path(ref).expanduser()
     if p.exists():
-        return _upload_media(key, p)
+        return _file_to_data_url(p)
     # Not a URL and not an existing file: assume it is already base64/pass-through.
     return ref
+
+
+def _file_to_data_url(path: Path) -> str:
+    """Read a local image and return a data: URL. The AtlasCloud schema requires
+    the base64 ref to carry a content type, and accepts PNG/JPEG/JPG/WebP only."""
+    import base64
+    import mimetypes
+    mime = mimetypes.guess_type(path.name)[0] or "image/png"
+    if mime not in ("image/png", "image/jpeg", "image/webp"):
+        mime = "image/png"
+    b64 = base64.b64encode(path.read_bytes()).decode("ascii")
+    return f"data:{mime};base64,{b64}"
 
 
 def _upload_media(key: str, path: Path) -> str:
