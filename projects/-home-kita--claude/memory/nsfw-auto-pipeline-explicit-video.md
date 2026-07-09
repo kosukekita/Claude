@@ -27,6 +27,14 @@ i2v は先頭フレームの構図しか動かせない。エロくない/破綻
 - **Qwen-Edit（着衣・無検閲）**: `very large G-cup breasts` を**明示**＋**フィットした服**にする(ゆったり白衣だと胸が潰れる。前を開けフィットインナーで胸ライン)。書かないと普通体型になる(実機事故→修正で解決)。
 - **Codex（シート・image_gen 検閲あり）**: 「大きな胸/胸/バスト」等の**直接的な体型強調語は sexual 判定で拒否**。ただし**「体のラインが出るフィットした制服で、服の上からでも胸の大きさ（体型）が分かるようにする」という"服の上から体型が分かる"の婉曲な言い回しは通る**（2026-07-10 実証。直接語NG／服が体型を示す表現OK）。これでシートでも胸のラインを（間接的に）指定できる。参照画像(busty な着衣)にも体型を委ねる。→ [[atlascloud-nsfw-image-and-pipeline]]
 
+## ★セッション非依存の自走システム(2026-07-10・systemd --user)
+Workflowツールはセッション内でしか動かない→本番は**スタンドアロン script + systemd --user タイマー**(sheet-factory同型)。`~/media-out/nsfw-auto/`:
+- **phase1_generate.mjs**(node): Ollama(gpt-oss:120b→qwen3.5→表)でペルソナ自動(G固定)+行為ランダム→z-image frame→wan-2.7-spicy動画→Qwen胸強調3枚(薄手夏浴衣・斜め45度・上半身・乳首隠す,seed5/8/11)→send_bust_shots.mjsでメール→status.txt=PENDING_SELECTION。lock/state/日1回guard。systemd `nsfw-phase1.timer`(毎日10:00 JST)。
+- **send_bust_shots.mjs**(node): bust_1/2/3.png添付でGmail SMTP送信+latest_run.txt記録。
+- **phase2_poll.py**(python標準lib): latest_run→status==PENDING確認→**Gmail IMAP(imaplib,アプリパスワード)で返信(Re:件名"胸強調ショット")を検索→本文引用より上から1/2/3をparse**→bust_N→2_clothed.png→codex exec -iでシート→smtplibでシート返信→status=DONE+既読化。systemd `nsfw-phase2poll.timer`(10分ごと)。
+- ★人間チェックポイント=メールで選択(loop-engineeringのcognitive surrender対策)。Gmailはアプリパスワード`~/.config/gmail-smtp.pass`でSMTP送信もIMAP受信も可(実証)。
+- 起動: `node phase1_generate.mjs --force`で即実行。全成果物run_<日時>/(1_frame_nude/4_video/bust_1..3/2_clothed/3_sheet)。
+
 ## 逆変換(NSFW画像→SFWシート)も可能
 NSFW フレームの女性を切り出し→ローカル Qwen-Edit で着衣SFW化→Codex -i でシート。Codex に胸を書かないのが鍵(同上)。character-sheet-template.md の(D)節に記載。
 
