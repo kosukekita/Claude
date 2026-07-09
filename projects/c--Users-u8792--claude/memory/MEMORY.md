@@ -1,5 +1,7 @@
 # Memory Index
 
+- [feedback_character_sheet_no_text_no_crop.md](feedback_character_sheet_no_text_no_crop.md) — リファレンスシート固定ルール2点(文字/ラベル一切なし・元画像からアップ切り取り禁止で全パネル生成)。ユーザー確定2026-07-07。正本はcharacter-sheet-template.md冒頭★固定ルール節
+- [feedback_flux2_reference_image_editing.md](feedback_flux2_reference_image_editing.md) — FLUX.2-dev/kleinはオープンウェイトで参照画像編集可(image=[PIL]渡すだけ・最大10枚)。gen_image.pyがt2iのみだったのは実装漏れ。pro/flexはAPI専用でローカル不可。FLUX.1参照編集はKontext
 - [feedback_slide_icon_approach.md](feedback_slide_icon_approach.md) — slide-makingでSVGアイコン手書きは失敗する。リファレンスPNGクロップ→base64埋め込みが唯一の確実な方法
 - [project_skill_consolidation.md](project_skill_consolidation.md) — ~/.claude/skills統合履歴（〜2026-06-14）。achievement+career→cv-profile、Swiss-modernism→ui-ux-design、writing-skills→skill-writingリネーム。方針: 重複は同一ツールのみマージ、別レイヤー/依存関係（例 subagent-driven⊃TDD）は統合せず「依存契約の明示＋RED/GREEN実測」で締める、descriptionにworkflow要約を書かない
 - [project_matt_pocock_skills_import.md](project_matt_pocock_skills_import.md) — mattpocock/skills 全19本を精査しcaveman/diagnose/handoffの3本を移植（2026-06-15）。日本語化＋Win/Linux両対応、HITLはbash+ps1両版。残り16本は既存重複orスタック不一致で見送り。判断軸=真のギャップ/環境整合/スタック一致
