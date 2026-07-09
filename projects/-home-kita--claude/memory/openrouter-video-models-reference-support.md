@@ -50,6 +50,13 @@ wan-2.7のi2vが3つの連鎖バグで動かなかった→全て修正済。同
 3. **unsigned_urlsのkey欠落**: 完了時`unsigned_urls[0]`は`.../videos/{id}/content?index=0`(api/v1配下)で**名前に反しBearer必須**。`_download(urls[0], out)`がkeyを渡さず401。`_download(urls[0], out, key=key)`に修正。
 切り分け教訓: submit(POST)もpoll(GET)も200なのにスクリプトだけ401 → 怪しいのは(a)GETのContent-Type (b)完了後のダウンロード認証。手動pollで「どのステップで401か」を切る(submit/poll/downloadのどれか)。wan-2.7は約66秒でcompleted、150f/30fps/5sの.mp4が出る。
 
+## ★r2v の画質序列＋真の対応モデル（2026-07-09 実カタログ精査で確定・NSFW不問）
+実カタログ精査でメモの分類を更新。**画質最優先の SFW r2v の答え**:
+- **OpenRouter 第一 = `bytedance/seedance-2.0`**（TRUE r2v・同一人物性最強格・縦9:16可・1080p ≈$0.34/s）。保険 = `alibaba/wan-2.7`（フラット$0.10/s）。
+- **AtlasCloud 第一 = `google/veo3.1/reference-to-video`**（★純画質の頂点。1080p/8秒/参照1〜3枚 base64、2026-07-09 実証で最高画質＝枕広告風パジャマ動画が実写級に出た）。安価な高画質量産 = `bytedance/seedance-2.0/reference-to-video`（base $0.09・参照1〜9枚）。
+- **★重要な訂正**: **OpenRouter の veo-3.1 と kling-v3 は r2v ではない**（first/last frame のみ＝i2v）。プレイグラウンドの "Reference Images" スロットはモデル非依存の汎用UIで機能に効かない。真の参照セット r2v は OpenRouter だと8本（seedance-2.0/-fast, wan-2.7, wan-2.6【一覧では隠れる】, hailuo-2.3【1080p 16:9横のみ音声なし】, happyhorse-1.0/1.1, grok-imagine）。**真の veo3.1 r2v と真の kling(o3) r2v は AtlasCloud 側にだけある**（`.../reference-to-video`、AtlasCloud は r2v 21本）。
+- **cloud_atlascloud.py video が r2v で実動**（generateVideo→prediction ポーリング）。ローカル参照は **base64 データURL** で渡す（`_resolve_media_input` を uploadMedia でなく base64 化に修正済＝uploadMedia は未検証のまま不使用）。`--images a.png,b.png`（CSV分割後に各々base64化するのでdataURLのカンマ問題は起きない）。veo3.1 は既定で音声トラックを付ける（不要ならffmpegで無音化/差し替え）。
+
 ## ★wan-2.7 r2v の実測（2026-07-09・キャラシートを参照に実行）
 - **参照画像は最低 240×240 が必須**。小さいと submit は通るが job が `failed` "image resolution must be at least 240x240, got WxH"（`InvalidParameter` code400）。★キャラクターシート（グリッド1枚）からパネルを切り出すと 160×280 等になり必ず弾かれる → Lanczos で min-side 320 に拡大すれば通る（実証）。
 - **参照はグリッド全体を渡さず、綺麗な単一パネル（全身正面＋顔正面など）を切り出して複数 `--reference` で渡す**（コラージュ認識で同一性が崩れるのを防ぐ）。SFW 服装の参照＋NSFW 文章プロンプトで、裸のシャワー動画が同一人物性を保って生成できた（r2v は identity=参照 / シーン=プロンプトの分業）。
