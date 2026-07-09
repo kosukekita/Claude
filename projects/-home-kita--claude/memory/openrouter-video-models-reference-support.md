@@ -50,4 +50,10 @@ wan-2.7のi2vが3つの連鎖バグで動かなかった→全て修正済。同
 3. **unsigned_urlsのkey欠落**: 完了時`unsigned_urls[0]`は`.../videos/{id}/content?index=0`(api/v1配下)で**名前に反しBearer必須**。`_download(urls[0], out)`がkeyを渡さず401。`_download(urls[0], out, key=key)`に修正。
 切り分け教訓: submit(POST)もpoll(GET)も200なのにスクリプトだけ401 → 怪しいのは(a)GETのContent-Type (b)完了後のダウンロード認証。手動pollで「どのステップで401か」を切る(submit/poll/downloadのどれか)。wan-2.7は約66秒でcompleted、150f/30fps/5sの.mp4が出る。
 
-関連: [[optimal-gen-models-table-and-new-model-eval]] [[openrouter-image-gen-quirks]] [[nsfw-models-chroma-noobai-wan-lora]] [[video-media-studio-skill]]
+## ★wan-2.7 r2v の実測（2026-07-09・キャラシートを参照に実行）
+- **参照画像は最低 240×240 が必須**。小さいと submit は通るが job が `failed` "image resolution must be at least 240x240, got WxH"（`InvalidParameter` code400）。★キャラクターシート（グリッド1枚）からパネルを切り出すと 160×280 等になり必ず弾かれる → Lanczos で min-side 320 に拡大すれば通る（実証）。
+- **参照はグリッド全体を渡さず、綺麗な単一パネル（全身正面＋顔正面など）を切り出して複数 `--reference` で渡す**（コラージュ認識で同一性が崩れるのを防ぐ）。SFW 服装の参照＋NSFW 文章プロンプトで、裸のシャワー動画が同一人物性を保って生成できた（r2v は identity=参照 / シーン=プロンプトの分業）。
+- **`--aspect-ratio 9:16` は無視され 1280×720 の横で出る**（画像同様、比率はモデル任せ）。縦が要るなら生成後に 9:16 センタークロップが確実（再指定しても横になりやすい）。5s/150f/30fps。
+- r2v の呼び方: `cloud_openrouter.py video --model alibaba/wan-2.7 --task t2v --reference A --reference B --prompt ...`（first-frame を与えない＝input_references のみ＝r2v。i2v にしたいなら `--task i2v --image`）。プロンプトは日本語で通る（NSFW も wan-2.7 はすり抜ける）。生成 ~130s。
+
+関連: [[optimal-gen-models-table-and-new-model-eval]] [[openrouter-image-gen-quirks]] [[nsfw-models-chroma-noobai-wan-lora]] [[video-media-studio-skill]] [[hunyuancustom-r2v-nogo]] [[wan-vace-r2v-local-setup]]
