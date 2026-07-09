@@ -129,6 +129,16 @@ node ~/.claude/bin/or-consult.mjs --list   # 主要な利用可能モデル
 - 代替モデル目安: Codex(OpenAI系)の代替=`openai/gpt-5.5`/`openai/o3-pro`(重、要 max-tokens 大)、Grok=`x-ai/grok-4.3`、Gemini=`google/gemini-2.5-pro`。
 - これは**手動フォールバック**（Claude が判断して使う）。`codex:rescue` の自動切替は未実装。Codex が「使用制限に達した」等を返したら、このツールに切り替えて相談を継続する。
 
+### さらにその先のフォールバック（OpenRouter も使い切ったとき）= AtlasCloud
+
+OpenRouter が残高切れ（**HTTP 402**）やレート制限（**429**）で使えないときの**二次バックエンド**。階段は `Codex/Grok → OpenRouter → AtlasCloud`。**大前提は変わらない**: Claude 系の知見でよい相談は自分（このセッション）が答える。**AtlasCloud でも `anthropic/claude-*` は呼ばない**（二重課金で無駄）。使うのは gpt / grok / gemini / deepseek 等の Claude 以外。
+
+- **キー**: `~/.config/atlascloud.key`（1 行・末尾改行なし・`chmod 600`）。無ければ `$ATLASCLOUD_API_KEY`。読み出したら `.strip()`。**キーの中身は表示しない**。
+- LLM 相談のエントリは video-media-studio スキルの `scripts/cloud_atlascloud.py llm`（`/v1` の OpenAI 互換・同期）。画像/動画は `/api/v1` の非同期で形が違う（詳細はスキル本文）。id 例: `deepseek-ai/DeepSeek-V3.1`, `openai/gpt-5.5`, `openai/o3-pro`, `xai/grok-4.5`, `google/gemini-3.1-pro-preview`。**★OpenRouter の `x-ai` は AtlasCloud では `xai`（ハイフン無し）**。
+- ⚠️ **落とし穴（実測）**: エラー封筒は OpenAI 形式でなく `{"code":N,"msg":"..."}`。**不正キーは 401 でなく HTTP 404**（不正 model は 400）→ 404 を「エンドポイントが無い」と即断せず認証失敗も疑う。
+- ⚠️ **AtlasCloud 側の残高切れの HTTP ステータスは未文書＝未確定。402 と決め打ちしてはいけない。** 非 2xx が返ったら `{code,msg}` をそのまま人間に見せて落とす。
+- 医学研究データそのものを外部送信する相談は、Codex/OpenRouter と同じく PII を含めない前提で使う。
+
 ## ツールコール漏洩バグへの対処
 
 ハーネスのシリアライズ不具合により、`<function_calls><invoke name="Bash">...` という形のツール呼び出しが、開始マーカーのプレフィックスが落ちて `count`（または `court`/`call`）という裸トークン + `<invoke name=...>` の生テキストとして出力される既知のバグがある。この場合ツールは実行されず、操作がサイレントに失敗する。

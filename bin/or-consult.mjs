@@ -18,6 +18,12 @@
  *
  * 注意: OpenRouter は従量課金。残高不足時は HTTP 402 が返る。max_tokens を明示しないと
  *   モデル上限を要求して 402 になりやすいので、既定で 4000 を付ける。
+ *
+ * フォールバック: OpenRouter が 402(残高切れ)を返したら、同じ messages を AtlasCloud
+ *   (OpenAI 互換 /v1/chat/completions)へ投げ直す。どのプロバイダで応答したかは必ず stderr に
+ *   出す(黙って別アカウントへ課金が移らないように)。429 はフォールバックせず OpenRouter の
+ *   エラーとして扱う(残高切れではないため)。--no-fallback で無効化できる。
+ *   AtlasCloud キー: ~/.config/atlascloud.key(1行,chmod 600) → 環境変数 $ATLASCLOUD_API_KEY。
  */
 import fs from "node:fs";
 import os from "node:os";
@@ -25,6 +31,9 @@ import path from "node:path";
 
 const KEY_PATH = path.join(os.homedir(), ".config", "openrouter.key");
 const API = "https://openrouter.ai/api/v1";
+const ATLAS_KEY_PATH = path.join(os.homedir(), ".config", "atlascloud.key");
+// AtlasCloud の LLM は /v1(OpenAI 互換)。画像/動画は /api/v1 で base が違うが、ここでは無関係。
+const ATLAS_API = "https://api.atlascloud.ai/v1";
 // 🔑 既定は openai/gpt-5.5(Codex=OpenAI系の代替、= "Claude 以外の独立視点")。
 //   ※Claude 系の知見でよいなら OpenRouter を使わず Claude Code 自身(このセッション)が答える
 //     こと。OpenRouter で anthropic/claude-* を呼ぶのは Claude 契約と OpenRouter の二重課金で無駄。
@@ -45,8 +54,29 @@ function readKey() {
   }
 }
 
+// AtlasCloud キー: ~/.config/atlascloud.key を優先し、無ければ $ATLASCLOUD_API_KEY。
+// どちらも無ければ null(呼び出し側でフォールバック不可を案内)。改行混入で落ちないよう trim 必須。
+function readAtlasKey() {
+  try {
+    const k = fs.readFileSync(ATLAS_KEY_PATH, "utf8").trim();
+    if (k) return k;
+  } catch {}
+  const env = (process.env.ATLASCLOUD_API_KEY || "").trim();
+  return env || null;
+}
+
+// OpenRouter の model id を AtlasCloud のカタログ表記に変換。x-ai/* → xai/*(ハイフン無し)。
+// それ以外は概ね同じ id なのでそのまま渡す(未知の id も無変換で通す)。
+function toAtlasModel(model) {
+  const PREFIX = { "x-ai/": "xai/" };
+  for (const [from, to] of Object.entries(PREFIX)) {
+    if (model.startsWith(from)) return to + model.slice(from.length);
+  }
+  return model;
+}
+
 function parseArgs(argv) {
-  const a = { model: DEFAULT_MODEL, maxTokens: 4000, system: null, stdin: false, list: false, prompt: null };
+  const a = { model: DEFAULT_MODEL, maxTokens: 4000, system: null, stdin: false, list: false, noFallback: false, prompt: null };
   const rest = [];
   for (let i = 0; i < argv.length; i++) {
     const t = argv[i];
@@ -55,6 +85,7 @@ function parseArgs(argv) {
     else if (t === "--system") a.system = argv[++i];
     else if (t === "--stdin") a.stdin = true;
     else if (t === "--list") a.list = true;
+    else if (t === "--no-fallback") a.noFallback = true;
     else rest.push(t);
   }
   if (rest.length) a.prompt = rest.join(" ");
@@ -79,7 +110,9 @@ async function listModels(key) {
   console.log(`\n総モデル数: ${ids.length}  (既定: ${DEFAULT_MODEL})`);
 }
 
-async function chat(key, model, messages, maxTokens) {
+// 成功時 {ok:true, json}、失敗時 {ok:false, status, body}。402 フォールバック判定を
+// 呼び出し側に委ねるため、ここでは process.exit しない。
+async function orChat(key, model, messages, maxTokens) {
   const r = await fetch(`${API}/chat/completions`, {
     method: "POST",
     headers: {
@@ -90,13 +123,23 @@ async function chat(key, model, messages, maxTokens) {
     },
     body: JSON.stringify({ model, messages, max_tokens: maxTokens }),
   });
-  if (!r.ok) {
-    const body = await r.text();
-    console.error(`OpenRouter HTTP ${r.status}: ${body.slice(0, 400)}`);
-    if (r.status === 402) console.error("→ 残高不足。--max-tokens を下げるか https://openrouter.ai/settings/credits で追加。");
-    process.exit(1);
-  }
-  return r.json();
+  if (r.ok) return { ok: true, json: await r.json() };
+  return { ok: false, status: r.status, body: await r.text() };
+}
+
+// AtlasCloud LLM は OpenAI 互換なのでボディ/レスポンス形は OpenRouter と同じ。
+// エラー封筒は {code,msg}(OpenAI 形ではない)ので、失敗時は body を生で呼び出し側に返す。
+async function atlasChat(key, model, messages, maxTokens) {
+  const r = await fetch(`${ATLAS_API}/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ model, messages, max_tokens: maxTokens }),
+  });
+  if (r.ok) return { ok: true, json: await r.json() };
+  return { ok: false, status: r.status, body: await r.text() };
 }
 
 async function main() {
@@ -115,11 +158,42 @@ async function main() {
   if (args.system) messages.push({ role: "system", content: args.system });
   messages.push({ role: "user", content: prompt });
 
-  const d = await chat(key, args.model, messages, args.maxTokens);
+  let res = await orChat(key, args.model, messages, args.maxTokens);
+  let provider = "openrouter";
+  let sentModel = args.model;
+
+  // 402 = OpenRouter 残高切れ。429(レート制限)ではフォールバックしない。
+  if (!res.ok && res.status === 402 && !args.noFallback) {
+    const atlasKey = readAtlasKey();
+    if (!atlasKey) {
+      console.error("OpenRouter が 402(残高切れ)。AtlasCloud キーが無いためフォールバックできません。");
+      console.error(`AtlasCloud キーを ~/.config/atlascloud.key に置く(chmod 600)か $ATLASCLOUD_API_KEY を設定すればフォールバックできます。`);
+      process.exit(1);
+    }
+    sentModel = toAtlasModel(args.model);
+    console.error(`[or-consult] openrouter 402 -> falling back to atlascloud (model: ${sentModel})`);
+    res = await atlasChat(atlasKey, sentModel, messages, args.maxTokens);
+    provider = "atlascloud";
+  }
+
+  if (!res.ok) {
+    if (provider === "openrouter") {
+      console.error(`OpenRouter HTTP ${res.status}: ${res.body.slice(0, 400)}`);
+      if (res.status === 402) console.error("→ 残高不足。--max-tokens を下げるか https://openrouter.ai/settings/credits で追加(または AtlasCloud キーを置いてフォールバック)。");
+      if (res.status === 429) console.error("→ レート制限。少し待って再試行(429 はフォールバックしません)。");
+    } else {
+      // AtlasCloud の非2xx。封筒は {code,msg}。404/400 はキー不正(認証失敗)やモデル名不正でも起きる。
+      console.error(`AtlasCloud HTTP ${res.status}: ${res.body.slice(0, 400)}`);
+      console.error("→ AtlasCloud が非2xx。404/400 は AtlasCloud キー不正(認証失敗)やモデル名不正の可能性。~/.config/atlascloud.key を確認してください。");
+    }
+    process.exit(1);
+  }
+
+  const d = res.json;
   const msg = d.choices?.[0]?.message?.content ?? "(空の応答)";
   process.stdout.write(msg + "\n");
   const u = d.usage || {};
-  console.error(`\n[or-consult model=${d.model} tokens=${u.total_tokens ?? "?"}]`);
+  console.error(`\n[or-consult provider=${provider} model=${d.model ?? sentModel} tokens=${u.total_tokens ?? "?"}]`);
 }
 
 main().catch((e) => {

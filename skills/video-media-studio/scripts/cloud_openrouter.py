@@ -23,6 +23,18 @@ It does THREE things over ONE billing/routing layer:
   image   text-to-image via chat/completions + modalities ["image","text"]
   video   text/image-to-video via the dedicated async /api/v1/videos endpoint
 
+FALLBACK ON HTTP 402 (out of credits)
+=====================================
+When OpenRouter answers a generate request with HTTP 402 (its "insufficient
+credits" signal), all three routes retry the SAME request against AtlasCloud —
+a second cloud vendor with independent billing — by DELEGATING to the sibling
+cloud_atlascloud.py (its image/video APIs are shaped completely differently, so
+this is not a base-URL swap). Model ids do NOT map 1:1 across the two vendors; a
+small explicit table handles the known renames and an unmapped image/video model
+is a hard stop (never a silent substitution) unless you name the AtlasCloud model
+with --or-model. Disable the whole behaviour with --no-fallback. Which provider
+actually served the request is always announced on stderr.
+
 --------------------------------------------------------------------------------
 API KEY SETUP (one time)  —  stored in a dedicated file, NOT an env you must export
 --------------------------------------------------------------------------------
@@ -175,13 +187,15 @@ def cmd_llm(args: argparse.Namespace) -> int:
     if args.max_tokens is not None:
         body["max_tokens"] = args.max_tokens
 
-    log(f"llm -> {args.model}")
+    log(f"[OpenRouter] llm -> {args.model}")
     resp = requests.post(
         f"{API_BASE}/chat/completions",
         headers=auth_headers(key),
         json=body,
         timeout=HTTP_TIMEOUT,
     )
+    if resp.status_code == 402 and not args.no_fallback:
+        return _fallback_llm(args)
     _raise_for_openrouter(resp)
     data = resp.json()
     try:
@@ -217,7 +231,7 @@ def cmd_image(args: argparse.Namespace) -> int:
         content.append(
             {"type": "image_url", "image_url": {"url": _to_image_url(img)}}
         )
-    log(f"image -> {args.model}")
+    log(f"[OpenRouter] image -> {args.model}")
     # Two model families on OpenRouter:
     #   out=[image,text]  (gemini-*, gpt-5*-image, openrouter/auto) -> need both modalities
     #   out=[image] only  (flux.2-*, gpt-image-*, recraft, riverflow, seedream, mai,
@@ -256,6 +270,8 @@ def cmd_image(args: argparse.Namespace) -> int:
         log(f"  transient HTTP {resp.status_code}; retry {attempt}/4 after {wait}s")
         time.sleep(wait)
         resp = _post(modalities)
+    if resp.status_code == 402 and not args.no_fallback:
+        return _fallback_image(args)
     _raise_for_openrouter(resp)
     data = resp.json()
     try:
@@ -306,13 +322,15 @@ def cmd_video(args: argparse.Namespace) -> int:
             {"type": "image_url", "image_url": {"url": _to_image_url(ref)}}
         )
 
-    log(f"video -> {args.model} ({args.task}); submitting job ...")
+    log(f"[OpenRouter] video -> {args.model} ({args.task}); submitting job ...")
     resp = requests.post(
         f"{API_BASE}/videos",
         headers=auth_headers(key),
         json=body,
         timeout=HTTP_TIMEOUT,
     )
+    if resp.status_code == 402 and not args.no_fallback:
+        return _fallback_video(args)
     _raise_for_openrouter(resp)
     job = resp.json()
     job_id = job.get("id")
@@ -438,8 +456,166 @@ def _download(url: str, out: Path, key: str | None = None) -> None:
 
 
 # --------------------------------------------------------------------------- #
+# AtlasCloud fallback (fires only on OpenRouter HTTP 402 = out of credits)
+# --------------------------------------------------------------------------- #
+# Ids do NOT map 1:1 across vendors. TEXT follows a general rule (same id;
+# OpenRouter's "x-ai/" is AtlasCloud's "xai/"), so text ids fall through
+# _atlas_llm_model(). IMAGE/VIDEO ids are structurally different (the task lives
+# in the id suffix), so an unmapped one is a hard stop rather than a guess.
+_ATLAS_TEXT_MODEL_MAP = {
+    "x-ai/grok-4.3": "xai/grok-4.3",
+}
+_ATLAS_IMAGE_MODEL_MAP = {
+    "google/gemini-2.5-flash-image-preview": "google/nano-banana-2/text-to-image",
+}
+_ATLAS_VIDEO_MODEL_MAP = {
+    ("t2v", "alibaba/wan-2.7"): "alibaba/wan-2.7/text-to-video",
+    ("i2v", "alibaba/wan-2.7"): "alibaba/wan-2.7/image-to-video",
+}
+
+
+def _load_atlas_module():
+    """Load the sibling cloud_atlascloud.py by path. It is a PEP723 script, not an
+    installed package, so a plain import would not find it."""
+    import importlib.util
+
+    path = Path(__file__).resolve().with_name("cloud_atlascloud.py")
+    if not path.exists():
+        die(f"OpenRouter 402（残高切れ）。フォールバック先 {path} が見つかりません。")
+    spec = importlib.util.spec_from_file_location("cloud_atlascloud", path)
+    if spec is None or spec.loader is None:
+        die(f"OpenRouter 402（残高切れ）。{path} をロードできませんでした。")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _atlas_key_present(atlas) -> bool:
+    """Presence check only — the key value is never returned or logged here."""
+    try:
+        if atlas.KEY_FILE.exists() and atlas.KEY_FILE.read_text(encoding="utf-8").strip():
+            return True
+    except OSError:
+        pass
+    return bool(os.environ.get("ATLASCLOUD_API_KEY", "").strip())
+
+
+def _load_atlas_or_die():
+    """Load AtlasCloud and confirm a key exists, or die with fallback-specific
+    guidance. Callers log the concrete [AtlasCloud] line once the model resolves."""
+    atlas = _load_atlas_module()
+    if not _atlas_key_present(atlas):
+        die(
+            "OpenRouter 402（残高切れ）。AtlasCloud にフォールバックしようとしましたが、"
+            "AtlasCloud の API キーがありません（~/.config/atlascloud.key か "
+            "$ATLASCLOUD_API_KEY）。キーを設定するか --no-fallback で無効化してください。"
+        )
+    return atlas
+
+
+def _die_no_atlas_mapping(or_model: str) -> "NoReturn":  # type: ignore[name-defined]
+    die(
+        f"OpenRouter 402。AtlasCloud に {or_model} の対応が無いので "
+        f"--or-model で指定し直してください"
+    )
+
+
+def _atlas_llm_model(or_model: str) -> str:
+    if or_model in _ATLAS_TEXT_MODEL_MAP:
+        return _ATLAS_TEXT_MODEL_MAP[or_model]
+    if or_model.startswith("x-ai/"):
+        return "xai/" + or_model[len("x-ai/"):]
+    return or_model
+
+
+def _fallback_llm(args: argparse.Namespace) -> int:
+    atlas = _load_atlas_or_die()
+    atlas_model = args.or_model or _atlas_llm_model(args.model)
+    log("OpenRouter 402（残高切れ）→ AtlasCloud にフォールバックします")
+    log(f"[AtlasCloud] llm -> {atlas_model}")
+    ns = argparse.Namespace(
+        model=atlas_model,
+        prompt=args.prompt,
+        stdin=False,
+        system=args.system,
+        temperature=args.temperature,
+        max_tokens=args.max_tokens,
+    )
+    return atlas.cmd_llm(ns)
+
+
+def _fallback_image(args: argparse.Namespace) -> int:
+    atlas = _load_atlas_or_die()
+    atlas_model = args.or_model or _ATLAS_IMAGE_MODEL_MAP.get(args.model)
+    if not atlas_model:
+        _die_no_atlas_mapping(args.model)
+    log("OpenRouter 402（残高切れ）→ AtlasCloud にフォールバックします")
+    if args.image:
+        log("  注意: AtlasCloud フォールバックは text-to-image のため --image（入力画像）は無視されます")
+    log(f"[AtlasCloud] image -> {atlas_model}")
+    ns = argparse.Namespace(
+        model=atlas_model,
+        prompt=args.prompt,
+        out=args.out,
+        size=None,
+        seed=None,
+        extra_json=None,
+        sync=False,
+    )
+    return atlas.cmd_image(ns)
+
+
+def _fallback_video(args: argparse.Namespace) -> int:
+    atlas = _load_atlas_or_die()
+    atlas_model = args.or_model or _ATLAS_VIDEO_MODEL_MAP.get((args.task, args.model))
+    if not atlas_model:
+        _die_no_atlas_mapping(args.model)
+    # AtlasCloud takes model-specific fields via extra_json; forward only the two
+    # that the wan-2.7 schema documents (aspect_ratio, duration). OpenRouter-only
+    # option names (resolution/audio) and per-vendor-shaped ones (seed/reference)
+    # are announced as dropped rather than guessed onto AtlasCloud's schema.
+    extra: dict = {}
+    if args.aspect_ratio:
+        extra["aspect_ratio"] = args.aspect_ratio
+    if args.duration is not None:
+        extra["duration"] = args.duration
+    dropped = [
+        name
+        for name, val in (
+            ("--resolution", args.resolution),
+            ("--seed", args.seed),
+            ("--audio", args.audio),
+            ("--reference", args.reference),
+        )
+        if val
+    ]
+    log("OpenRouter 402（残高切れ）→ AtlasCloud にフォールバックします")
+    if dropped:
+        log(f"  注意: {', '.join(dropped)} は AtlasCloud フォールバックには引き継がれません")
+    log(f"[AtlasCloud] video -> {atlas_model} ({args.task})")
+    ns = argparse.Namespace(
+        model=atlas_model,
+        prompt=args.prompt,
+        out=args.out,
+        image=args.image if args.task == "i2v" else None,
+        images=None,
+        extra_json=json.dumps(extra) if extra else None,
+        sync=False,
+    )
+    return atlas.cmd_video(ns)
+
+
+# --------------------------------------------------------------------------- #
 # CLI
 # --------------------------------------------------------------------------- #
+def _add_fallback_flags(sp: argparse.ArgumentParser) -> None:
+    sp.add_argument("--no-fallback", action="store_true",
+                    help="disable the AtlasCloud fallback triggered on HTTP 402 (out of credits)")
+    sp.add_argument("--or-model", default=None, dest="or_model",
+                    help="explicit AtlasCloud model id for the 402 fallback "
+                         "(overrides the built-in OpenRouter->AtlasCloud id map)")
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="cloud_openrouter.py",
@@ -465,6 +641,7 @@ def build_parser() -> argparse.ArgumentParser:
     pl.add_argument("--system", default=None, help="optional system prompt")
     pl.add_argument("--temperature", type=float, default=None)
     pl.add_argument("--max-tokens", type=int, default=None, dest="max_tokens")
+    _add_fallback_flags(pl)
     pl.set_defaults(func=cmd_llm)
 
     pi = sub.add_parser("image", help="text-to-image (chat/completions+modalities)")
@@ -475,6 +652,7 @@ def build_parser() -> argparse.ArgumentParser:
     pi.add_argument("--image", action="append", default=None,
                     help="input image for edit-style prompts (path/url); repeatable")
     pi.add_argument("--out", default="image.png", help="output image path")
+    _add_fallback_flags(pi)
     pi.set_defaults(func=cmd_image)
 
     pv = sub.add_parser("video", help="text/image-to-video (async /videos)")
@@ -492,6 +670,7 @@ def build_parser() -> argparse.ArgumentParser:
     pv.add_argument("--duration", type=int, default=None, help="seconds")
     pv.add_argument("--seed", type=int, default=None)
     pv.add_argument("--audio", action="store_true", help="request audio generation")
+    _add_fallback_flags(pv)
     pv.set_defaults(func=cmd_video)
 
     pm = sub.add_parser("models", help="list available model ids")

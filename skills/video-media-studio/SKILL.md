@@ -379,6 +379,29 @@ bash scripts/grok_delegate.sh    # grok-media の契約を表示して委譲（�
   ```
 - **要点**: 画像は `chat/completions` + `modalities:["image","text"]`（結果は base64 data-URL を自動デコード保存）。動画は**非同期**（`POST /videos` → polling → DL）で、ポーリングは wall-clock 期限と試行回数の二重ガードで必ず打ち切る。動画 model 例: `google/veo-3.1`, `alibaba/wan-2.7`, `kwaivgi/kling-v3.0-std`。画像 model 例: `google/gemini-2.5-flash-image-preview`, `black-forest-labs/flux.2-pro`。**id は変動するので確証が要るときは `models` サブコマンドで確認**。
 
+## AtlasCloud（OpenRouter を使い切ったときの二次バックエンド — auto には入れない）
+
+**OpenRouter が残高切れ（HTTP 402）等で使えないときの二次フォールバック。** OpenRouter と同じ「指名されたら使う経路」で、`--backend auto` の VRAM 階段（local→modal→fal→grok）には **入れない**（`probe_backend.py` の auto 解決も変更しない）。LLM・画像・動画を 1 つのキー / 課金レイヤーで使える点は OpenRouter と同じだが、**API の形が違う**（下記）。
+
+- **キー**: `~/.config/atlascloud.key`（1 行・末尾改行なし・`chmod 600`）。無ければ `$ATLASCLOUD_API_KEY`。読み出したら必ず `.strip()`。**キーの中身は出力・ログ・エラーに出さない**。
+- **エントリ**: `scripts/cloud_atlascloud.py`（`requests` のみ）。5 サブコマンド `llm` / `image` / `video` / `models`（id 探索）/ `schema`（モデル固有フィールド確認）。
+  ```bash
+  "$UV" run scripts/cloud_atlascloud.py llm    --model deepseek-ai/DeepSeek-V3.1 --prompt "..."
+  "$UV" run scripts/cloud_atlascloud.py image  --model z-image/turbo --prompt "..." --size 1024*1024 --out a.png
+  "$UV" run scripts/cloud_atlascloud.py video  --model alibaba/wan-2.7/image-to-video --image URL --prompt "..." --out a.mp4
+  "$UV" run scripts/cloud_atlascloud.py models --type Video --grep spicy   # id を type で絞って列挙
+  "$UV" run scripts/cloud_atlascloud.py schema --model z-image/turbo        # そのモデルのリクエストフィールドを確認
+  ```
+- **★LLM とメディアで base が違う**: LLM は **`/v1`**（`chat/completions`・**同期**・OpenAI 互換で `choices[0].message.content`）。画像/動画は **`/api/v1`**（`generateImage` / `generateVideo` の**非同期** submit→poll→DL）。混同すると 404。
+- **画像/動画は非同期**: submit の `data.urls.get` をそのままポーリング（自分で URL を組み立てない）。`data.status` の**終端は `completed` / `failed` のみ**、それ以外は全て処理中扱い → wall-clock 期限と試行回数の二重ガードで必ず打ち切る。完了時は `data.outputs[0]` が成果物の直 URL（認証不要 GET でDL）。
+- **`size` は `"1024*1024"` 形式**（アスタリスク区切り、`"1024x1024"` ではない、512〜2048）。動画のタスクはパラメータでなく **model id** で選ぶ（`.../text-to-video` `.../image-to-video` `.../reference-to-video`）。i2v の入力画像は `--image`（単一 URL/Base64）、reference は `--images`（1〜3）。
+- **★モデル毎にフィールドが違う → `schema` サブコマンドが正本**（内部で `/api/v1/models` の各要素の `schema` URL＝OpenAPI ドキュメントを引き、`components.schemas.Input.properties` を出す）。
+- **★落とし穴（実測）**:
+  - **エラー封筒は OpenAI 形式ではない** → `{"code":404,"msg":"..."}` の `{code,msg}`（`{"error":{...}}` を仮定するコードは壊れる）。
+  - **不正キーは 401 でなく HTTP 404**（body `{"code":404,"msg":"not found"}`）。不正 model 名は HTTP 400。**404 を「エンドポイントが無い」と即断せず、認証失敗の可能性もメッセージに含める**。
+  - **`/v1/models` の `output_modalities` は当てにならない**（画像モデルが `["text"]` と申告する）。modality 判定は **`/api/v1/models` の `type`**（`Text` / `Image` / `Video`）を見る。このカタログの封筒は `code` が**文字列 `"200"`**。
+  - **NSFW 動画候補あり**: `atlascloud/wan-2.2-turbo-spicy/image-to-video`, `alibaba/wan-2.2-spicy/image-to-video` 等（存在は確認、生成は未実測）。動画生成・`uploadMedia`（ローカル→一時 URL）は構造のみ文書化で**未実測**。
+
 ## Common Mistakes
 
 - **conda の python で実行 → 依存が壊れる / libtinfo 汚染**。必ず `source scripts/env.sh` → `"$UV" run`。
