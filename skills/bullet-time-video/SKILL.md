@@ -43,9 +43,10 @@ Uses `video-media-studio`'s `cloud_atlascloud.py` (AtlasCloud) for i2v. `$UV` fr
 ```
 "$UV" run cloud_atlascloud.py video --model bytedance/seedance-2.0/image-to-video \
   --image frozen_still.png \
-  --prompt "Keep the scene frozen. Freeze frame. Only move the camera in a dynamic orbit around the subject." \
-  --out orbit.mp4 --extra-json '{"duration":5,"resolution":"720p","ratio":"adaptive"}'
+  --prompt "A completely static frozen photograph, time is completely stopped. Absolutely nothing in the scene moves at all - the <objects>, droplets, splash and the person are all perfectly still and frozen solid, zero motion, NOT slow motion, no liquid flow, no changing splash. The ONLY thing that moves is the camera, which performs a smooth dynamic 180 degree orbit around the frozen subject." \
+  --out orbit.mp4 --extra-json '{"duration":10,"resolution":"720p","ratio":"adaptive"}'
 ```
+**★ Freeze reality (confirmed 2026-07-11):** Seedance/Kling i2v have NO motion/static control param and **cannot be forced to perfectly freeze — they always add slight slow-motion**, especially for liquids (solid objects freeze better). The aggressive "completely static / zero motion / NOT slow motion" prompt above minimizes it but does not eliminate it. **A mathematically perfect freeze + moving camera is only achievable with DepthFlow depth-parallax (see below) — but that has "cardboard" 3D.** So: single-image → (perfect freeze + cardboard 3D via DepthFlow) OR (clean 3D + slight slow-mo via i2v). Pick one; you cannot have both. For most viral clips the slight slow-mo i2v reads fine (bullet-time is itself slow-mo + camera).
 
 **Method B — generate the explosion, subject holds pose**:
 ```
