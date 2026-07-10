@@ -1,13 +1,15 @@
 ---
 name: sheet-factory-daily-sfw-loop
-description: 毎朝9時JSTにSFWキャラシートを自動生成しpCloudに保存するsystemdループ（akitaken）。場所・運用コマンド・設計上の決定
+description: SFWキャラシート自動生成systemdループ（akitaken）。★2026-07-11にユーザー指示で停止・無効化（詳細・戻し方は本文冒頭）。場所・運用コマンド・設計上の決定
 metadata: 
   node_type: memory
   type: project
   originSessionId: d067b6fc-7d1c-46e7-adf2-f2c98dec84b1
 ---
 
-**sheet-factory** = 毎朝 09:00 JST に SFW キャラクターシート1枚を自動生成する systemd --user ループ（akitaken、2026-07-08 稼働開始・初回実走OK）。[[video-media-studio-skill]] のキャラシート入口(A)のヘッドレス版。
+> ★**2026-07-11 停止・無効化（ユーザー指示「sheet factory はいらないので停止」）**: `systemctl --user disable --now sheet-factory.timer` 済み（現在 disabled/inactive、もう朝に走らない）。ユニット/スクリプトのファイルは残置＝戻せる（戻し方 `systemctl --user enable --now sheet-factory.timer`）。理由: 朝のスロットを NSFW auto パイプライン（[[nsfw-auto-pipeline-explicit-video.md]] の phase1）に譲るため。両者は別システム（sheet-factory=SFWシート/クラウド生成、nsfw-auto=NSFW/ローカルGPU z-image+Qwen 35分）だが、どちらも冒頭で Ollama gpt-oss:120b を使うので同時刻だと GPU/Ollama が競合する。**nsfw-phase1 は毎朝 07:00 JST に変更**（sheet-factory を止めたので競合解消）。以下は稼働当時の記録（再開時の参考）。
+
+**sheet-factory** = 毎朝 09:00 JST に SFW キャラクターシート1枚を自動生成する systemd --user ループ（akitaken、2026-07-08 稼働開始・初回実走OK。2026-07-11 停止）。[[video-media-studio-skill]] のキャラシート入口(A)のヘッドレス版。
 
 - **場所**: スクリプト `~/media-out/sheet-factory/daily_sfw_sheet.mjs`（/usr/bin/node）、設計書 `README.md` 同居、ユニット `~/.config/systemd/user/sheet-factory.{service,timer}`（Persistent=true）
 - **保存先**: `~/pCloudDrive/Data/NSFW/AIgenaratedSheet/YYYYMMDD_<名前>/`（sheet.png + persona.json/md + prompt.txt + run.log）。pCloud未マウント時は staging/ に退避→次回自動移送
