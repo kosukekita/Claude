@@ -1,3 +1,4 @@
+- [画像生成のseedは常にランダム化](seed-randomize-always-image-gen.md) — ★恒久ルール(2026-07-10): 画像/動画生成でseed設定可なら再現目的以外は必ず毎回ランダム化。固定seed+似プロンプトで別ペルソナが同一人物・同一動画化した事故(z-image --seed 8固定)。gen_image.py/gen_qwen_edit.pyはseed未指定=自動ランダム+ログ記録に修正(旧gen_qwen_editはdefault=0固定だった)。phase1はpersona.frameSeed乱数化
 - [【再開用】hf-watcher+r2vセッション](session-resume-hf-watcher-r2v.md) — 2026-07-08時点の続き。biz/X停止・勾配ゲート・NSFW限定Top1・真r2v成立まで完了。次アクション候補(HunyuanCustom導入等)と未コミット変更・教訓
 - [sheet-factory 毎朝9時SFWシート自動生成](sheet-factory-daily-sfw-loop.md) — systemd --userループ(akitaken)。Ollamaペルソナ→Codex/Grok生成→pCloud保存→Gmail通知。AppArmorは検知のみ・NSFW派生は手動限定
 - [ローカルLLM構成(Ollama)](local-llm-roster-ollama.md) — akitaken A6000x2/96GBの導入済みテキストLLM。メイン=gpt-oss:120b(65GB,100%GPU,o4-mini級,日本語実用)。qwen3:30b/qwen3.5併存。70GB超はオフロード激遅で回避

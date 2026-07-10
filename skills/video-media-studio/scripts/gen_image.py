@@ -74,6 +74,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import random
 import shutil
 import subprocess
 import sys
@@ -789,9 +790,10 @@ def run_local(
     else:
         pipe.to("cuda")
 
-    gen = None
-    if seed is not None:
-        gen = torch.Generator("cpu").manual_seed(seed)
+    if seed is None:
+        seed = random.randint(0, 2**31 - 1)  # 未指定は毎回ランダム(引いた値を残して再現可能に)
+        log(f"seed: not given -> random {seed}")
+    gen = torch.Generator("cpu").manual_seed(seed)
 
     kwargs: dict = {
         "height": height,
@@ -949,7 +951,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--steps", type=int, default=None, help="override inference steps")
     p.add_argument("--guidance", type=float, default=None, help="override guidance scale")
-    p.add_argument("--seed", type=int, default=None, help="random seed (reproducible)")
+    p.add_argument("--seed", type=int, default=None, help="乱数シード。未指定なら毎回ランダム(引いた値をログに残す)。再現したい時だけ明示する")
     p.add_argument(
         "--lora",
         action="append",

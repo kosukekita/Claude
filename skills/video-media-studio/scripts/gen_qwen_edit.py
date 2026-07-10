@@ -39,6 +39,7 @@ Backend: local-single on one A6000 (bf16 ~40GB; --offload model if tight).
 """
 
 import argparse
+import random
 import sys
 import torch
 from PIL import Image, ImageOps
@@ -82,7 +83,8 @@ def main():
                     help="inference steps. The anime LoRA is a 4-step lightning model; "
                          "use ~4-8 steps + low cfg with it.")
     ap.add_argument("--guidance", type=float, default=4.0, help="true_cfg_scale")
-    ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--seed", type=int, default=None,
+                    help="乱数シード。未指定なら毎回ランダム(引いた値をログに残す)。再現したい時だけ明示する")
     ap.add_argument("--offload", choices=["none", "model", "sequential"], default="model")
     args = ap.parse_args()
 
@@ -115,6 +117,8 @@ def main():
     else:
         pipe.to("cuda")
 
+    if args.seed is None:
+        args.seed = random.randint(0, 2**31 - 1)  # 未指定は毎回ランダム(固定0だと同じ入力で同じ出力になる)
     gen = torch.Generator(device="cpu").manual_seed(args.seed)
     kw = dict(
         image=imgs,
