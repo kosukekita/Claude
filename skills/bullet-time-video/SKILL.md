@@ -28,7 +28,8 @@ Pick by *what is frozen* in your still.
 
 Uses `video-media-studio`'s `cloud_atlascloud.py` (AtlasCloud) for i2v. `$UV` from that skill's `env.sh`.
 
-**Still generation** (choose one):
+**Still generation** (choose one).
+**★ DEFAULT: always append a cinematic phrase to the still prompt** — `映画のワンシーンのようなハイクオリティな写真` / `cinematic movie-scene quality, dramatic lighting, shallow depth of field`. Verified 2026-07-11 to noticeably improve realism, lighting, and composition (low-angle, moody light) vs the same prompt without it. Include it unless the user asks for a flat/snapshot look.
 - **Codex GPT Image** — best scene build + realism, no reference needed (SFW scenes):
   `codex exec --skip-git-repo-check --sandbox workspace-write "Use your image_gen tool to generate ONE tall vertical photorealistic image. Prompt: <scene>, frozen in mid-air / bullet time, cinematic. リアルな実写写真: 毛穴・肌の質感を残す, CG/3Dレンダーっぽさをなくし実際のカメラで撮った写真に"` → output in `~/.codex/generated_images/<newest>/ig_*.png`.
 - **AtlasCloud Seedream 5 / Nano Banana 2** (reference-consistent) — see 75Gravity `scripts/gen_ref_image.py` (base64 refs in HTTP body).
