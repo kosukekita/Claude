@@ -1,4 +1,4 @@
-{ "alwaysThinkingEnabled": true, 
+{
   "permissions": {
     "allow": [
       "Bash(git init:*)",
@@ -47,7 +47,7 @@
     ],
     "defaultMode": "auto"
   },
-  "model": "fable",
+  "model": "opus[1m]",
   "fallbackModel": [
     "opus[1m]"
   ],
@@ -148,6 +148,7 @@
       }
     }
   },
+  "alwaysThinkingEnabled": true,
   "effortLevel": "xhigh",
   "ultracode": true,
   "autoUpdatesChannel": "latest",
