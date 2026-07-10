@@ -1,3 +1,4 @@
+- [並列bashのcd/source優先順位バグ](parallel-bash-cd-source-precedence.md) — `cd && source && (leg0) & (leg1) & wait` は優先順位でleg1がcd/sourceされず環境喪失で全滅(2GPU並列で片側9枚全滅の実バグ)。修正=並列部を`{ ...; }`で包む。exitはwaitが0返すので成果物個数で判定
 - [画像生成のseedは常にランダム化](seed-randomize-always-image-gen.md) — ★恒久ルール(2026-07-10): 画像/動画生成でseed設定可なら再現目的以外は必ず毎回ランダム化。固定seed+似プロンプトで別ペルソナが同一人物・同一動画化した事故(z-image --seed 8固定)。gen_image.py/gen_qwen_edit.pyはseed未指定=自動ランダム+ログ記録に修正(旧gen_qwen_editはdefault=0固定だった)。phase1はpersona.frameSeed乱数化
 - [【再開用】hf-watcher+r2vセッション](session-resume-hf-watcher-r2v.md) — 2026-07-08時点の続き。biz/X停止・勾配ゲート・NSFW限定Top1・真r2v成立まで完了。次アクション候補(HunyuanCustom導入等)と未コミット変更・教訓
 - [sheet-factory 毎朝9時SFWシート自動生成](sheet-factory-daily-sfw-loop.md) — systemd --userループ(akitaken)。Ollamaペルソナ→Codex/Grok生成→pCloud保存→Gmail通知。AppArmorは検知のみ・NSFW派生は手動限定
