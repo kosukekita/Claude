@@ -116,6 +116,7 @@ source scripts/env.sh
     --first-clip s0.mp4 --model wan2.2-i2v-a14b --start 1 --end 8
   ```
 - Grok での t2v が欲しい場合 → **grok-media**（image_gen → image_to_video の 2 段）。
+- **カメラワークを指定したい**（dolly / pan / tilt / zoom / orbit / crane / drone / tracking / whip pan / crash zoom / FPV 等）ときは `reference/camera-movements.md` を参照。46技法×7カテゴリの**再現プロンプト全文**（`Camera: … Movement: … Speed: … Framing: … End: …` の平叙文フル記述で Wan/LTX に効く。出典 aicameramovements.com 原文）＋適用の指針（1クリップ1動き・i2v の可否・NSFWパイプラインでは控えめな動き）。
 
 ## r2v フロー（参照人物 1 枚 + テキスト → 任意シーン動画）= `gen_hunyuan_custom.py`
 
