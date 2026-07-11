@@ -36,10 +36,13 @@ tags: [nsfw-auto, swipe, tinder, tailscale, systemd, reference-selection]
 「選択待ちなし」= PENDINGバッチが無い（未生成 or 既に選択完了で DONE）。多くは異常でない。確認: `cat latest_ref_batch.txt` → その `status.txt`。`DONE` なら選択済み。
 
 ### DONE済みバッチを選び直す（再アーム）— UIに再オープン導線は無い
-1. `latest_ref_batch.txt` が対象バッチを指すことを確認。
-2. `<batch>/status.txt` を `PENDING_REF_SELECTION` に書き換え。
-3. **`<batch>/swipe_state.json` を削除**（★必須。`done:true` のままだと `/api/vote` が 409 を返し、UIが即「全枚数チェック済み」に飛んで再選択できない）。
-4. iPhoneでアプリを再読み込み。
+バッチ実体もポインタも全て `~/media-out/nsfw-auto/` にある。バッチ = `run_<タイムスタンプ>/`。
+1. **対象バッチのフォルダを特定**する（`run_*` 各フォルダの `status.txt` と `manifest.json` の有無・更新時刻で見分ける。`refbatch_*` 等の別フォルダと混同しない）。
+2. **`latest_ref_batch.txt` を対象バッチのフルパスに書き換える**（★重要・忘れやすい。毎朝07:00のタイマーが新バッチで `latest_ref_batch.txt` を上書きするため、**昨日以前のバッチは通常ここを指していない**。「確認」でなく「書き換え」が要る）。
+3. `<batch>/status.txt` を `PENDING_REF_SELECTION` に書き換え（実装が `.strip()` するので末尾改行は問題ない）。
+4. **`<batch>/swipe_state.json` を削除**（★必須。`done:true` のままだと `/api/vote` が 409 を返し、UIが即「全枚数チェック済み」に飛んで再選択できない）。
+5. iPhoneでアプリを再読み込み（サービス再起動は不要＝状態はリクエスト毎に読み直す）。
+- 注意: 選び直しは **keep を再 `cp` するだけで、前回保存済みの `reference/<衣装>/` ファイルは自動削除されない**（cp は追記的）。まっさらにしたいなら該当ファイルを手で消してから確定する。
 
 ### 到達できない時
 `ss -tlnp | grep 8710`（Tailscale IPでListenか）/ `systemctl --user is-active nsfw-swipe` / `tailscale status`（iPhoneがtailnetにいるか）。ufw/firewalld は無効前提。
