@@ -232,6 +232,8 @@ source scripts/env.sh
 > - **クラウド（`cloud_atlascloud.py` / `cloud_openrouter.py`）は `--seed` 未指定なら送信せずプロバイダ側でランダム**になる。特定 seed を記録したいならラン毎に乱数を生成して `--seed` で渡す。
 > - **同一人物を意図的に量産する時**（キャラの別カット等）は、人物ブロック（プロンプト）を固定し、seed も固定 or 明示管理する——この時だけ固定でよい。「別人・別バリエーションが欲しい」局面での固定 seed は事故。
 
+> **参照画像を iPhone で選ぶ（メール通知 + Tinder風スワイプ選択システム）**: 毎朝の nsfw-auto パイプラインが生成する参照候補18枚を、メールで届くリンクから iPhone で ○/✕ スワイプして選ぶ常駐 Web アプリ（Tailscale 限定・PIN不要・セッション非依存）。「アプリが空になる／DONE済みを選び直す（status を戻し `swipe_state.json` を削除）／到達できない」等の**操作・再アーム手順・設計判断（なぜTelegramでなくメール+Tailscaleか）**は `reference/tinder-swipe-selection.md` を参照。
+
 **推奨の既定 3 本柱（実機評価ベース）= `z-image-turbo` / Codex(GPT Image) / Grok。**
 フォトリアルな人物・日常スナップで実機検証した結果: **Z-Image-Turbo（ローカル）= 人物の可愛さ・透明感が最良**、**Grok = 生活感・シーンのリアルさが最良**、**Codex(GPT Image) = ナチュラル/構図忠実**。FLUX.1-dev は同用途では微妙だった（落ち着きすぎ）。特に指定が無ければこの 3 本で出して見比べる。
 
