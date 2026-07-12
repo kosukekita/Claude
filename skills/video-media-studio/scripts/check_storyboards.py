@@ -1,11 +1,19 @@
 #!/usr/bin/env python3
-"""Validate video-media-studio storyboard invariants.
+"""Validate video-media-studio KEYFRAME-FILE invariants (per generation unit).
 
-1 storyboard = 1 continuous shot (no cut/scene-change/time-jump).
-A continuous shot = 1+ CHAINED i2v clips. Storyboard keyframes are the clip
-boundaries: adjacent keyframes = one i2v clip, so their time gap must be within
-the model's generatable range (Kling 3-15s, Seedance 4-15s).
+SCOPE: this validates the per-shot KEYFRAME FILES (storyboard_<shot>_NN.txt),
+each of which is ONE continuous shot = 1 generation unit (no cut/scene-change/
+time-jump; cut_count=0). It does NOT validate the whole-video TEXT storyboard,
+which is a separate higher-level artifact and MAY contain multiple shots/cuts
+(those are generated separately and ffmpeg-concatenated). See
+reference/storyboard-shot-boundary.md (2026-07-12 header) for the two levels.
+
+A continuous shot = 1+ CHAINED i2v clips. Keyframes are the clip boundaries:
+adjacent keyframes = one i2v clip, so their time gap must be within the model's
+generatable range (Kling 3-15s, Seedance 4-15s).
 N keyframes = N-1 clips = min (N-1)*min_duration seconds.
+(Finished video length is NOT capped at 15s: concatenate shots/clips, or use a
+model's native long/extend feature.)
 
 Usage: check_storyboards.py <dir-or-txt> [...]
 """
