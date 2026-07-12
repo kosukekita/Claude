@@ -14,7 +14,20 @@
 - 構図ジャンプ: フルショットからバストアップ、屋上俯瞰からローアングル、正面から背面など、連続カメラ移動だけでは届かない変化。
 - アクションの非連続: 同じ人物でも、姿勢・向き・髪/衣装状態・持ち物・位置関係が途中で飛ぶ。
 
-**同じ作品として連続して見せたい**ことと、**1つの i2v クリップとして連続補間できる**ことは別。前者は編集で作る。後者だけが1ストーリーボードに入る。
+**同じ作品として連続して見せたい**ことと、**1連続ショットとして途切れず補間できる**ことは別。前者（カット跨ぎ）は編集で作る＝別ボード。後者だけが1ストーリーボードに入る。
+
+## 連鎖クリップ（1連続ショット内）と、キーフレーム間隔の下限
+
+1連続ショットは、**1本以上の"連鎖クリップ"**として実現する。i2v クリップには最短尺（**Kling 3s / Seedance 4s**、最長15s）があるため:
+
+- **ストーリーボードの隣接キーフレーム間＝i2v 1クリップ**。隣接フレームの**時間差は最短尺以上・15秒以下**でなければならない。
+- **N枚のキーフレーム＝N-1本のクリップ＝最短 (N-1)×最短尺**。
+  - 2枚（開始/終了）＝1クリップ＝最短3秒（Kling）。
+  - **4枚(2×2)＝3クリップ＝最短9秒**。フレームは `0s / 3s / 6s / 9s`。
+- **1.7s・3.3s のような3秒未満の間隔にフレームを置けない**（i2vの境界にできない）。中間フレームを増やすほど動画は長くなる。
+- 連鎖はクリップnの終了キーフレーム＝クリップn+1の開始キーフレーム（同一画像）で繋ぐ。厳密一致を狙うなら**クリップnの実レンダ最終フレームをクリップn+1の開始画像に使う**（キーフレームの再記述では画がズレてconcatで段差が出る）。
+
+★中間キーフレームで区切った複数クリップは**同一ショット＝同一ボード**でOK。これは**カット（場面転換）とは別物**。カットは別ボード・別動画。
 
 ## i2v start/end 補間としての技術的理由
 
@@ -53,38 +66,35 @@ i2v の start/end 指定は、開始画像と終了画像の間を「同一シ�
 
 ## 機械的にチェックできる不変条件
 
-`storyboard_*.txt` は、最低限次のヘッダを持つ strict 形式にする。
+`storyboard_*.txt` は、最低限次のヘッダを持つ strict 形式にする。キーフレームは `keyframe_N: t_sec=<秒> img=<相対パス>` で0から連番。
 
 ```text
 storyboard_id: storyboard_rewind_city_c1_001
 shot_id: rewind_city_c1
-clip_id: 001
 model: kling_i2v
-duration_sec: 5
-start_keyframe: keyframes/rewind_city_c1_001_start.png
-end_keyframe: keyframes/rewind_city_c1_001_end.png
 continuity: single_continuous_shot
 cut_count: 0
 scene_changes: none
 time_jumps: none
-camera: neon rooftop wide shot, slow push-in only
-content: one continuous rooftop shot; no cut; no time jump
+keyframe_0: t_sec=0 img=../keyframes/rewind_city_c1_001_t0.png
+keyframe_1: t_sec=3 img=../keyframes/rewind_city_c1_001_t3.png
+keyframe_2: t_sec=6 img=../keyframes/rewind_city_c1_001_t6.png
+keyframe_3: t_sec=9 img=../keyframes/rewind_city_c1_001_t9.png
+camera: neon rooftop wide, slow continuous push-in
+content: one continuous rooftop take, single flowing motion
 ```
 
 不変条件:
 
-- `storyboard_id` はファイル basename と一致する。
-- basename は `storyboard_<shot>_NN`。例: `storyboard_rewind_city_c1_001.txt`。
-- 同 basename の `.png` が存在する。
-- 1 txt に `duration_sec` は1つだけ。`start_keyframe` と `end_keyframe` も1つずつだけ。
-- `duration_sec` は使用バックエンドの生成可能尺内。Kling i2v は 3-15 秒、Seedance i2v は 4-15 秒。
-- `continuity` は `single_continuous_shot`。
-- `cut_count` は `0`。
-- `scene_changes` は `none`。
-- `time_jumps` は `none`。
-- `start_keyframe` と `end_keyframe` は別ファイルで、実在する。
-- 1つの txt に `C1/C2/C3`、複数の `shot_id`、複数の `clip_id`、複数の `duration_sec` が出てはいけない。
-- `camera` や `content` に「cut」「scene change」「time jump」「montage」「別カット」「場面転換」など、ショット分割を示す語が出てはいけない。
+- `storyboard_id` はファイル basename と一致し、basename は `storyboard_<shot>_NN`。同 basename の `.png` が存在する。
+- `keyframe_N` は 0 から連番で **2枚以上**（最小＝開始/終了）。各に `t_sec=` と `img=`。
+- `t_sec` は 0 から**狭義単調増加**。`keyframe_0` は `t_sec=0`。
+- **隣接キーフレームの時間差（＝1クリップの尺）がモデル生成可能尺内**（Kling 3-15s / Seedance 4-15s）。3s未満・15s超は不可。
+- **キーフレーム枚数 ＝ クリップ数 + 1**。総尺 ＝ 最後の `t_sec`。
+- `continuity` は `single_continuous_shot`、`cut_count` は `0`、`scene_changes`/`time_jumps` は `none`。
+- 各 `img` は別ファイルで実在する。
+- 1つの txt に `C1/C2/C3`、複数の `shot_id` が出てはいけない（＝カットは別ボード）。
+- `camera` や `content` に「cut」「scene change」「時間ジャンプ」「場面転換」「montage」等のショット分割語を書かない（分割はファイルを分けて表す）。
 
 チェック:
 
