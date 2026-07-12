@@ -44,13 +44,19 @@ crossview. new camera angle: {horizontal}, {height}, {distance}.
 | spatial upscaler | `ltx-2.3-spatial-upscaler-x2-1.1.safetensors` | Lightricks/LTX-2.3 | ❌ 未 |
 | custom nodes | ComfyUI-LTXVideo / KJNodes / VideoHelperSuite / rgthree / RES4LYF / comfyui-int-and-float | 各GitHub | ❌ 未 |
 
-**現状（2026-07-13 セットアップ実施）**:
-- ✅ **基盤スタック全DL済み**（`/data/kita/ComfyUI/models/` に配置・計~42GB）: 22B dev transformer fp8(22G) / distilled speed LoRA(2.6G) / IC-LoRA(97M) / video・audio・preview VAE / gemma text encoder fp8(13G) / text projection / spatial upscaler。
-- ✅ **custom node 6個 導入済み**（ComfyUI-LTXVideo / KJNodes / VideoHelperSuite / rgthree-comfy / RES4LYF / comfyui-int-and-float）。pip依存は uv で解決。
-- ✅ **kornia を 0.7.3 に固定**（ComfyUI-LTXVideo が `kornia.geometry.transform.pyramid.pad` を要求。kornia 0.8.3 で削除されていたため）。⚠️ **共有依存の降格なので HunyuanVideoWrapper(r2v) 等への影響は要確認**。
-- ✅ **ラッパー初版 `scripts/gen_ltx_crossview.py`**（headless ComfyUI 方式・構文OK）。ただし**未テスト**。
-- ⚠️ **未完（要対応）**: (1) このworkflowは **ComfyUIサブグラフ2個＋GetNode/SetNode(16/17)** を含み、**headlessの ui_to_api 変換が最大の難所**（frontendがサブグラフ/Get-Set を解決してAPI形式にする）。確実なのは **ComfyUIのUIで一度 workflow を開き "Export (API)" で API形式JSONを出力** → それをラッパーに食わせる方式。(2) 本サンドボックス環境ではデタッチした ComfyUI 常駐サーバが終了させられ、ヘッドレスのフルテストが困難（ComfyUI起動自体は正常＝device初期化まで到達を確認）。
-- **実行はまだ未検証**（生成テスト未実施）。ComfyUIのUIで `crossview-workflow/ltx2.3-ic-lora-crossview.json` を開いて手動で回すのが現状最も確実。
+**現状（2026-07-13 実装完了・フル完走はサンドボックス制約で未実測）**:
+- ✅ **基盤スタック全DL済み**（`/data/kita/ComfyUI/models/`・計~42GB）: 22B dev transformer fp8(22G) / distilled speed LoRA(2.6G) / IC-LoRA(97M) / video・audio・preview VAE / gemma text encoder fp8(13G) / text projection / spatial upscaler。
+- ✅ **custom node 導入済み**: ComfyUI-LTXVideo / KJNodes / VideoHelperSuite / rgthree-comfy / RES4LYF / comfyui-int-and-float ／ **★`FL_FloatToInt` 用に `ComfyUI_Fill-Nodes` も導入**（WORKFLOW_README の記載は不正確で `comfyui-int-and-float` では別物）。
+- ✅ **kornia を 0.7.3 に固定**（ComfyUI-LTXVideo が `kornia.geometry.transform.pyramid.pad` を要求。0.8.3 で削除）。HunyuanVideoWrapper は import 継続を確認。
+- ✅ **spatial upscaler は `models/latent_upscale_models/` に配置**（`LatentUpscaleModelLoader` は `latent_upscale_models` キーを見る。`upscale_models` ではない）。
+- ✅ **ヘッドレス変換＆ラッパー完成・実ノード実行まで到達を検証**:
+  - `scripts/ui_to_api.py` に **`inline_subgraphs` / `resolve_get_set` / `bypass_reroutes` / `bypass_muted`** を実装（サブグラフ2個・GetNode/SetNode・mode=4バイパスを平坦化）。★特に **mode=4 のミュート/バイパスノードを有効ノードとして残すと validation で落ちて "3秒 no-op" になる** → `bypass_muted` で入力→同型出力へ直結して除去。
+  - `scripts/gen_ltx_crossview.py`（ComfyUI を子プロセス管理・最終2xアップスケール出力ノード5249を回収・`nvidia_rtx_vsr→lanczos` 上書き）。workflow JSON 側でも 5091 の `nvidia_rtx_vsr→lanczos` を確定修正。
+  - **実証**: 修正後、prompt が **validation 通過 → 実ノードが実行される**状態（3秒 no-op は解消）。
+- ⚠️ **フル完走の実測が未達（環境制約）**: **このサンドボックス環境は、22B 2パスの数分かかる生成プロセスを exit 144 で殺す**（fork / 前景 / nohup / run_in_background いずれでも）。よって出力mp4・ピークVRAM・所要時間の**実測ができていない**。コード自体は実ノード実行まで到達済みで、**長時間プロセスが生き残る通常セッションで1回回せば完走する見込み**。
+- **完走コマンド（通常セッションで1回実行）**:
+  `/data/kita/ComfyUI/.venv/bin/python ~/.claude/skills/video-media-studio/scripts/gen_ltx_crossview.py --ref <参照.mp4> --azimuth "slightly to the left" --elevation higher --distance closer --out <out.mp4> --gpu 0 --no-sage`
+  （合否＝出力が 512×512 でない・nb_frames≈241・数分かかる。完走したら本節を「✅実行確認済み（実測VRAM/時間）」に更新）。
 
 ## スキルの既存LTXとの関係
 `gen_ltx23_lora.py` は **i2v**（`--image` 必須）でLoRAをスタックする経路であり、この **v2v IC-LoRA（参照動画入力・in-context）には非対応**。CrossView は上記 ComfyUI v2v 経路で動かす（diffusers 直の v2v IC-LoRA は未検証）。
