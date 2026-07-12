@@ -61,6 +61,17 @@
 29. 「読者目線で違和感がないか確認してください」
 30. 「100点に近づけるために自然さを最優先してください」
 
+## ⑦ シネマ／広告・商品映像調（動画・CM・商品カット向けの追加キュー・上の30個とは別枠）
+実写の広告/商品/シネマ調（例: 商品開封・食品・POV ハンド）で"高級な実写"に寄せたいとき、STYLE ブロックや各ショットに足す。日本語で言われたら英語キュー化して渡す（ローカル diffusion はキーワード、Codex/Grok は自然文）。
+- `soft natural lighting with gentle shadows`（柔らかい自然光・作り物っぽい照明を避ける）
+- `shallow depth of field, creamy background bokeh`（浅い被写界深度・背景ボケ＝被写体が浮く）
+- `cinematic look, subtle filmic color grade`（シネマ調の色）
+- `real camera product photography, premium commercial style`（本物のカメラの商品撮影・高級広告調）
+- `warm practical light, warm wooden table surface, window light`（暖色の実光源・木のテーブル等の生活感）
+- `POV first-person, hands only, no face visible`（一人称・手だけ・顔を映さない POV ハンド）
+- `visible steam, condensation, moisture, natural reflections`（湯気・水滴・自然な反射＝食品/飲料で効く）
+- `subtle motion blur on moving hands, natural handheld feel`（手の自然なブレ・手持ち感）
+
 ## 症状 → 提案するカテゴリの対応
 
 | ユーザーの症状・要望 | 提案 |
