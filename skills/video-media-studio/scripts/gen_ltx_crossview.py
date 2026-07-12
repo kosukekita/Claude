@@ -111,6 +111,8 @@ def spawn_comfyui(comfyui_root: str, port: int, gpu, use_sage: bool):
         cmd += ["--gpu", str(gpu)]
     if not use_sage:
         cmd += ["--no-sage"]
+    # 22B 2パス + 241f が単一48GBを超える → ComfyUI に低VRAM offload を渡す(-- 以降は ComfyUI 引数)
+    cmd += ["--", "--lowvram"]
     log(f"spawning ComfyUI: {' '.join(cmd)}")
     env = os.environ.copy()
     env.pop("_GEV_CLEANED", None)
