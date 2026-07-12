@@ -1,6 +1,6 @@
 ---
 name: academic-writing
-description: "医学・学術論文の執筆支援。構成（IMRAD）、文体、引用形式、AI 生成テキストパターン（18種）の検出・除去を含む。AI 研究時は TRIPOD+AI（27項目）に準拠した報告を支援。投稿先ジャーナルの推薦（JCR IF ベース）にも対応。Use when user writes, edits, or reviews academic manuscripts, or requests humanization of AI-generated text, or asks for journal recommendation. Trigger phrases: 論文, 原稿, manuscript, abstract, humanize, AI文体, 学術英語, IMRAD, 投稿, 論文執筆, アカデミックライティング, 論文校正, academic writing, medical writing, TRIPOD, prediction model, ジャーナル, journal, IF, インパクトファクター, 投稿先, submission. Do NOT trigger for モデル構築・欠損値補完・SHAP 等の解析の実装そのもの（use ai-prediction-model）— 本スキルは予測モデル研究の『執筆・報告』のみを担当する。"
+description: "医学・学術論文の執筆支援。構成（IMRAD）、文体、引用形式、AI 生成テキストパターン（18種）の検出・除去を含む。引用は必ず Zotero フィールド経由（記憶から文献情報を書き下ろすことを禁止し、Zotero に無ければユーザーに追加を依頼して止まる）＋投稿前の PubMed/Crossref 実在確認を規約化。AI 研究時は TRIPOD+AI（27項目）に準拠した報告を支援。投稿先ジャーナルの推薦（JCR IF ベース）にも対応。Use when user writes, edits, or reviews academic manuscripts, inserts or verifies citations/references, requests humanization of AI-generated text, or asks for journal recommendation. Trigger phrases: 論文, 原稿, manuscript, abstract, humanize, AI文体, 学術英語, IMRAD, 投稿, 論文執筆, アカデミックライティング, 論文校正, 引用, 参考文献, 文献リスト, 引用の実在確認, 引用ハルシネーション, citation, reference list, PubMed で確認, Zotero で引用, academic writing, medical writing, TRIPOD, prediction model, ジャーナル, journal, IF, インパクトファクター, 投稿先, submission. Do NOT trigger for モデル構築・欠損値補完・SHAP 等の解析の実装そのもの（use ai-prediction-model）— 本スキルは予測モデル研究の『執筆・報告』のみを担当する。"
 ---
 
 # Academic Writing
@@ -41,9 +41,11 @@ description: "医学・学術論文の執筆支援。構成（IMRAD）、文体�
 - **校正**: 問題箇所を特定し修正案を提示
 - **AI文体除去**: 18パターンに基づいて書き換え
 
+> 🔴 **引用を入れる場面では必ず「引用・参考文献」節の Zotero 規約に従う。** 文献情報を記憶から書き下ろさない。Zotero に無ければ**書かずにユーザーに追加を依頼して止まる**。
+
 ### Step 4: 最終チェック
 
-投稿前チェックリスト（下部参照）を実行。
+投稿前チェックリスト（下部参照）を実行。**引用は PubMed/Crossref で1件ずつ実在確認する**（「引用・参考文献」節の投稿前チェック）。
 
 ---
 
@@ -164,6 +166,29 @@ Results は結果を淡々と記述し、過大主張（over-claim）も過小�
 ---
 
 ## 引用・参考文献
+
+### 🔴 引用は必ず Zotero フィールドを通す（AI が引用を書き下ろすことの禁止）
+
+**最重要。引用ハルシネーション（存在しない文献の捏造）を機構的に不可能にするための規約。**
+
+- **AI（自分）が文献情報を記憶から書き下ろしてはならない。** 著者名・タイトル・誌名・巻・頁・年・DOI を、原稿にも Response にも**直接タイプしない**。記憶から書ける文献情報は、それらしく見えて巻・頁・年だけが違う（あるいは丸ごと存在しない）ことがあり、これが査読で最も信用を失う事故になる。
+- **引用の唯一の正規経路 = Zotero フィールド**（Word の `ADDIN ZOTERO_ITEM CSL_CITATION`）。文献リストも Zotero が生成するフィールド（`ZOTERO_BIBL`）で作る。手打ちの上付き番号・手打ちの文献行を原稿に残さない。
+- **引用したい文献が Zotero ライブラリに無い場合、自分で本文に書き足さない。作業を止めてユーザーに依頼する**:
+  > 「〇〇（主張）に引用が必要ですが、該当文献が Zotero にありません。**Zotero に追加してください**（DOI: … / PMID: …）。追加後に Zotero フィールドとして挿入します。」
+  - DOI/PMID の候補を提示するのは可。ただし**必ず PubMed/Crossref で実在を確認したものだけ**を出し、確認していない候補は「未確認」と明示する。
+  - ユーザーが Zotero に追加したら、`zotero` スキルで item を取得し、フィールドとして挿入する。
+- **査読者回答書（Point-by-Point Response）・カバーレターも同じ規約**。回答書は「急いで文献を1本足す」典型的な場面で、**ハルシネーションの発生確率が最も高い文書**。ここで手打ちの引用を作らない。やむを得ず本文外に文献を書く場合も、**必ず PubMed/Crossref で1件ずつ実在確認してから**書く。
+- **投稿前チェック（必須）**: docx から Zotero フィールドを全抽出し、各文献を PubMed E-utilities（DOI → `esearch?term=<DOI>[AID]`）で突合する。確認するのは (1) 実在と PMID、(2) 著者・誌名・巻・頁・年の一致、(3) 引用番号と文献リストの対応・孤児文献の有無、(4) 撤回論文の有無。**PubMed 非収載（数理統計・計量経済・工学系の雑誌など）は捏造ではない** — Crossref/出版社で実在確認すればよく、これを「ハルシネーション」と誤判定しない。
+
+### 引用ハルシネーションには2種類ある（実在確認だけでは足りない）
+
+1. **第1型: 文献そのものの捏造** — 存在しない論文。上の Zotero 規約＋PubMed 突合で機構的に防げる。
+2. **第2型: 実在する論文を、その論文が述べていない内容の根拠として引く** — こちらは Zotero を通しても防げない。**AI が最もやりがちなのはこちら**。典型:
+   - 論文に**書かれていない数値**を引用付きで書く（例: ガイドライン論文に無い「達成率 60–70%」を、そのガイドラインを引用して書く）
+   - 原著の粒度を勝手に一般化する（例: 原著が**薬剤別**に報告した結果を「**薬効クラス別**」と言い換える）
+   - 原著と逆の評価語を付ける（例: accuracy 0.90 を報告した論文を「性能は modest」の根拠にする）
+   - **時代錯誤の引用**（例: 2016年の総説を、2021年以降に確立した安全性勧告の根拠にする）
+   - **対策**: 数値・評価語・「〜が推奨されている」を引用付きで書くときは、**その数値・文言が引用先の抄録か本文に実在することを確認してから書く**。確認できないなら数値を落として表現を緩めるか、実際にその数値を報告している一次文献に差し替える。
 
 ### バンクーバー方式（医学論文標準）
 
@@ -479,6 +504,12 @@ Author 2: First Name: Kosuke | Last Name: Ebina
 - [ ] Figure Legends 内の略語は本文とは独立して再定義されている（Figure 内の略語は Legend 末尾に Abbreviations として一覧記載）
 - [ ] 統計値に 95% CI と P 値が付記されている
 - [ ] 引用は具体的（曖昧な "Studies show" がない）。引用なき一般化がない
+- [ ] **本文の引用が 100% Zotero フィールドである**（手打ちの上付き番号・手打ちの文献行がゼロ。docx の XML で `ADDIN ZOTERO_ITEM CSL_CITATION` の数と本文引用数が一致することを機械確認した）
+- [ ] **全文献を PubMed/Crossref で1件ずつ実在確認し、PMID/DOI を記録した**（第1型ハルシネーション対策。PubMed 非収載の雑誌は Crossref・出版社で確認し、非収載＝捏造と誤判定していない）
+- [ ] **引用番号と文献リストの対応を機械照合した**（各フィールドの番号＝文献リストの位置、孤児文献ゼロ、初出順昇順。改訂で文献を挿抜すると「全文献が実在のまま番号だけ1つずれる」壊れ方をする）
+- [ ] **撤回論文（Retracted）が含まれていない**（PubMed の PublicationType / CommentsCorrections を確認）
+- [ ] **数値・評価語・「〜が推奨されている」を引用付きで書いた箇所は、その内容が引用先の抄録/本文に実在することを確認した**（第2型ハルシネーション＝実在する論文を、その論文が言っていないことの根拠に使う）
+- [ ] **査読者回答書・カバーレターの引用も同じ基準で実在確認した**（回答書は手打ち引用が混入しやすく、ハルシネーション発生確率が最も高い）
 - [ ] Methods に具体的な数値・結果が混在していない（N数、群ごとの人数等は Results に記載）
 - [ ] 除外「基準」は Methods、除外「件数・残存 n」は Results に分けて記載（同じ除外を1文に混ぜていない）。アウトカム別に分母 n が異なる場合は Results の analysis-set 段落で件数差の理由を明記
 - [ ] Methods と Results の解析項目が 1:1 対応している（Results の全解析・感度分析・代替定義が Methods に設計記述あり。手法なしの結果がない）
