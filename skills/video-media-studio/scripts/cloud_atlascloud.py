@@ -342,6 +342,10 @@ def cmd_video(args: argparse.Namespace) -> int:
     # Task (t2v / i2v / r2v) is picked by the MODEL ID suffix, not a flag.
     if args.image:
         body["image"] = _resolve_media_input(key, args.image)  # single URL/base64
+    if getattr(args, "end_image", None):
+        body["end_image"] = _resolve_media_input(key, args.end_image)  # Kling i2v ending frame
+    if getattr(args, "last_image", None):
+        body["last_image"] = _resolve_media_input(key, args.last_image)  # Seedance i2v ending frame
     if args.images:
         refs = [_resolve_media_input(key, x) for x in _split_csv(args.images)]
         if refs:
@@ -562,6 +566,10 @@ def build_parser() -> argparse.ArgumentParser:
     pv.add_argument("--out", default="out.mp4", help="output mp4 path")
     pv.add_argument("--image", default=None,
                     help="i2v input image: public URL / base64 / local path (local -> uploadMedia, UNVERIFIED)")
+    pv.add_argument("--end-image", default=None, dest="end_image",
+                    help="Kling i2v ENDING frame: URL / base64 / local path")
+    pv.add_argument("--last-image", default=None, dest="last_image",
+                    help="Seedance i2v ENDING frame (last_image): URL / base64 / local path")
     pv.add_argument("--images", default=None,
                     help="reference images (1-3), comma-separated URLs/base64/paths")
     pv.add_argument("--extra-json", default=None, dest="extra_json",
