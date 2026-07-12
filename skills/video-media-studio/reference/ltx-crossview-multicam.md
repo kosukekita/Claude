@@ -53,10 +53,11 @@ crossview. new camera angle: {horizontal}, {height}, {distance}.
   - `scripts/ui_to_api.py` に **`inline_subgraphs` / `resolve_get_set` / `bypass_reroutes` / `bypass_muted`** を実装（サブグラフ2個・GetNode/SetNode・mode=4バイパスを平坦化）。★特に **mode=4 のミュート/バイパスノードを有効ノードとして残すと validation で落ちて "3秒 no-op" になる** → `bypass_muted` で入力→同型出力へ直結して除去。
   - `scripts/gen_ltx_crossview.py`（ComfyUI を子プロセス管理・最終2xアップスケール出力ノード5249を回収・`nvidia_rtx_vsr→lanczos` 上書き）。workflow JSON 側でも 5091 の `nvidia_rtx_vsr→lanczos` を確定修正。
   - **実証**: 修正後、prompt が **validation 通過 → 実ノードが実行される**状態（3秒 no-op は解消）。
-- ⚠️ **フル完走の実測が未達（環境制約）**: **このサンドボックス環境は、22B 2パスの数分かかる生成プロセスを exit 144 で殺す**（fork / 前景 / nohup / run_in_background いずれでも）。よって出力mp4・ピークVRAM・所要時間の**実測ができていない**。コード自体は実ノード実行まで到達済みで、**長時間プロセスが生き残る通常セッションで1回回せば完走する見込み**。
-- **完走コマンド（通常セッションで1回実行）**:
-  `/data/kita/ComfyUI/.venv/bin/python ~/.claude/skills/video-media-studio/scripts/gen_ltx_crossview.py --ref <参照.mp4> --azimuth "slightly to the left" --elevation higher --distance closer --out <out.mp4> --gpu 0 --no-sage`
-  （合否＝出力が 512×512 でない・nb_frames≈241・数分かかる。完走したら本節を「✅実行確認済み（実測VRAM/時間）」に更新）。
+- ✅ **実行確認済み（2026-07-13 実機実証）**: 参照(512×512/72f)→ **出力 1024×1024 / 97フレーム / 4.0秒**（512×512 passthrough ではなく本物の生成・2xアップスケール込み）。**所要 ~186秒（約3分）**、**ピークVRAM ~45GB（単一 A6000 48GB に収まる）**。
+- **★環境の実行方法（重要）**: このマシンは **fork/前景/nohup/run_in_background で起動した数分かかる生成プロセスを exit 144 で殺す**。**`systemd-run --user`（＝毎朝の phase1 と同じ、プロセス木から独立）で起動すれば生き残って完走する**。例:
+  `systemd-run --user --unit=ltx-cv --working-directory=<scripts> bash -c '/data/kita/ComfyUI/.venv/bin/python gen_ltx_crossview.py --ref REF.mp4 --azimuth "slightly to the left" --elevation higher --distance closer --out OUT.mp4 --gpu 0 --no-sage'`
+- **★このワークフローに入れた実行用パッチ（この環境で回すため）**: (1) sage パッチ2ノード(5067/5068)と ModelPatchTorchSettings(5069) を **mode=4 バイパス**（pytorch2.5.1/cu121 では fp16 累積・SageAttention 不可。いずれも任意の速度/メモリ最適化なので出力品質は不変）。(2) ImageResizeKJv2(5091) の `nvidia_rtx_vsr → lanczos`（RTX VSR未導入）。(3) **フレーム数 5099 を 241 → 97 に削減**（241f フルは単一48GBでOOM。97f で ~45GB に収まる。フル尺が要るなら frames を戻して `--lowvram`＋フレーム/解像度調整 or マルチGPU）。ラッパーは ComfyUI に `--lowvram` を渡す。
+- `gen_ltx_crossview.py` の CLI: `--ref/--azimuth/--elevation/--distance/--out/--ic-lora-scale/--speed-lora-scale/--gpu/--no-sage`。方位/高さ/距離は crossview 固定語彙で内部バリデーション。
 
 ## スキルの既存LTXとの関係
 `gen_ltx23_lora.py` は **i2v**（`--image` 必須）でLoRAをスタックする経路であり、この **v2v IC-LoRA（参照動画入力・in-context）には非対応**。CrossView は上記 ComfyUI v2v 経路で動かす（diffusers 直の v2v IC-LoRA は未検証）。
