@@ -358,14 +358,72 @@ def inline_subgraphs(ui):
     return ui
 
 
+def bypass_muted(ui):
+    """Handle node mode: 4=bypass (route each output to its same-type input's
+    source, then drop the node), 2=mute (drop node + its links). ComfyUI skips
+    these at run time; if left as active nodes they fail validation on missing
+    required inputs (e.g. a bypassed LTXVPreprocess with no image input).
+    Run LAST, on the flattened top-level graph. Iterates for bypass chains."""
+    ui = copy.deepcopy(ui)
+    nodes = ui.get("nodes", [])
+    links = [_norm_link(l) for l in ui.get("links", [])]
+
+    while True:
+        target = next((n for n in nodes if n.get("mode") in (2, 4)), None)
+        if target is None:
+            break
+        nid = target["id"]
+        mode = target.get("mode")
+        incoming = [l for l in links if l["target_id"] == nid]
+        outgoing = [l for l in links if l["origin_id"] == nid]
+
+        rewired = []
+        if mode == 4:  # bypass: pass input source through to output consumers by type
+            in_src_by_slot = {l["target_slot"]: l for l in incoming}
+            inputs = target.get("inputs", []) or []
+            outputs = target.get("outputs", []) or []
+            for out in outgoing:
+                oslot = out["origin_slot"]
+                otype = outputs[oslot].get("type") if oslot < len(outputs) else None
+                chosen = None
+                # prefer same-index input if type matches, else first same-type input with a source
+                if oslot in in_src_by_slot and (oslot >= len(inputs) or inputs[oslot].get("type") == otype):
+                    chosen = in_src_by_slot[oslot]
+                if chosen is None:
+                    for i, inp in enumerate(inputs):
+                        if inp.get("type") == otype and i in in_src_by_slot:
+                            chosen = in_src_by_slot[i]
+                            break
+                if chosen is not None:
+                    nl = dict(out)
+                    nl["origin_id"] = chosen["origin_id"]
+                    nl["origin_slot"] = chosen["origin_slot"]
+                    nl["type"] = out.get("type", otype or "*")
+                    rewired.append(nl)
+                # else: no pass-through source -> that output consumer becomes unconnected
+        # drop all links touching this node, then add the rewired ones with fresh ids
+        links = [l for l in links if l["target_id"] != nid and l["origin_id"] != nid]
+        next_lid = _max_id(links + rewired, lambda l: l["id"]) + 1
+        for nl in rewired:
+            nl["id"] = next_lid
+            next_lid += 1
+        links += rewired
+        nodes = [n for n in nodes if n["id"] != nid]
+
+    ui["nodes"] = nodes
+    ui["links"] = [_denorm_link(l) for l in links]
+    return ui
+
+
 def flatten_ui(ui):
-    """Expand subgraphs + resolve Get/Set + bypass Reroute (idempotent for flat graphs)."""
+    """Expand subgraphs + resolve Get/Set + bypass Reroute + handle bypass/mute."""
     ui = inline_subgraphs(ui)      # expose subgraph internals to top level first
     ui = resolve_get_set(ui)       # then resolve named Get/Set channels
     ui = bypass_reroutes(ui)
     # second pass in case inlining exposed nested subgraphs/Get-Set
     ui = inline_subgraphs(ui)
     ui = resolve_get_set(ui)
+    ui = bypass_muted(ui)          # LAST: bypassed(mode4)/muted(mode2) nodes skipped by ComfyUI
     return ui
 
 

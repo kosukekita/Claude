@@ -219,6 +219,13 @@ def patch(api: dict, prompt: str, ref_basename: str, ic_scale: float,
     def nodes_of(ct):
         return [(nid, n) for nid, n in api.items() if n.get("class_type") == ct]
 
+    # 0) ImageResizeKJv2: 'nvidia_rtx_vsr' は nvidia-vfx 未導入で落ちる → 標準 lanczos に差し替え
+    for nid, n in nodes_of("ImageResizeKJv2"):
+        ins = n.get("inputs", {})
+        for k, v in ins.items():
+            if v == "nvidia_rtx_vsr":
+                ins[k] = "lanczos"
+
     # 1) reference video (VHS_LoadVideo.video)
     for nid, n in nodes_of("VHS_LoadVideo"):
         if not _set_str_input(n, lambda v: isinstance(v, str) and v.lower().endswith(
