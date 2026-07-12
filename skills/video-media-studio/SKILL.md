@@ -235,6 +235,9 @@ source scripts/env.sh
 
 > **参照画像を iPhone で選ぶ（メール通知 + Tinder風スワイプ選択システム）**: 毎朝の nsfw-auto パイプラインが生成する参照候補18枚を、メールで届くリンクから iPhone で ○/✕ スワイプして選ぶ常駐 Web アプリ（Tailscale 限定・PIN不要・セッション非依存）。「アプリが空になる／DONE済みを選び直す（status を戻し `swipe_state.json` を削除）／到達できない」等の**操作・再アーム手順・設計判断（なぜTelegramでなくメール+Tailscaleか）**は `reference/tinder-swipe-selection.md` を参照。
 
+> ★**人物・実写生成では画像内に文字を書かせない（z-image-turbo / Qwen-Image-Edit）**。人物やシーンを作るとき、**看板・ロゴ・字幕・透かし・服やスマホ画面の文字などの「画中テキスト」は入れさせない**。理由: 実機では**偶発的な文字（特に日本語・小さい/背景の文字）が崩れて（誤字・文字化け）実写感を壊す**。運用: ①**positive プロンプトに文字要素を書かない**、②negative に `text, letters, words, watermark, caption, subtitle, logo, signage, gibberish text` を必ず入れる（`gen_qwen_edit.py` の DEFAULT_NEG・リアル化既定ネガに既に入っている＝**外さない**）。z-image-turbo は guidance≈0 で negative が効きにくいので、**positive に文字を書かないこと自体が主対策**。
+> - 例外（画中に読める文字を"わざと"出したいとき）: 長く正確な文字は **`gen_image.py --backend qwen-image`（t2i の Qwen-Image 本体＝画中テキスト最強格）** を使う。z-image-turbo は短い英字ブランド語程度なら可（数枚出して綴りの正しい1枚を選ぶ）。**Qwen-Image-Edit は特に日本語の画中テキストが弱い**ので、編集で読める日本語を足すのは避け、必要なら後段で ffmpeg/画像編集でオーバーレイする。
+
 **推奨の既定 3 本柱（実機評価ベース）= `z-image-turbo` / Codex(GPT Image) / Grok。**
 フォトリアルな人物・日常スナップで実機検証した結果: **Z-Image-Turbo（ローカル）= 人物の可愛さ・透明感が最良**、**Grok = 生活感・シーンのリアルさが最良**、**Codex(GPT Image) = ナチュラル/構図忠実**。FLUX.1-dev は同用途では微妙だった（落ち着きすぎ）。特に指定が無ければこの 3 本で出して見比べる。
 
