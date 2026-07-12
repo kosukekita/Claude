@@ -37,6 +37,8 @@ metadata:
 - kornia ImportError(`cannot import name 'pad'`)→ `kornia==0.7.3` にピン（ComfyUI-LTXVideoが `kornia.geometry.transform.pyramid.pad` を使う。0.8.3で削除。uv pipで固定）。ComfyUI venvは "No module named pip" なので `uv pip install --python <.venv/bin/python>`。
 - LatentUpscaleModelLoader "model_name not in []"→ フォルダキーは `latent_upscale_models`（`upscale_models`でない）。upscalerをそこへsymlink。
 
-## 使い分け
-r2v系3経路: **任意シーン(テキストだけ)=HunyuanCustom / 別人モーション転写=Wan-VACE / 別カメラアングル(同一テイクを別視点)=このLTX CrossView**。CrossViewはv1 pilotなので**角度追従は不安定**なことがある（step13700・実験的）。IC-LoRA strength=1.5 / speed LoRA=0.6 が既定。
+## 使い分け（★入力モダリティが三者三様。CrossViewだけ「動画入力のv2v」）
+- **CrossView = v2v**。入力は**動画1本まるごと**（参照動画がIC-LoRAのin-contextガイド。開始画像不要）で、それを別カメラアングルに再レンダ＝novel-view。公式READMEも "Type: Video-to-Video"。**r2vではない**（当初r2vと誤記した→2026-07-13訂正）。
+- 「参照から別の動画を作る」系の対比（入力が違う）: **静止画1枚+テキスト→任意シーン = HunyuanCustom(r2v)** / **別人のモーション動画(骨格)を転写 = Wan-VACE(v2v・動き転写)** / **動画1本→同じテイクを別視点 = このLTX CrossView(v2v・novel-view)**。
+- CrossViewはv1 pilotなので**角度追従は不安定**なことがある（step13700・実験的）。IC-LoRA strength=1.5 / speed LoRA=0.6 が既定。
 関連: [[hunyuancustom-r2v-nogo]] [[wan-vace-r2v-local-setup]] [[r2v-reference-to-video-models]] [[video-media-studio-skill]]
