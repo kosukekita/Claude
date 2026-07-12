@@ -114,7 +114,12 @@ def spawn_comfyui(comfyui_root: str, port: int, gpu, use_sage: bool):
     log(f"spawning ComfyUI: {' '.join(cmd)}")
     env = os.environ.copy()
     env.pop("_GEV_CLEANED", None)
-    return subprocess.Popen(cmd, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    logf = os.environ.get("CROSSVIEW_COMFY_LOG", "/data/kita/ltxdl_tmp/comfy_exec.log")
+    try:
+        _lf = open(logf, "w")
+        return subprocess.Popen(cmd, env=env, stdout=_lf, stderr=subprocess.STDOUT)
+    except Exception:
+        return subprocess.Popen(cmd, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
 
 def place_ref_video(comfyui_root: str, ref_path: str) -> str:
@@ -244,11 +249,34 @@ def patch(api: dict, prompt: str, ref_basename: str, ic_scale: float,
             if isinstance(v, (int, float)) and not isinstance(v, bool):
                 n["inputs"][k] = speed_scale
 
-    # 5) outputs: unique prefix on every saved VHS_VideoCombine (要テスト調整 #2)
-    for nid, n in nodes_of("VHS_VideoCombine"):
+    # 5) outputs: force the FINAL 2x-upscaled combine (the one fed by LTXVLatentUpsampler)
+    #    to be the SOLE save_output, so ComfyUI runs the full sampler->upscale chain and we
+    #    collect the real result — not a base-pass preview or the reference passthrough.
+    def reaches(nid, targets, seen=None):
+        if seen is None:
+            seen = set()
+        if nid in seen or nid not in api:
+            return False
+        seen.add(nid)
+        if api[nid].get("class_type") in targets:
+            return True
+        for v in api[nid].get("inputs", {}).values():
+            if isinstance(v, list) and len(v) == 2 and reaches(str(v[0]), targets, seen):
+                return True
+        return False
+    combines = nodes_of("VHS_VideoCombine")
+    finals = [nid for nid, _ in combines if reaches(nid, {"LTXVLatentUpsampler"})]
+    if not finals:  # no upscaler path: fall back to any sampler-fed combine
+        finals = [nid for nid, _ in combines if reaches(nid, {"SamplerCustomAdvanced"})]
+    final_ids = set(finals)
+    log(f"VHS_VideoCombine: {[nid for nid,_ in combines]}; final(save)= {sorted(final_ids)}")
+    for nid, n in combines:
         ins = n.setdefault("inputs", {})
-        if ins.get("save_output") is True or ins.get("save_output") is None:
+        if nid in final_ids:
+            ins["save_output"] = True
             ins["filename_prefix"] = out_prefix
+        else:
+            ins["save_output"] = False
 
     _flatten_loader_paths(api)
     return api
@@ -321,6 +349,10 @@ def main() -> int:
             print(json.dumps(api, indent=2, ensure_ascii=False))
             return 0
 
+        try:
+            json.dump(api, open("/data/kita/ltxdl_tmp/submitted_wf.json", "w"), indent=1, ensure_ascii=False)
+        except Exception:
+            pass
         pid = submit(server, api)
         log(f"submitted prompt_id={pid}; polling (timeout={args.timeout}s)")
         t0 = time.time()
