@@ -33,8 +33,10 @@ Usage:
   ui_to_api.py --ui sample_ui.json --server ... --dry-post   # POST to validate
 """
 import argparse
+import copy
 import json
 import sys
+from collections import defaultdict
 
 import requests
 
@@ -136,7 +138,239 @@ def _strip_control_values(order, widget_names, widgets):
     return out
 
 
+# ---------------------------------------------------------------------------
+# Flattening pre-pass: expand subgraphs, resolve KJNodes Get/Set, bypass Reroute.
+# ComfyUI's frontend does this before sending /prompt; we replicate it headless.
+# (algorithm per Codex consult 2026-07-13; link output kept ARRAY-format for convert)
+# ---------------------------------------------------------------------------
+SUBGRAPH_INPUT_ID = -10
+SUBGRAPH_OUTPUT_ID = -20
+_SET_TYPES = {"SetNode", "SetNode (KJNodes)", "SetNode_KJ"}
+_GET_TYPES = {"GetNode", "GetNode (KJNodes)", "GetNode_KJ"}
+_REROUTE_TYPES = {"Reroute", "rgthree Reroute", "Reroute (rgthree)"}
+
+
+def _norm_link(l):
+    if isinstance(l, (list, tuple)):
+        return {"id": l[0], "origin_id": l[1], "origin_slot": l[2],
+                "target_id": l[3], "target_slot": l[4], "type": l[5] if len(l) > 5 else "*"}
+    return dict(l)
+
+
+def _denorm_link(l):  # ARRAY format, matches convert()'s expectation
+    return [l["id"], l["origin_id"], l["origin_slot"], l["target_id"], l["target_slot"], l.get("type", "*")]
+
+
+def _max_id(items, key):
+    vals = []
+    for x in items:
+        try:
+            vals.append(int(key(x)))
+        except Exception:
+            pass
+    return max(vals, default=0)
+
+
+def _channel(n):
+    props = n.get("properties") or {}
+    for k in ("channel", "name", "key", "Name"):
+        if props.get(k) not in (None, ""):
+            return str(props[k])
+    w = n.get("widgets_values")
+    if isinstance(w, list) and w:
+        return str(w[0])
+    raise ValueError(f"cannot read channel for node id={n.get('id')} type={n.get('type')}")
+
+
+def bypass_reroutes(ui):
+    ui = copy.deepcopy(ui)
+    nodes = ui.get("nodes", [])
+    links = [_norm_link(l) for l in ui.get("links", [])]
+    changed = True
+    while changed:
+        changed = False
+        for n in list(nodes):
+            if n.get("type") not in _REROUTE_TYPES:
+                continue
+            incoming = [l for l in links if l["target_id"] == n["id"]]
+            if len(incoming) != 1:
+                continue
+            src = incoming[0]
+            for out in links:
+                if out["origin_id"] == n["id"]:
+                    out["origin_id"] = src["origin_id"]
+                    out["origin_slot"] = src["origin_slot"]
+                    out["type"] = out.get("type") or src.get("type", "*")
+            links = [l for l in links if l["id"] != src["id"] and l["target_id"] != n["id"]]
+            nodes = [x for x in nodes if x["id"] != n["id"]]
+            changed = True
+            break
+    ui["nodes"] = nodes
+    ui["links"] = [_denorm_link(l) for l in links]
+    return ui
+
+
+def resolve_get_set(ui):
+    ui = copy.deepcopy(ui)
+    nodes = ui.get("nodes", [])
+    if not any(n.get("type") in _SET_TYPES or n.get("type") in _GET_TYPES for n in nodes):
+        return ui
+    links = [_norm_link(l) for l in ui.get("links", [])]
+    links_by_id = {l["id"]: l for l in links}
+
+    set_source = {}
+    for n in nodes:
+        if n.get("type") not in _SET_TYPES:
+            continue
+        ch = _channel(n)
+        incoming = []
+        for inp in n.get("inputs", []) or []:
+            lid = inp.get("link")
+            if lid is not None and lid in links_by_id:
+                incoming.append(links_by_id[lid])
+        if not incoming:
+            incoming = [l for l in links if l["target_id"] == n["id"]]
+        if len(incoming) != 1:
+            raise ValueError(f"SetNode channel={ch}: input link not unique ({len(incoming)})")
+        l = incoming[0]
+        set_source[ch] = (l["origin_id"], l["origin_slot"], l.get("type", "*"))
+
+    remove_nodes, remove_links, rewired = set(), set(), []
+    for n in nodes:
+        if n.get("type") not in _GET_TYPES:
+            continue
+        ch = _channel(n)
+        if ch not in set_source:
+            raise ValueError(f"GetNode channel={ch}: no matching SetNode")
+        src_id, src_slot, typ = set_source[ch]
+        remove_nodes.add(n["id"])
+        for l in links:
+            if l["origin_id"] == n["id"]:
+                nl = copy.deepcopy(l)
+                remove_links.add(l["id"])
+                nl["origin_id"] = src_id
+                nl["origin_slot"] = src_slot
+                nl["type"] = l.get("type") or typ
+                rewired.append(nl)
+    for n in nodes:
+        if n.get("type") in _SET_TYPES:
+            remove_nodes.add(n["id"])
+            for l in links:
+                if l["target_id"] == n["id"] or l["origin_id"] == n["id"]:
+                    remove_links.add(l["id"])
+
+    ui["nodes"] = [n for n in nodes if n["id"] not in remove_nodes]
+    ui["links"] = [_denorm_link(l) for l in links
+                   if l["id"] not in remove_links
+                   and l["origin_id"] not in remove_nodes
+                   and l["target_id"] not in remove_nodes] + [_denorm_link(l) for l in rewired]
+    return ui
+
+
+def _slot_link_ids(io_slot):
+    return set(io_slot.get("linkIds") or io_slot.get("links") or [])
+
+
+def inline_subgraphs(ui):
+    ui = copy.deepcopy(ui)
+    sub_defs = {sg["id"]: sg for sg in ui.get("definitions", {}).get("subgraphs", [])}
+    if not sub_defs:
+        return ui
+    changed = True
+    while changed:
+        changed = False
+        nodes = ui.get("nodes", [])
+        links = [_norm_link(l) for l in ui.get("links", [])]
+        inst = next((n for n in nodes if n.get("type") in sub_defs), None)
+        if not inst:
+            break
+        changed = True
+        sg = sub_defs[inst["type"]]
+        inst_id = inst["id"]
+        parent_in, parent_out = defaultdict(list), defaultdict(list)
+        for l in links:
+            if l["target_id"] == inst_id:
+                parent_in[l["target_slot"]].append(l)
+            if l["origin_id"] == inst_id:
+                parent_out[l["origin_slot"]].append(l)
+        next_nid = _max_id(nodes, lambda n: n["id"]) + 1
+        next_lid = _max_id(links, lambda l: l["id"]) + 1
+        in_node_id = (sg.get("inputNode") or {}).get("id", SUBGRAPH_INPUT_ID)
+        out_node_id = (sg.get("outputNode") or {}).get("id", SUBGRAPH_OUTPUT_ID)
+        idmap, inner_nodes = {}, []
+        for n in sg.get("nodes", []):
+            if n["id"] in (in_node_id, out_node_id, SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID):
+                continue
+            nn = copy.deepcopy(n)
+            idmap[n["id"]] = next_nid
+            nn["id"] = next_nid
+            next_nid += 1
+            inner_nodes.append(nn)
+        inner_links = [_norm_link(l) for l in sg.get("links", [])]
+        in_link_to_slot = {}
+        for i, s in enumerate(sg.get("inputs", []) or []):
+            for lid in _slot_link_ids(s):
+                in_link_to_slot[lid] = i
+        out_link_to_slot = {}
+        for i, s in enumerate(sg.get("outputs", []) or []):
+            for lid in _slot_link_ids(s):
+                out_link_to_slot[lid] = i
+        new_links, internal_out_src = [], {}
+        for l in inner_links:
+            oid, tid = l["origin_id"], l["target_id"]
+            if oid in (in_node_id, SUBGRAPH_INPUT_ID) or l["id"] in in_link_to_slot:
+                slot = in_link_to_slot.get(l["id"], l["origin_slot"])
+                if l["target_id"] not in idmap:
+                    continue
+                for pl in parent_in.get(slot, []):
+                    nl = copy.deepcopy(l)
+                    nl["id"] = next_lid; next_lid += 1
+                    nl["origin_id"] = pl["origin_id"]; nl["origin_slot"] = pl["origin_slot"]
+                    nl["target_id"] = idmap[l["target_id"]]; nl["target_slot"] = l["target_slot"]
+                    nl["type"] = pl.get("type") or l.get("type", "*")
+                    new_links.append(nl)
+                continue
+            if tid in (out_node_id, SUBGRAPH_OUTPUT_ID) or l["id"] in out_link_to_slot:
+                slot = out_link_to_slot.get(l["id"], l["target_slot"])
+                if l["origin_id"] in idmap:
+                    internal_out_src[slot] = (idmap[l["origin_id"]], l["origin_slot"], l.get("type", "*"))
+                continue
+            if oid in idmap and tid in idmap:
+                nl = copy.deepcopy(l)
+                nl["id"] = next_lid; next_lid += 1
+                nl["origin_id"] = idmap[oid]; nl["target_id"] = idmap[tid]
+                new_links.append(nl)
+        for slot, outs in parent_out.items():
+            src = internal_out_src.get(slot)
+            if not src:
+                continue
+            src_id, src_slot, typ = src
+            for pl in outs:
+                nl = copy.deepcopy(pl)
+                nl["id"] = next_lid; next_lid += 1
+                nl["origin_id"] = src_id; nl["origin_slot"] = src_slot
+                nl["type"] = pl.get("type") or typ
+                new_links.append(nl)
+        ui["nodes"] = [n for n in nodes if n["id"] != inst_id] + inner_nodes
+        ui["links"] = [_denorm_link(l) for l in links
+                       if l["origin_id"] != inst_id and l["target_id"] != inst_id] + \
+                      [_denorm_link(l) for l in new_links]
+    return ui
+
+
+def flatten_ui(ui):
+    """Expand subgraphs + resolve Get/Set + bypass Reroute (idempotent for flat graphs)."""
+    ui = inline_subgraphs(ui)      # expose subgraph internals to top level first
+    ui = resolve_get_set(ui)       # then resolve named Get/Set channels
+    ui = bypass_reroutes(ui)
+    # second pass in case inlining exposed nested subgraphs/Get-Set
+    ui = inline_subgraphs(ui)
+    ui = resolve_get_set(ui)
+    return ui
+
+
 def convert(ui: dict, obj_info: dict) -> dict:
+    ui = flatten_ui(ui)
     nodes = ui["nodes"]
     links = ui.get("links", [])
     # link format: [link_id, from_node, from_slot, to_node, to_slot, type]
