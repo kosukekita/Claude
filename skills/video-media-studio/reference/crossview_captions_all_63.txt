@@ -1,0 +1,63 @@
+crossview. new camera angle: same angle, lower, closer.
+crossview. new camera angle: same angle, lower, same distance.
+crossview. new camera angle: same angle, lower, further.
+crossview. new camera angle: same angle, same height, closer.
+crossview. new camera angle: same angle, same height, same distance.
+crossview. new camera angle: same angle, same height, further.
+crossview. new camera angle: same angle, higher, closer.
+crossview. new camera angle: same angle, higher, same distance.
+crossview. new camera angle: same angle, higher, further.
+crossview. new camera angle: slightly to the left, lower, closer.
+crossview. new camera angle: slightly to the left, lower, same distance.
+crossview. new camera angle: slightly to the left, lower, further.
+crossview. new camera angle: slightly to the left, same height, closer.
+crossview. new camera angle: slightly to the left, same height, same distance.
+crossview. new camera angle: slightly to the left, same height, further.
+crossview. new camera angle: slightly to the left, higher, closer.
+crossview. new camera angle: slightly to the left, higher, same distance.
+crossview. new camera angle: slightly to the left, higher, further.
+crossview. new camera angle: slightly to the right, lower, closer.
+crossview. new camera angle: slightly to the right, lower, same distance.
+crossview. new camera angle: slightly to the right, lower, further.
+crossview. new camera angle: slightly to the right, same height, closer.
+crossview. new camera angle: slightly to the right, same height, same distance.
+crossview. new camera angle: slightly to the right, same height, further.
+crossview. new camera angle: slightly to the right, higher, closer.
+crossview. new camera angle: slightly to the right, higher, same distance.
+crossview. new camera angle: slightly to the right, higher, further.
+crossview. new camera angle: to the left, lower, closer.
+crossview. new camera angle: to the left, lower, same distance.
+crossview. new camera angle: to the left, lower, further.
+crossview. new camera angle: to the left, same height, closer.
+crossview. new camera angle: to the left, same height, same distance.
+crossview. new camera angle: to the left, same height, further.
+crossview. new camera angle: to the left, higher, closer.
+crossview. new camera angle: to the left, higher, same distance.
+crossview. new camera angle: to the left, higher, further.
+crossview. new camera angle: to the right, lower, closer.
+crossview. new camera angle: to the right, lower, same distance.
+crossview. new camera angle: to the right, lower, further.
+crossview. new camera angle: to the right, same height, closer.
+crossview. new camera angle: to the right, same height, same distance.
+crossview. new camera angle: to the right, same height, further.
+crossview. new camera angle: to the right, higher, closer.
+crossview. new camera angle: to the right, higher, same distance.
+crossview. new camera angle: to the right, higher, further.
+crossview. new camera angle: far to the left, lower, closer.
+crossview. new camera angle: far to the left, lower, same distance.
+crossview. new camera angle: far to the left, lower, further.
+crossview. new camera angle: far to the left, same height, closer.
+crossview. new camera angle: far to the left, same height, same distance.
+crossview. new camera angle: far to the left, same height, further.
+crossview. new camera angle: far to the left, higher, closer.
+crossview. new camera angle: far to the left, higher, same distance.
+crossview. new camera angle: far to the left, higher, further.
+crossview. new camera angle: far to the right, lower, closer.
+crossview. new camera angle: far to the right, lower, same distance.
+crossview. new camera angle: far to the right, lower, further.
+crossview. new camera angle: far to the right, same height, closer.
+crossview. new camera angle: far to the right, same height, same distance.
+crossview. new camera angle: far to the right, same height, further.
+crossview. new camera angle: far to the right, higher, closer.
+crossview. new camera angle: far to the right, higher, same distance.
+crossview. new camera angle: far to the right, higher, further.
