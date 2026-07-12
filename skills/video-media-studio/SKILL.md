@@ -29,6 +29,24 @@ allowed-tools: Bash, Read, Write, Glob, SendUserFile, AskUserQuestion
 | (4) 動画スタイル変換 v2v | **既存動画**を別スタイルに変換（リアル↔アニメ等）し、**同じ人物を固定**したまま動きを保つ。NSFW 可 | **★NSFW リアル動画→アニメ動画は `gen_v2v_qwen.py`（Qwen-Image-Edit + アニメ LoRA・実機実証の本命）が第一選択**。汎用スタイル変換や動きの強い拘束が要る場合のみ `gen_v2v_style.py`（SDXL img2img + ControlNet + IP-Adapter）。下の「動画スタイル変換フロー」参照 |
 | (5) r2v（参照→任意シーン動画） | **参照人物 1 枚 + テキスト**で、その人物を**全く別のシチュ**（例: 浴室でシャワー）の動画にする。**モーション元動画は不要**。NSFW 可 | **`gen_hunyuan_custom.py`（HunyuanCustom・headless ComfyUI）**。VACE r2v（`gen_wan_vace.py`）は別人モーション動画を骨格転写する方式で任意シーンは作れない＝**テキストだけで任意シーンにするなら HunyuanCustom**。下の「r2v フロー」参照 |
 
+## ★既定モデル（何も指定が無いとき）＋ 生成前のモデル宣言・承認（必須）
+
+**画像・動画を生成する前に、必ず「使うモデル」を宣言し、ユーザーの承認を得てから本番生成する。**「**〇〇（モデル名）で作ります。よいですか？**」と一言添え、**承認前に本番生成しない**（試作用の静止画キーフレーム生成は続けてよい）。動画は**ストーリーボード承認**と併せてモデルも宣言する。例外＝無人の自律パイプライン（`phase1_generate.mjs`・sheet-factory 等）は既定モデルが固定・承認済みなので都度宣言は不要。
+
+**何も指定が無いときの既定モデル（2026-07-12 ユーザー確定）:**
+
+| 種別 | 既定モデル | 入口 |
+|---|---|---|
+| **SFW 画像** | **Seedream** | `cloud_openrouter.py image`（bytedance/seedream 系） |
+| **SFW 動画** | **Seedance** | `cloud_atlascloud.py video`（seedance i2v）/ OpenRouter |
+| **NSFW 画像・参照なし (t2i)** | **z-image**（ローカル `z-image-turbo`・無検閲・無料） | `gen_image.py --backend z-image-turbo` |
+| **NSFW 画像・参照あり (i2i)** | **Qwen-Image-Edit-2511**（ローカル最新・無検閲・同一人物保持） | `gen_qwen_edit.py --repo Qwen/Qwen-Image-Edit-2511` |
+| **NSFW 動画** | **AtlasCloud wan-2.7**（NSFW は `wan-2.7-spicy`） | `cloud_atlascloud.py video --model atlascloud/wan-2.7-spicy/image-to-video` |
+
+- 上表は**無指定時の出発点**。ユーザーが具体モデルを指定したらそれに従う。
+- **非リアル系（アニメ/漫画/絵画調）NSFW** は上表でなく **Chroma(manga,paint)＋Pony(anime,manga)** が既定（下の「NSFW 画像のモデル使い分け」表）。上表の z-image/Qwen-Edit はフォトリアル NSFW 用。
+- 別モデルが明らかに適する用途（画中テキスト→`qwen-image`、r2v＝参照人物→任意シーン→HunyuanCustom/VACE 等）は、宣言時に「既定は〇〇ですが本件は△△が適します。どちらにしますか？」と提案してよい。
+
 ## バックエンド自動選択（THE core decision）
 
 **判定をモデル（LLM）の頭の中でやらない。** バックエンド選択は 2 経路で機械的に行う:
@@ -141,6 +159,7 @@ source scripts/env.sh
     --first-clip s0.mp4 --model wan2.2-i2v-a14b --start 1 --end 8
   ```
 - Grok での t2v が欲しい場合 → **grok-media**（image_gen → image_to_video の 2 段）。
+- **★無指定時の既定動画モデル**: **SFW＝Seedance**（`cloud_atlascloud.py video`）/ **NSFW＝AtlasCloud wan-2.7（spicy）**（上の「既定モデル」表）。`gen_video.py` の Wan（t2v=1.3b/i2v=a14b）は**ローカルで作りたいとき**の選択肢。**生成前にどのモデルで作るか宣言し、承認を得てから生成する。**
 - **カメラワークを指定したい**（dolly / pan / tilt / zoom / orbit / crane / drone / tracking / whip pan / crash zoom / FPV 等）ときは `reference/camera-movements.md` を参照。46技法×7カテゴリの**再現プロンプト全文**（`Camera: … Movement: … Speed: … Framing: … End: …` の平叙文フル記述で Wan/LTX に効く。出典 aicameramovements.com 原文）＋適用の指針（1クリップ1動き・i2v の可否・NSFWパイプラインでは控えめな動き）。
 
 ## r2v フロー（参照人物 1 枚 + テキスト → 任意シーン動画）= `gen_hunyuan_custom.py`
@@ -264,8 +283,8 @@ source scripts/env.sh
 > ★**人物・実写生成では画像内に文字を書かせない（z-image-turbo / Qwen-Image-Edit）**。人物やシーンを作るとき、**看板・ロゴ・字幕・透かし・服やスマホ画面の文字などの「画中テキスト」は入れさせない**。理由: 実機では**偶発的な文字（特に日本語・小さい/背景の文字）が崩れて（誤字・文字化け）実写感を壊す**。運用: ①**positive プロンプトに文字要素を書かない**、②negative に `text, letters, words, watermark, caption, subtitle, logo, signage, gibberish text` を必ず入れる（`gen_qwen_edit.py` の DEFAULT_NEG・リアル化既定ネガに既に入っている＝**外さない**）。z-image-turbo は guidance≈0 で negative が効きにくいので、**positive に文字を書かないこと自体が主対策**。
 > - 例外（画中に読める文字を"わざと"出したいとき）: 長く正確な文字は **`gen_image.py --backend qwen-image`（t2i の Qwen-Image 本体＝画中テキスト最強格）** を使う。z-image-turbo は短い英字ブランド語程度なら可（数枚出して綴りの正しい1枚を選ぶ）。**Qwen-Image-Edit は特に日本語の画中テキストが弱い**ので、編集で読める日本語を足すのは避け、必要なら後段で ffmpeg/画像編集でオーバーレイする。
 
-**推奨の既定 3 本柱（実機評価ベース）= `z-image-turbo` / Codex(GPT Image) / Grok。**
-フォトリアルな人物・日常スナップで実機検証した結果: **Z-Image-Turbo（ローカル）= 人物の可愛さ・透明感が最良**、**Grok = 生活感・シーンのリアルさが最良**、**Codex(GPT Image) = ナチュラル/構図忠実**。FLUX.1-dev は同用途では微妙だった（落ち着きすぎ）。特に指定が無ければこの 3 本で出して見比べる。
+**SFW 画像の無指定時の既定は Seedream**（上の「既定モデル」表）。**まずモデルを宣言して承認を得てから生成する。**
+- ローカルで実機比較したいとき／Seedream が合わないときの候補（**実機評価**）: `z-image-turbo`（ローカル・人物の可愛さ/透明感が最良）/ Grok（生活感・シーンのリアルさが最良）/ Codex(GPT Image)（ナチュラル/構図忠実）。FLUX.1-dev は同用途では微妙（落ち着きすぎ）。「Seedream 既定です／ローカル3本で見比べますか？」と提案してよい。
 
 ```bash
 source scripts/env.sh
