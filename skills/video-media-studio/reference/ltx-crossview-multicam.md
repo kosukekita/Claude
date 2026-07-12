@@ -44,7 +44,13 @@ crossview. new camera angle: {horizontal}, {height}, {distance}.
 | spatial upscaler | `ltx-2.3-spatial-upscaler-x2-1.1.safetensors` | Lightricks/LTX-2.3 | ❌ 未 |
 | custom nodes | ComfyUI-LTXVideo / KJNodes / VideoHelperSuite / rgthree / RES4LYF / comfyui-int-and-float | 各GitHub | ❌ 未 |
 
-**現状**: IC-LoRA本体・ワークフローJSON・63語彙は取得済み。**実行にはLTX-2.3 22Bの基盤スタック（合計~40-50GB）＋6つのcustom node**をComfyUIに入れる必要があり、これは未導入（要ユーザー承認の大型セットアップ）。導入後は、**HunyuanCustom（`gen_hunyuan_custom.py`）と同じヘッドレスComfyUI方式**でラッパー化できる（このワークフローJSONを ui_to_api 変換 → 参照動画upload → crossviewプロンプトPOST → poll → mp4回収）。
+**現状（2026-07-13 セットアップ実施）**:
+- ✅ **基盤スタック全DL済み**（`/data/kita/ComfyUI/models/` に配置・計~42GB）: 22B dev transformer fp8(22G) / distilled speed LoRA(2.6G) / IC-LoRA(97M) / video・audio・preview VAE / gemma text encoder fp8(13G) / text projection / spatial upscaler。
+- ✅ **custom node 6個 導入済み**（ComfyUI-LTXVideo / KJNodes / VideoHelperSuite / rgthree-comfy / RES4LYF / comfyui-int-and-float）。pip依存は uv で解決。
+- ✅ **kornia を 0.7.3 に固定**（ComfyUI-LTXVideo が `kornia.geometry.transform.pyramid.pad` を要求。kornia 0.8.3 で削除されていたため）。⚠️ **共有依存の降格なので HunyuanVideoWrapper(r2v) 等への影響は要確認**。
+- ✅ **ラッパー初版 `scripts/gen_ltx_crossview.py`**（headless ComfyUI 方式・構文OK）。ただし**未テスト**。
+- ⚠️ **未完（要対応）**: (1) このworkflowは **ComfyUIサブグラフ2個＋GetNode/SetNode(16/17)** を含み、**headlessの ui_to_api 変換が最大の難所**（frontendがサブグラフ/Get-Set を解決してAPI形式にする）。確実なのは **ComfyUIのUIで一度 workflow を開き "Export (API)" で API形式JSONを出力** → それをラッパーに食わせる方式。(2) 本サンドボックス環境ではデタッチした ComfyUI 常駐サーバが終了させられ、ヘッドレスのフルテストが困難（ComfyUI起動自体は正常＝device初期化まで到達を確認）。
+- **実行はまだ未検証**（生成テスト未実施）。ComfyUIのUIで `crossview-workflow/ltx2.3-ic-lora-crossview.json` を開いて手動で回すのが現状最も確実。
 
 ## スキルの既存LTXとの関係
 `gen_ltx23_lora.py` は **i2v**（`--image` 必須）でLoRAをスタックする経路であり、この **v2v IC-LoRA（参照動画入力・in-context）には非対応**。CrossView は上記 ComfyUI v2v 経路で動かす（diffusers 直の v2v IC-LoRA は未検証）。
