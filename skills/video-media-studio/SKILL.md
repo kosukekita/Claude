@@ -44,6 +44,7 @@ allowed-tools: Bash, Read, Write, Glob, SendUserFile, AskUserQuestion
 | **NSFW 動画** | **AtlasCloud wan-2.7**（NSFW は `wan-2.7-spicy`） | `cloud_atlascloud.py video --model atlascloud/wan-2.7-spicy/image-to-video` |
 
 - 上表は**無指定時の出発点**。ユーザーが具体モデルを指定したらそれに従う。
+- **正確なモデルID**は版が変わるので直書きせず、`cloud_openrouter.py models`（Seedream）/ `cloud_atlascloud.py models`（Seedance/wan-2.7）で解決する（例: `bytedance/seedream-*` / `atlascloud/wan-2.7-spicy/image-to-video`）。SFW 動画 Seedance は i2v なので入力キーフレーム画像が要る（承認前に試作キーフレームを作ってよい）。
 - **非リアル系（アニメ/漫画/絵画調）NSFW** は上表でなく **Chroma(manga,paint)＋Pony(anime,manga)** が既定（下の「NSFW 画像のモデル使い分け」表）。上表の z-image/Qwen-Edit はフォトリアル NSFW 用。
 - 別モデルが明らかに適する用途（画中テキスト→`qwen-image`、r2v＝参照人物→任意シーン→HunyuanCustom/VACE 等）は、宣言時に「既定は〇〇ですが本件は△△が適します。どちらにしますか？」と提案してよい。
 
