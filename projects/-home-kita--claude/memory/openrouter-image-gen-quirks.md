@@ -25,8 +25,9 @@ chat経路では aspect_ratio を渡せず各モデルのデフォルト寸法�
 - **sourceful/riverflow (pro/fast両方)** … 502を繰り返す＝プロバイダ全体がダウンしている時間帯あり(ポリシーでなくインフラ障害、時間をおけば回復見込み)。
 - **通った系**: google/gemini-3-pro-image, black-forest-labs/flux.2-pro, bytedance/seedream-4.5, x-ai/grok-imagine-image-quality, recraft/recraft-v4.1-pro。SFW寄り(露出指示なし)の盗撮風スナップはこの5社で生成可。
 
-## ★ユーザー恒久ルール: bytedance/seedream は比較から除外
-seedream-4.5 は**精度が低い**(2048正方形で構図が崩れ気味、題材再現が弱い)ためユーザー指示で **今後の比較生成から外す**(2026-06-26)。OpenRouterのbytedance枠は当面スキップ。比較対象のデフォルト5社→ **google/gemini-3-pro-image, black-forest-labs/flux.2-pro, x-ai/grok-imagine-image-quality, recraft/recraft-v4.1-pro** を基本に(openai/microsoftはポリシー拒否で落ちやすい、sourcefulは502障害が出る時間帯あり)。
+## ★Seedream は SFW 画像の既定（2026-07-12 方針転換・旧「除外」を撤回）
+**2026-07-12 ユーザー確定: SFW 画像の無指定既定＝Seedream**（video-media-studio SKILL.md 既定モデル表が正本。`cloud_openrouter.py image`・`bytedance/seedream-*`、exact id は `models` で解決）。**生成前にモデルを宣言して承認を得る**。露骨NSFWは別軸（参照なし=z-image / 参照あり=Qwen-Image-Edit-2511 / 動画=AtlasCloud wan-2.7-spicy）。
+> 履歴: 2026-06-26 には「seedream-4.5 は精度が低い(2048正方で構図崩れ・題材再現が弱い)ので比較から除外」としていたが、**2026-07-12 に撤回し Seedream を SFW 画像の正本に採用**。ローカル比較の候補5社(gemini-3-pro-image / flux.2-pro / grok-imagine / recraft 等)は"比べたいとき"の予備として残す。
 
 ## プロンプト緩和で拒否を回避できることがある
 "big breast"→"large bust over which she wears casual clothes" 等、露骨表現を弱め "TikTok-like UI" の明示を外すと、Azure(microsoft)やopenaiの拒否を回避できる可能性。Negative Promptはchat経路では別フィールドに渡せないのでプロンプト末尾に "Avoid: ..." として畳み込む(scriptは単一promptのみ受ける)。
