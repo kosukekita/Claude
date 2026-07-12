@@ -109,8 +109,16 @@ flowchart TD
 | 「承認しやすいから複数カットを1枚に」 | 承認効率のためにルールを曲げるのは letter vs spirit 違反。1ショット1ボードで並べて出せばよい。 |
 | 「txtで別クリップと注記したから実質OK」 | 画像を1枚に束ねた時点で違反。ファイルもshot毎に分ける。 |
 
-**詳細な判定基準（1連続ショットの定義・技術的理由・命名/ディレクトリ・REWIND CITYの正しい分割例）は `reference/storyboard-shot-boundary.md` を読む。** ストーリーボード提出前に `"$UV" run scripts/check_storyboards.py <project>/storyboards` を実行して不変条件（1 txt=1クリップ・cut_count=0・尺がモデル範囲内 等）を機械チェックする。雰囲気確認用の一覧は `moodboard_*.png` と命名し、生成承認用 storyboard と混同しない。
+**詳細な判定基準（1連続ショットの定義・技術的理由・命名/ディレクトリ・REWIND CITYの正しい分割例）は `reference/storyboard-shot-boundary.md` を読む。** ストーリーボード提出前に `"$UV" run scripts/check_storyboards.py <project>/storyboards` を実行して不変条件（キーフレーム間隔がモデル生成可能尺内・cut_count=0・continuity=single 等）を機械チェックする。雰囲気確認用の一覧は `moodboard_*.png` と命名し、生成承認用 storyboard と混同しない。
 関連プロジェクトのゲート（例: 75Gravity `.claude-memory/ask-before-video-generation.md`）とも整合させる。
+
+### ★合成用の人物プレートは「無地グレー背景」で生成する（マット信頼性・Codex second-opinion 2026-07-12）
+人物を抜いて別背景/逆行世界に合成する（例: 「人物順行×世界逆行」）なら、**人物レイヤーは中明度チャコールグレーの無地背景**で生成する。**複雑な実背景だと手・指・細い四肢が背景色や看板光に溶け、SAM2 初期マスクから欠落する**（実際に手が消えた）。
+- 背景＝**中明度グレー（RGB≈50–60）**。黒はNG（髪/黒衣装/影が沈む）、肌色近似もNG。
+- **雨・波紋等の"動く世界要素は人物プレートに入れない"**（それらは別レイヤーで `ffmpeg reverse` させる。人物ごと reverse すると人物も逆再生される）。
+- **ライティングだけ最終合成先に合わせる**（例: ネオン夜＝シアン後方右リム／マゼンタ後方左リム／柔らかいキーをカメラ左前）＝抜けやすさと合成の馴染みを両立。
+- ポーズはマット優先: 手・指をはっきり見せ、**手を胴/腰に密着させない**、体幹を横切る腕を避ける。動きは小さく。
+- **SAM2 初期マスクは全部位（頭/胴/上腕/前腕/手首/手の甲/指/脚）に点を打ち"合格制"**: 手・指・髪外周が入っていなければ MatAnyone2 に渡さず、人物生成からやり直す。MatAnyone2 は既存実証設定 `-e5 -d15 --max_size -1`。詳細は 75Gravity `.claude-memory/judge-left-right-by-subject-not-image.md` / `pivot-3dwater-to-ffmpeg-reverse-matte.md`。
 
 ```bash
 source scripts/env.sh
