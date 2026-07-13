@@ -24,6 +24,32 @@ MF は AVS/Express 製の GUI アプリで CLI 駆動の公式手段は無い（
 5. **材料（テキスト・GUI不要）🔑**: `data\props\*.dat` はテキスト。`Keyak Sample(Eq).dat` の弾性率式が Keyak 区分則（`33900ρ^2.2 / 5307ρ+469 / 10200ρ^2.01`）で、**プロジェクトの `fe/hu_to_E.py` と完全一致**。形式=`<density閾値> <flag> <coef> <exp> <const>`（val = coef·ρ^exp + const）。均質材料=`basicdata_en.mat`（name/ν/E/density/critical/yield/…）。
 6. **ソルバ**: `to_exec.exe [EXEC.BINP] [EXEC.INP] (LOG)` が BINP→INP 変換（SOLVER-TYPE V1/V2 判定）→ `solver2.exe`（Intel Fortran + MKL Pardiso, EXEC.INP を読む）→ 結果 `.Bdsp`(変位)/`.Bstr`(応力)。solver.log の SOLUTION PARAMS: DRUCKER-PRAGER ALPHA=0.07(Bessho降伏)。プロジェクト→EXEC.BINP は `solv_cli`/`bat_solv`（GUI だが `CMfilesData::WriteInputData` を持つ）。
 
+## 🎯 決め手 = solver2 の入力 EXEC.INP を自前生成する（メッシュ/材料/BCは自前、ソルバだけMF）
+mesher/GUI authoring は親 GUI プロセス依存で CLI 不可（断念）。代わりに **`solver2.exe` の入力 `EXEC.INP` が完全に素直な人間可読テキスト（FIDAP風固定幅）と判明** → メッシュ・材料・BC を自前 Python で書いて EXEC.INP を生成し、`solver2.exe`（引数なし、cwd の固定名 EXEC.INP を読む）でFEAだけ回す。
+
+**solver2 実行**: `cd <workdir> && solver2.exe`（引数なし）。cwd の `EXEC.INP` を読み `EXEC.Bdsp`/`EXEC.Bstr`/`EXEC.LOG` を書く。`##$$ExSv end 1 1`=正常終了。
+
+**EXEC.INP 固定幅フォーマット（1バイトもズレ不可＝forrtl severe(64) input conversion error）**: 全キーワードで id 終端=col15。TITLE/CNTND/NODE/CNTEL/SOLID/SHELL/PROPT/CNTRL/CNTR2/CNTR3/PRPLT/PRPL2/CNTLP/CNTPR/KUKAN/NGLD/NLOAD/TBLLD/FORCE/DISP/NGLK/NPLNK/PLNK/END。制御ブロック(CNTR2/CNTR3/PRPLT/PRPL2/CNTLP/CNTPR)と拘束ヘッダ(NGLK/NPLNK)を欠くと STEP=0/access violation。
+
+**解析種フラグ = CNTRL の末尾4桁コード**（行内の数値でない）: `CNTRL0000`=線形 / `CNTRL0110`=幾何+材料非線形 / `CNTRL0010`=材料非線形のみ(幾何OFF)。2桁目=幾何非線形, 3桁目=材料非線形。**薄肉シェル付き破断解析は CNTRL0010(幾何OFF) を使う**(幾何非線形ONだと薄膜シェルが数値発散)。GUI捕捉で確定。
+
+**変位制御**: `NGLD 3` + 3グループ(x/y/z成分), 各グループ `NLOAD g 2 nL`/`TBLLD(0,0)(1.0,方向単位ベクトルのg成分)`/全荷重ノードの`DISP <id> <dx dy dz rx ry rz>`(g軸列に押込量mm)。**★拘束は NGLK 2 の2グループ必須**: 固定面 `PLNK <id>111111`(全固定) + 強制変位面 `PLNK <id>222000`(★DOFコード '2'=強制変位モード。これが無いとMFはDISP値を無視し全ゼロ解になる)。反力は cons枠に固定面(+)と強制変位面(-)が両方入り相殺→**強制変位ノードの反力だけ**が破断荷重。
+
+## 🔴 材料 PROPT の書式・単位（最重要 — 間違えると9.8倍硬い材料になる）
+**MFはCT値→密度→ヤング率を直接計算する**（密度をそのままKeyak則に入れる。ρ_ash変換を挟まない）:
+```
+CT値[HU] →[検量線]→ 密度[g/cm3] →[Keyak則]→ ヤング率[MPa]
+```
+- **PROPT列 = `PROPT00122(solid)/00121(shell) <id> <ν> <E> <density> <crit> <yield> <relax> 0 <Efloor> <Ecap>`**。
+- 🔴**単位: E・crit・yield・Efloor・Ecap = [kgf/mm2](MPaでない！ MPa値÷9.80665)。density = [kg/mm3](g/cm3値×1e-6)**。GUI捕捉版がKeyak式+単位変換でピタリ一致して確定。MPaのまま書くとMFは9.8倍硬い材料と解釈し、特に薄肉シェルで応力が非物理発散する。
+- **要素ID**: SHELLとSOLIDは**別系統の1始まり独立採番**(SOLID 1..M, SHELL 1..nSH)。PROPT00121もSHELL IDに対応し1始まり。
+- **皮質シェル(Miura2017型)**: solid四面体の外表面三角形を`SHELL <id> <n1><n2><n3> 3 <厚み>`で重ねる。**厚み=0.001mm(=MF GUIデフォルト`0.100E-02`)。Miura論文の0.2mmを渡すとシェルが自己応力を持ちsolidを発散させる**(MFは薄膜シェルとして扱う設計)。シェル法線はsolid四面体の対向節点で外向き統一。シェル材料は1000HU相当をKeyak則で計算。
+
+## CT値→密度の検量線（Keyak則の入力密度をどう作るか, mf_man.pdf第8章）
+- **ファントム設定時**: 密度[mg/cm3] = CT値×a + b（a,bはファントム4ロッドで校正した値）。
+- **ファントム未使用時 = 標準検量線**: `密度[g/cm3] = (CT値[H.U.] + 1.4246) × 0.001 / 1.0580` (CT値>-1), 0 (CT値≦-1)。⚠**X線管電圧125kVp前提**（マニュアル注記）。管電圧が違うCTでは系統誤差。
+- この密度[g/cm3]を **そのままKeyak則**（E=33900ρ^2.2(ρ≤0.27)/5307ρ+469(0.27<ρ<0.6)/10200ρ^2.01(ρ≥0.6)[MPa]、`Keyak Sample(Eq).dat`と一致）に入れてヤング率を得る。降伏応力も密度から（Keyak S=137ρ^1.88 等）。
+
 ## プロジェクトファイル形式
 バイナリ（独自ヘッダ）: `.geom`(GEO130)/`.mesh`(MES8.0)/`.prop`(PRP130材料)/`.cond`(CND110拘束)/`.forc`(FOC110荷重)/`.roi`/`.pai`/`.phan`(校正)/`.ctm`(CT)/`.set`/`.sys`。`data\sample.*` がテンプレ。`proj2text.exe`(GUI) でテキスト化可（読み出しのみ）。
 テキスト: 材料 `.dat/.mat`、節点グループ `#MFgroup-points`、メッシュ `inputs.json`。
@@ -37,6 +63,11 @@ MF は AVS/Express 製の GUI アプリで CLI 駆動の公式手段は無い（
 - exe を Windows パスで `timeout` に渡す → exit 127。exe は POSIX パス。
 - 圧縮 .mhd を inferSend に渡す → FileNotFoundError（.mhd を探す）。非圧縮で書き出す。
 - marching cubes STL を直接 FloatTetwild → 四面体爆発。smoothing 必須。
+- 🔴**PROPT の E/応力を MPa のまま書く → MFは9.8倍硬い材料と解釈**（MFはkgf/mm2）。密度をg/cm3のまま書く→100万倍（MFはkg/mm3）。E÷9.80665、density×1e-6 で変換。solidは動くが破断荷重が全部間違い、薄肉シェルは非物理発散。
+- 🔴**シェル厚みに Miura論文の0.2mm を渡す → シェルが自己応力を持ちsolid応力が数万〜数百万MPaに発散**。MFは薄膜シェルとして 0.001mm(GUIデフォルト)で扱う。
+- **SHELL要素IDをSOLIDの続き(M+1〜)にする → ID衝突で材料割当が壊れる**。SHELLは1始まり独立採番。
+- **変位制御で強制変位面を PLNK 222000 で拘束しない → DISP値が無視され全ゼロ解**。
+- **CNTRLの行内数値を変えて非線形化しようとする → 効かない**。フラグはキーワード末尾4桁コード(CNTRL0110等)。
 - 絶対破断荷重を臨床値扱い → BC/校正が未閉。**相対ランキング・破断部位・energy で見る**。破断部位が頸部かは**骨マスク重ね画像でユーザー（整形外科医）が目視**。MFメッシュ(tet+shell)は我々の voxel-hex とは別系統なので絶対値比較しない。
 
 ## 関連
