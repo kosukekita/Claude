@@ -17,6 +17,10 @@ metadata:
 6. **カメラの"動き"（dolly/pan/tilt/orbit等）は静止画storyboardに入れず、動画生成の段階で付与**（静止画には"シネマティックな画作り"＝構図/光/質感だけ）。
 7. 画像モデルは Seedream（`cloud_openrouter.py image`・bytedance/seedream）、動画は SFW=Seedance / NSFW=wan-2.7-spicy。**Seedance/Seedream を混同しない**（Seedance=動画、Seedream=画像）。
 
-**違反履歴（2026-07-13）**: (a) テキスト承認前にいきなり2x2画像を作った (b) 秒数ラベルが無く対応が不明 (c) 工程を間違えた（素材をカクテルグラスに注ぐと描いた＝正しくはシェーカーのティン）。→ 本手順をルール化。
+**継続性(continuity)チェック（必須）**: ストーリーに存在しない小物が映り込んでいないか毎パネル目視する。例: 「カクテルを作る途中」なのに完成カクテルグラスが置かれていた（NG＝矛盾）。★原因は**参照画像(カクテル＝グラス入り)を渡すと、その小物/構図ごと再現される**こと。**特定の属性(色など)だけ欲しいときは画像参照でなく文章で指定**し、不要な小物混入を防ぐ＋プロンプトに「〇〇は出さない」「Avoid: 〇〇」を明示する。人物の同一性用の参照は渡してよいが、小物入りの参照は要注意。
+
+**「リアル感」＝人間の肌のリアル感を最優先**（[[realism-naturalization-default-on]]）。storyboard/動画/画像でリアルを求められたら肌質感(毛穴/subsurface/皮脂の艶/no plastic-doll skin)を最強度で効かせる。
+
+**違反履歴（2026-07-13）**: (a) テキスト承認前にいきなり2x2画像を作った (b) 秒数ラベルが無く対応が不明 (c) 工程を間違えた（素材をカクテルグラスに注ぐと描いた＝正しくはシェーカーのティン） (d) ストーリーに無い完成カクテルグラスが映った(参照画像由来・継続性見落とし) (e) 肌のリアル感が不足。→ 本手順＋上記チェックをルール化。
 
 関連: [[quality-over-speed-media-gen]] [[person-image-6elements-confirm-before-fill]] [[realism-naturalization-default-on]] [[reference-selection-use-swipe-app]]
