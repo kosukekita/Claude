@@ -82,148 +82,34 @@ discovery/plan/brainstorming フェーズはブロックしない。クイズは
 - **ループ時の対処**: 指示を重ねるのではなく、会話をクリアするかアプローチを根本から変える
 - **Hooks 活用**: ファイル変更時に Prettier・型チェックを自動実行して技術的負債を防ぐ
 
-## Markdown 作成時は OKF を付ける（ナレッジ/ドキュメント系の .md のみ）
+## Markdown 作成時は OKF を付ける（ナレッジ/ドキュメント系のみ）
 
-ナレッジ/ドキュメント系の Markdown ファイルを**新規作成するとき**は、冒頭に OKF（Open Knowledge Format, Google Cloud 提案 2026-06）の YAML フロントマターを付ける。AI エージェントが複数 md を横断検索する際のメタデータになり、検索性・段階的な関連たどりが向上する。
+設計メモ・仕様書・調査メモ・議事録・README・手順書など、人が読む/AIに渡す `.md` を新規作成するときは OKF YAML フロントマターを付ける。最小必須は `type` のみ。
 
-**対象**: 人が読む/AI に渡すナレッジ文書 — 設計メモ・仕様書・調査メモ・議事録・README 類・手順書など、自分で新規に作る `.md`。
-**対象外**（既存フォーマットがあるので OKF を付けない）:
-- 記憶ファイル（`memory/*.md`・`./.claude-memory/*.md`）— 既に `name/description/metadata` のフロントマターがある
-- スキル本体（`SKILL.md`）・`CLAUDE.md`・`MEMORY.md` など構造が決まっている運用ファイル
-- 他者が定めたフォーマットの md を編集する場合（勝手に足さない）
-
-**形式**（最小ルール = 必須は `type` のみ。他フィールドは内容に応じて任意で足す）:
-```yaml
----
-type: spec            # 必須。文書の種別（例: spec / design / research / readme / runbook / minutes / note）
-title: ○○の設計メモ    # 任意
-description: 一行要約   # 任意
-tags: [okf, watcher]  # 任意
-timestamp: 2026-06-29 # 任意。相対日付でなく絶対日付で
-owner: ○○            # 任意（担当・部門）
----
-
-# 以下は通常の Markdown 本文
-```
-迷ったら `type` だけ付ければよい。OKF の設計思想は「ルールの最小化（必須は type のみ）／作成と利用の分離（特定サービス非依存）／どのツールでも実装可能なシンプルさ」。出典: https://zenn.dev/knowledgesense/articles/14a874a9f423bb
+記憶ファイル、`SKILL.md`、`CLAUDE.md`、`MEMORY.md`、他者が定めた既存フォーマットの `.md` には勝手に付けない。形式例・任意フィールド・出典は記憶 [[okf-markdown-frontmatter]]。
 
 ## Web 取得
 
-公開 URL は標準の WebFetch / WebSearch で取得する。これがブロックされる等で取れない場合のフォールバックとして、`https://r.jina.ai/<元URL>` を使う（URL の前に付けるだけで LLM 向けクリーン Markdown が返る。無料・認証不要）。
+URL付きで「参照して」と指示されたら、必ずそのサイトの実データ/原文を取得して使う。取れないからといって自作・記憶・要約で代替しない。まず取得し、必要なら出典付きで要約・再構成する。
 
-⚠️ Jina Reader は対象 URL を第三者サーバー（Jina AI）に送るプロキシ。**認証付き・社内/機密・個人情報を含む URL には使わない**（医学研究データ・要ログインのリソースは厳禁）。ログイン済みページの取得は chrome-devtools-mcp（既存ログインの Chrome に接続）を使う。
+公開URLは WebFetch/WebSearch を使い、足りなければ curl で HTML/埋め込みJSON/JS を読む、描画後DOMを読む、公開・PIIなしの場合のみ `https://r.jina.ai/<元URL>` を使う、の順で粘る。Jina Reader は第三者プロキシなので、認証付き・社内/機密・個人情報URLには使わない。詳細手順は [[web-original-fetch-playbook]]。
 
-### サイト参照を指示されたら「原文を取得」する（自作で代替しない）
+## 外部AI相談のフォールバック（Codex/Grok が使えないとき）
 
-「このサイトを参照して／内容を入れて」と URL 付きで指示されたら、**そのサイトの実データ（原文）を取得して使う**。取れないからといって**勝手に自作・記憶・要約で代替してはいけない**（サイト参照指示の意味が失われる＝実質的な捏造）。
+Claude 系の知見で足りる相談はこのセッションで答え、OpenRouter/AtlasCloud で `anthropic/claude-*` を呼ばない（二重課金）。外部AIを使うのは、Codex/Grok がレート制限・障害で使えず、Claude 以外の独立視点（OpenAI/Grok/Gemini/DeepSeek 等）が必要なときだけ。
 
-取得の手筋（この順で粘る。1つ失敗しても即あきらめず次を試す）:
-1. **WebFetch**。ただし要約モデルが長文を切る／逐語転載を拒むことがある → 原文が要るなら次へ。
-2. **`curl -sL -A "Mozilla/5.0" <URL>` で生 HTML/JS を取得**し、`data-copy` 等のデータ属性・`__NEXT_DATA__`・埋め込み JSON・参照される `.js`/`.json` から**原文文字列を機械抽出**（grep/node/jq）。SPA でも HTML や JS バンドルにデータが入っていることが多い（実際 aicameramovements.com は `data-copy` 属性に全 46 プロンプトが入っていた）。
-3. **ブラウザ自動化（claude-in-chrome）で描画後 DOM を読む**（`get_page_text`/`read_page`/`javascript_tool` で `document`・ページ内変数・`fetch` を直接叩く／コピー用ボタンの値や data 属性を取る）。
-4. r.jina.ai プロキシ（公開・PII なしのみ）。※プロキシ側モデルが逐語を拒むことがある。
-5. **上記で詰まったら Codex に取得方法を相談**（データファイルの特定・DevTools の見方・具体的な curl/grep コマンド）し、試行錯誤を続ける。
-
-**取れるまで粘るのが原則。** 手を尽くしても本当に取得不能なとき**だけ**ユーザーに相談する（黙って自作に逃げない）。逐語の全文転載が用途上問題になり得るときは、**まず原文を機械取得したうえで**出典を明記し、必要なら要約・再構成する（順序が逆＝先に自作、は禁止）。
-
-## 外部AI相談のフォールバック（Codex/Grok がレート制限・障害で使えないとき）
-
-🔴 **大前提（無駄な二重課金を避ける）**: **Claude 系の知見でよい相談は、OpenRouter を使わず Claude Code 自身（＝いま動いているこのセッション）が答える。** OpenRouter で `anthropic/claude-*` を呼ぶのは Claude 契約と OpenRouter API の**二重課金で無駄**。OpenRouter フォールバックが価値を持つのは「**Codex/Grok がレート制限・障害 かつ、Claude とは違う独立視点（OpenAI系/Grok/Gemini）が欲しい**」ときだけ。単に「別AIに聞きたい」だけなら、まず自分（Claude）が答えられないか考える。
-
-その条件を満たすときは、専用ラッパー `~/.claude/bin/or-consult.mjs`（Node、CLI 非依存で OpenRouter API を直接叩く）で Claude 以外のモデルに相談する。
-
-```bash
-# 基本（既定モデル=openai/gpt-5.5 = Codex(OpenAI系)の代替、空応答が起きにくい）
-node ~/.claude/bin/or-consult.mjs "<相談プロンプト>"
-# 長文は stdin で
-echo "<長いプロンプト>" | node ~/.claude/bin/or-consult.mjs --stdin --model x-ai/grok-4.3
-# 重いreasoningモデル(gpt-5.5-pro/o3-pro)は max-tokens を大きく（さもないと content が空になる）
-node ~/.claude/bin/or-consult.mjs "<プロンプト>" --model openai/o3-pro --max-tokens 12000
-node ~/.claude/bin/or-consult.mjs --list   # 主要な利用可能モデル
-```
-
-- APIキー=`~/.config/openrouter.key`（chmod 600）。ラッパーが読む。**キーの中身は表示しない**。
-- 既定モデル=`openai/gpt-5.5`（Codex=OpenAI系の代替、非重reasoningで content が返りやすい）。既定 `--max-tokens 4000`。
-- **OpenRouter で Claude 系（anthropic/claude-*）は指定しない**（自分で答えれば無料なので）。使うのは gpt / grok / gemini / o3 等の Claude 以外。
-- ⚠️ **重い reasoning モデル（gpt-5.5-pro / o3-pro 等）は max-tokens が小さいと推論トークンで消費され content が空（tokens は消費される）になる**。使うなら `--max-tokens 12000` 以上に。空応答が返ったら max-tokens を上げる。
-- OpenRouter は**従量課金**（残高不足は HTTP 402 → max-tokens を下げるか残高追加）。医学研究データそのものを外部送信する相談は、Codex と同じく PII を含めない前提で使う（大腿骨 FE 等は PII なしで可）。
-- 代替モデル目安: Codex(OpenAI系)の代替=`openai/gpt-5.5`/`openai/o3-pro`(重、要 max-tokens 大)、Grok=`x-ai/grok-4.3`、Gemini=`google/gemini-2.5-pro`。
-- これは**手動フォールバック**（Claude が判断して使う）。`codex:rescue` の自動切替は未実装。Codex が「使用制限に達した」等を返したら、このツールに切り替えて相談を継続する。
-
-### さらにその先のフォールバック（OpenRouter も使い切ったとき）= AtlasCloud
-
-OpenRouter が残高切れ（**HTTP 402**）やレート制限（**429**）で使えないときの**二次バックエンド**。階段は `Codex/Grok → OpenRouter → AtlasCloud`。**大前提は変わらない**: Claude 系の知見でよい相談は自分（このセッション）が答える。**AtlasCloud でも `anthropic/claude-*` は呼ばない**（二重課金で無駄）。使うのは gpt / grok / gemini / deepseek 等の Claude 以外。
-
-- **キー**: `~/.config/atlascloud.key`（1 行・末尾改行なし・`chmod 600`）。無ければ `$ATLASCLOUD_API_KEY`。読み出したら `.strip()`。**キーの中身は表示しない**。
-- LLM 相談のエントリは video-media-studio スキルの `scripts/cloud_atlascloud.py llm`（`/v1` の OpenAI 互換・同期）。画像/動画は `/api/v1` の非同期で形が違う（詳細はスキル本文）。id 例: `deepseek-ai/DeepSeek-V3.1`, `openai/gpt-5.5`, `openai/o3-pro`, `xai/grok-4.5`, `google/gemini-3.1-pro-preview`。**★OpenRouter の `x-ai` は AtlasCloud では `xai`（ハイフン無し）**。
-- ⚠️ **落とし穴（実測）**: エラー封筒は OpenAI 形式でなく `{"code":N,"msg":"..."}`。**不正キーは 401 でなく HTTP 404**（不正 model は 400）→ 404 を「エンドポイントが無い」と即断せず認証失敗も疑う。
-- ⚠️ **AtlasCloud 側の残高切れの HTTP ステータスは未文書＝未確定。402 と決め打ちしてはいけない。** 非 2xx が返ったら `{code,msg}` をそのまま人間に見せて落とす。
-- 医学研究データそのものを外部送信する相談は、Codex/OpenRouter と同じく PII を含めない前提で使う。
+第一候補は `~/.claude/bin/or-consult.mjs`、OpenRouter が 402/429 等で使えない場合のみ AtlasCloud を使う。APIキーの中身は表示せず、医学研究データ等は PII を含めない形で相談する。具体的なコマンド、モデルID、max-tokens、AtlasCloud の落とし穴は記憶 [[external-ai-consult-fallback]]。
 
 ## ツールコール漏洩バグへの対処
 
-ハーネスのシリアライズ不具合により、`<function_calls><invoke name="Bash">...` という形のツール呼び出しが、開始マーカーのプレフィックスが落ちて `count`（または `court`/`call`）という裸トークン + `<invoke name=...>` の生テキストとして出力される既知のバグがある。この場合ツールは実行されず、操作がサイレントに失敗する。
+`count`/`court`/`call` + 生 `<invoke name=...>` が出たら、ツールは実行されていない。まず前置きなしでツール呼び出しだけを短く再送し、繰り返すなら `/compact` → `/rewind` → handoffして新セッションの順で復旧する。
 
-**根本原因の仮説**: 前置き（ツール呼び出し直前の地の文・社交辞令・説明）が引き金になりやすい。前置きを消すだけで素直に通ることが多い。会話そのものは壊れていないので、文脈を捨てずに復旧できる。
+予防として、ツール呼び出しターンでは説明文を混ぜず、結果後に説明する。詳細なプレイブックは [[leaked-toolcall-mitigation-playbook]]、Linux Stop フック実装は [[leaked-toolcall-hook-linux]]。
 
-**漏洩したときの対処（この順番で手を打つ。安いものから）**:
-1. **最優先**: 余計な文章を一切書かず、実行してほしいツール呼び出しだけを短く送り直す（前置きが引き金なので、前置きを消すだけで通ることが多い。会話・文脈は失わない）。
-2. それでも繰り返すなら **`/compact`** で崩れた履歴を要約・圧縮する。
-3. まだダメなら **`/rewind`** で `count`/`court`/`call` が出る前の状態まで巻き戻す（「/rewind でうまくいった」という報告あり）。
-4. 最終手段: 引き継ぎメモを文章で残してから（`handoff` スキル）、新しいセッションに移る。
+## ファイルの手動編集を壊さない（revert 防止・最優先）
 
-> 注: ツールを呼び出すターンでは、前置きを書かずツール呼び出しのみにする（テキストと混在させない）。説明が必要なら、ツール結果が返った後のターンで書く。
+ディスク上の現物が唯一の正。既存ファイルの上書き・削除・再生成・生成スクリプト再実行の前に必ず対象を再読込し、過去コンテキスト・バックアップ・テンプレートを正としない。
 
-**予防策（漏洩を起こしにくい使い方）**:
-- **大量の調査のあとに Write/Edit を続ける場面は要注意**（コンテキストが膨らんだ直後の連続ツール呼び出しで崩れやすい）。
-- **長いプロンプトは分ける**。1つの指示に詰め込みすぎない。
-- **サブエージェントは一度に 3〜4 体までに絞る**（波のように何度も起動すると崩れる。6回目まで無事でも7回目で崩れた記録あり。Workflow の `parallel`/`pipeline` の同時数も同様に絞る）。
-- **1セッション1テーマで区切る**。テーマが変わるなら `/clear` か新セッション。
-- 毎回ツールの前に前置きを書かない（hook では前置き文が hook に渡らないため機構的に縛れない。これはモデル側の規律として守る）。
+一度ユーザーに渡した成果物は最小差分で局所編集する。ユーザーが消した要素は最終決定として復活させず、再生成が必要なら現在成果物の手編集を先にソースへ吸収する。build/format/export/generate 実行後は変更された現物を確認する。迷ったら作り直さず現物を編集し、ユーザー変更を捨てる必要がある場合は先に確認する。
 
-**現状**: 公式の確定した修正はまだ出ていない（GitHub に関連報告が複数ある段階）。当面は「出ても困らない使い方」で付き合う。
-
-**Stop フック**: `detect-leaked-toolcall.mjs`（Linux・node 優先）/ `.ps1`（Windows）/ `.sh`（フォールバック）が漏洩を事後検知し exit 2 でハーネスに続行を促す。これは事後検知であり予防ではない（前置きの有無は hook に渡らないので予防はモデル側の規律で行う）。
-
-## ファイルの手動編集を壊さない（revert 防止・最優先の運用規律）
-
-ユーザーが手で消した/直した内容が、別件の修正指示のあとに元へ戻る事故を防ぐ。原因は主に
-(1) テンプレ/バックアップから成果物を丸ごと作り直す再生成スクリプトの再実行、(2) 成果物の一部を
-ソースから毎回書き直す部分再生成、(3) 古い会話コンテキストを根拠にした全上書き。以下を厳守する。
-
-- **ディスク上の現物が唯一の正。** 既存ファイルを上書き・削除・再生成する前、および生成スクリプトを
-  再実行する前に、対象ファイルを**必ず再読込**して現在の内容を確認する。自分のコンテキストの記憶・
-  バックアップ・テンプレート・過去の生成物・過去の自分の出力を「正」としない。前ターンから時間が
-  経った、またはユーザーが「手で消した/直した」と述べた場合は特に必須。
-- **一度ユーザーに渡した成果物は、以後「最小差分の局所編集」で直す。** `shutil.copyfile(backup, out)`
-  してから全再構築する類の再生成スクリプトを、単発の修正のために再実行しない。どうしても再生成が
-  必要なら、**まず現在の成果物にあるユーザーの手編集を新しいソースへ取り込んでから**再生成する。
-- **手動削除は最終決定。** ユーザーが消した要素（段落・キャプション・ファイル等）は記録し、後続作業で
-  **復活させない**。「冪等に作り直す」スクリプトは消された要素を蘇らせるので、渡した後は使わない。
-- **build / format / export / generate や Python スクリプトは Write/Edit フックの外でファイルを
-  書き換える。** 実行後は変更されたファイルを確認してから次の編集に進む。
-- 迷ったら「作り直す」より「現物を編集する」。ユーザーの変更を捨てる必要が本当にあるなら先に確認する。
-
-補足（機構・2026-07-13 導入）: PreToolUse `guard-file-revert.ps1` が、Write/Edit 対象が「最後に見た/
-書いた」内容から外部変更されていれば exit 2 でブロックする。`record-file-snapshot.ps1`(PostToolUse) が
-Read/Write/Edit ごとに hash を `~/.claude/state/file-snapshots/` に記録し、`warn-bash-overwrite.ps1` が
-上書き系 Bash に助言する。全フックは fail-open。Bash サブプロセス内の書き込みは機械的に止められないので、
-この規律（特に丸ごと再生成の禁止）が最終防波堤である。
-
-### 生成スクリプトの型（absorb-before-regenerate / 3-way ベース照合）
-
-ソース（例: 本文.txt）から出力（例: .docx）を**再生成する**スクリプトを書くときは、revert を機構的に
-防ぐため次の 3-way 照合を必ず入れる。前回生成時の本文を「ベース」として横に保存しておき、再生成の直前に:
-
-- **出力 == ベース** → 手編集されていない。ソースから普通に再生成。
-- **出力 ≠ ベース かつ ソース == ベース** → ユーザーだけが出力を直した。**出力→ソースへ吸収**してから
-  再生成する（手編集を保持）。これがユーザーの言う「手編集をソースへ自動反映」の壊れない実装。
-- **出力 ≠ ベース かつ ソース ≠ ベース** → 両方が直した＝**競合**。出力を一切触らずに停止し、出力側の
-  現内容を別ファイルに書き出して人手で照合させる（自動マージしない）。
-
-成功したら「ベース := 書き込んだソース」に更新する。編集前に手編集を吸い上げるだけの `--sync-only`
-モードも用意しておくと、`①出力→ソース吸収 → ②ソースを編集 → ③再生成` の順で安全に回せる。
-参照実装: `P:/Code/Research/PINN/UKA_FEA_PINN/grant_IFPMR_overseas/figures/build_abroad_figure.py`
-（docx の該当セルから本文を抽出し、ソース `abroad_body.txt` と `abroad_body.base.txt` で 3-way 判定する）。
-docx↔テキストのような**往復可能な形式**でのみ吸収は成立する。往復でロスする要素（図の位置・書式）は
-ソース側を正とし、ユーザーには「本文は Word で直してよい／図はソースから」を伝える。
+revert防止フック、Bash上書きの限界、absorb-before-regenerate / 3-way ベース照合の実装型は記憶 [[file-revert-prevention-playbook]]。
