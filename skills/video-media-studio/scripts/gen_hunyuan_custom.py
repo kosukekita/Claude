@@ -123,11 +123,18 @@ def patch_template(wf: dict, args, ref_filename: str, out_prefix: str) -> dict:
         node["inputs"]["flow_shift"] = args.flow_shift
         node["inputs"]["seed"] = args.seed
 
-    # Block swap (VRAM control)
-    if args.offload is not None:
+    # Block swap (VRAM control). double_blocks max 20; single_blocks (max 40) and
+    # txt/img offload give extra headroom needed above the tested 512x896.
+    if args.offload is not None or args.offload_single is not None or args.offload_io:
         nid, node = find_by_class(wf, "HyVideoBlockSwap")
         if node is not None:
-            node["inputs"]["double_blocks_to_swap"] = args.offload
+            if args.offload is not None:
+                node["inputs"]["double_blocks_to_swap"] = args.offload
+            if args.offload_single is not None:
+                node["inputs"]["single_blocks_to_swap"] = args.offload_single
+            if args.offload_io:
+                node["inputs"]["offload_txt_in"] = True
+                node["inputs"]["offload_img_in"] = True
 
     # VHS_VideoCombine: unique filename prefix + fps + save to output/
     nid, node = find_by_class(wf, "VHS_VideoCombine")
@@ -273,7 +280,11 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--fps", type=int, default=24)
     ap.add_argument("--offload", type=int, default=20,
-                    help="block-swap count (higher=less VRAM/slower). None to leave template default")
+                    help="double-block swap count 0-20 (higher=less VRAM/slower). None to leave template default")
+    ap.add_argument("--offload-single", type=int, default=None,
+                    help="single-block swap count 0-40 (extra VRAM headroom for res above the tested 512x896; template default 0)")
+    ap.add_argument("--offload-io", action="store_true",
+                    help="also offload txt_in/img_in embeddings (more VRAM saved, slightly slower)")
     ap.add_argument("--gpu", default=None, help="physical GPU index for the ComfyUI server")
     ap.add_argument("--server", default=None, help="use an already-running ComfyUI at this URL")
     ap.add_argument("--port", type=int, default=8188)
