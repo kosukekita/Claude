@@ -350,6 +350,10 @@ def cmd_video(args: argparse.Namespace) -> int:
         refs = [_resolve_media_input(key, x) for x in _split_csv(args.images)]
         if refs:
             body["images"] = refs  # 1-3 reference images
+    if getattr(args, "reference_image", None):
+        rimgs = [_resolve_media_input(key, x) for x in args.reference_image]
+        if rimgs:
+            body["reference_images"] = rimgs  # seedance-2.0 reference-to-video (up to 9; "image 1..N" in prompt)
     if args.sync:
         body["enable_sync_mode"] = True
     _merge_extra_json(body, args.extra_json)
@@ -572,6 +576,8 @@ def build_parser() -> argparse.ArgumentParser:
                     help="Seedance i2v ENDING frame (last_image): URL / base64 / local path")
     pv.add_argument("--images", default=None,
                     help="reference images (1-3), comma-separated URLs/base64/paths")
+    pv.add_argument("--reference-image", action="append", default=None, dest="reference_image",
+                    help="reference_images for reference-to-video (repeatable, up to 9; local path/URL/base64; refer as 'image 1..N' in prompt)")
     pv.add_argument("--extra-json", default=None, dest="extra_json",
                     help='model-specific fields as JSON, e.g. \'{"aspect_ratio":"9:16","duration":5}\'')
     pv.add_argument("--sync", action="store_true",
