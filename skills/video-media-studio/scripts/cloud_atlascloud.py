@@ -324,6 +324,8 @@ def cmd_image(args: argparse.Namespace) -> int:
         body["size"] = args.size  # ★"W*H" with an asterisk, not "WxH".
     if args.seed is not None:
         body["seed"] = args.seed
+    if getattr(args, "image", None):
+        body["images"] = [_resolve_media_input(key, x) for x in args.image]  # seedream .../edit reference images (up to 10)
     if args.sync:
         body["enable_sync_mode"] = True
     _merge_extra_json(body, args.extra_json)
@@ -557,6 +559,8 @@ def build_parser() -> argparse.ArgumentParser:
     pi.add_argument("--out", default="image.png", help="output image path")
     pi.add_argument("--size", default=None, help='"W*H" with an asterisk, e.g. 1024*1024 (512-2048)')
     pi.add_argument("--seed", type=int, default=None, help="-1 = random")
+    pi.add_argument("--image", action="append", default=None,
+                    help="reference image for edit models (e.g. seedream .../edit); repeatable; local path/URL/base64")
     pi.add_argument("--extra-json", default=None, dest="extra_json",
                     help='model-specific fields as a JSON object, e.g. \'{"prompt_extend":true}\'')
     pi.add_argument("--sync", action="store_true",
