@@ -82,6 +82,24 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/guard-file-revert.ps1\"; fi"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/warn-bash-overwrite.ps1\"; fi"
+          }
+        ]
       }
     ],
     "SessionStart": [
@@ -129,6 +147,17 @@
             "type": "command",
             "command": "if command -v node >/dev/null 2>&1; then node \"$HOME/.claude/hooks/detect-leaked-toolcall.mjs\"; elif command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/detect-leaked-toolcall.ps1\"; else bash \"$HOME/.claude/hooks/detect-leaked-toolcall.sh\"; fi",
             "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Read|Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/record-file-snapshot.ps1\"; fi"
           }
         ]
       }

@@ -76,3 +76,4 @@ projects/[cC]--Users-*--claude/*
 projects/-*--claude/*
 !projects/-*--claude/memory/
 !projects/-*--claude/memory/**
+/state/
