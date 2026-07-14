@@ -31,20 +31,20 @@ allowed-tools: Bash, Read, Write, Glob, SendUserFile, AskUserQuestion
 
 ## ★既定モデル（何も指定が無いとき）＋ 生成前のモデル宣言・承認（必須）
 
-**画像・動画を生成する前に、必ず「使うモデル」を宣言し、ユーザーの承認を得てから本番生成する。**「**〇〇（モデル名）で作ります。よいですか？**」と一言添え、**承認前に本番生成しない**（試作用の静止画キーフレーム生成は続けてよい）。動画は**ストーリーボード承認**と併せてモデルも宣言する。例外＝無人の自律パイプライン（`phase1_generate.mjs`・sheet-factory 等）は既定モデルが固定・承認済みなので都度宣言は不要。
+**画像・動画を生成する前に、必ず「使うモデル」を宣言し、ユーザーの承認を得てから本番生成する。**「**〇〇（モデル名）で作ります。よいですか？**」と一言添え、**承認前に本番生成しない**（試作用の静止画キーフレーム生成は続けてよい）。動画は**字コンテ承認**と併せてモデルも宣言する。例外＝無人の自律パイプライン（`phase1_generate.mjs`・sheet-factory 等）は既定モデルが固定・承認済みなので都度宣言は不要。
 
 **何も指定が無いときの既定モデル（2026-07-12 ユーザー確定）:**
 
 | 種別 | 既定モデル | 入口 |
 |---|---|---|
-| **SFW 画像** | **Seedream** | `cloud_openrouter.py image`（bytedance/seedream 系） |
-| **SFW 動画** | **Seedance** | `cloud_atlascloud.py video`（seedance i2v）/ OpenRouter |
+| **SFW 画像** | **Codex（GPT Image / image_gen）** | `codex exec --skip-git-repo-check`（参照画像は `-i`・プロンプトは stdin。**サブスク内＝追加課金なし。2026-07-14 ユーザー確定**）。拒否・障害・サイズ要件不適合時のフォールバック＝AtlasCloud Seedream（`cloud_atlascloud.py image`・参照あり=`bytedance/seedream-*/edit`・`--image` 複数可・`--size W*H` で 16:9 明示） |
+| **SFW 動画** | **Seedance** | `cloud_atlascloud.py video`（seedance i2v。`--image`+`--last-image` でキーフレーム連鎖） |
 | **NSFW 画像・参照なし (t2i)** | **z-image**（ローカル `z-image-turbo`・無検閲・無料） | `gen_image.py --backend z-image-turbo` |
 | **NSFW 画像・参照あり (i2i)** | **Qwen-Image-Edit-2511**（ローカル最新・無検閲・同一人物保持） | `gen_qwen_edit.py --repo Qwen/Qwen-Image-Edit-2511` |
 | **NSFW 動画** | **AtlasCloud wan-2.7**（NSFW は `wan-2.7-spicy`） | `cloud_atlascloud.py video --model atlascloud/wan-2.7-spicy/image-to-video` |
 
 - 上表は**無指定時の出発点**。ユーザーが具体モデルを指定したらそれに従う。
-- **正確なモデルID**は版が変わるので直書きせず、`cloud_openrouter.py models`（Seedream）/ `cloud_atlascloud.py models`（Seedance/wan-2.7）で解決する（例: `bytedance/seedream-*` / `atlascloud/wan-2.7-spicy/image-to-video`）。SFW 動画 Seedance は i2v なので入力キーフレーム画像が要る（承認前に試作キーフレームを作ってよい）。
+- **正確なモデルID**は版が変わるので直書きせず、`cloud_atlascloud.py models --type Image|Video` で解決する（例: `bytedance/seedream-v5.0-pro/edit` / `bytedance/seedance-2.0/image-to-video` / `atlascloud/wan-2.7-spicy/image-to-video`）。モデル固有フィールドは `cloud_atlascloud.py schema --model <id>` が正本。SFW 動画 Seedance は i2v なので入力キーフレーム画像が要る（承認前に試作キーフレームを作ってよい）。
 - **非リアル系（アニメ/漫画/絵画調）NSFW** は上表でなく **Chroma(manga,paint)＋Pony(anime,manga)** が既定（下の「NSFW 画像のモデル使い分け」表）。上表の z-image/Qwen-Edit はフォトリアル NSFW 用。
 - 別モデルが明らかに適する用途（画中テキスト→`qwen-image`、r2v＝参照人物→任意シーン→HunyuanCustom/VACE 等）は、宣言時に「既定は〇〇ですが本件は△△が適します。どちらにしますか？」と提案してよい。
 
@@ -109,29 +109,36 @@ flowchart TD
 
 ## 動画生成フロー（t2v / i2v / chaining）
 
-### ★動画生成の前に、まず「テキストのストーリーボード」を書いて承認を得る（例外なし）
-**動画生成でいちばん大事なのは、作る前に映像を"文字のストーリーボード（絵コンテ）"に落とすこと。** これが動画全体の設計図であり承認ゲート。「素早い1本」「テスト」でも省略しない。テンプレは `reference/storyboard-template.md`。
+### ★動画生成の前に、まず「字コンテ」（テキストのショットリスト）を書いて承認を得る（例外なし）
+> **用語（2026-07-14 ユーザー指摘で確定）**: 「ストーリーボード／絵コンテ」は**画像**を指す語。テキスト版を「テキスト・ストーリーボード」と呼ばない。**テキスト版＝「字コンテ」**（英: shot list）、**画像版＝「ストーリーボード（絵コンテ）」**＝字コンテに対応するキーフレーム画像群。ファイル命名（`storyboard_<shot>_NN.png` / `check_storyboards.py` / `storyboard-template.md`）は画像・字コンテ両方の基盤として従来どおり変えない。
 
-**★storyboard「画像」を作る前・作るときの3ルール（2026-07-13 ユーザー確定・必須）**:
+**動画生成でいちばん大事なのは、作る前に映像を"字コンテ"に落とすこと。** これが動画全体の設計図であり承認ゲート。「素早い1本」「テスト」でも省略しない。テンプレは `reference/storyboard-template.md`。
+
+**★経路選択（2026-07-14 ユーザー確定・実機A/B比較で決定）: 人物・キャラの参照画像が揃っている場合、ストーリーボード（キーフレーム画像）は挟まず、「参照画像＋字コンテ」を Seedance r2v に直接入れるのが既定。**
+- 入口: `cloud_atlascloud.py video --model bytedance/seedance-2.0/reference-to-video --reference-image <img>`（複数可・最大9枚。プロンプト内で「image 1..N」と参照）。総尺≤15秒は1回生成（マルチショット・カット込み）。
+- 字コンテ（テキスト）と**ユーザー承認ゲートは従来どおり必須**（省略するのはキーフレーム画像の工程だけ）。字コンテをそのままマルチショットプロンプトに変換して渡す。
+- 下記のストーリーボード画像（1枚シート→キーフレーム→i2v）経路を使うのは、**参照画像が無い/作れない場合**、または**衣装・構図・マッチカットをキーフレームで厳密に固定したい場合**のみ。
+- 実測の注意（2026-07-14）: r2v は参照写真の服装・裸足等を**そのまま採用**し、写真ごとに服が違うと全編の衣装統一が崩れる。衣装を揃えたいときは「その衣装で写った参照だけ」を渡すか、衣装統一のキャラシート1枚を参照にする。
+
+**★storyboard「画像」を作る前・作るときの3ルール（2026-07-13 ユーザー確定。上記の r2v 既定経路を使わない場合に適用）**:
 1. **同一性の参照(ベース人物/キャラ)を、画像を作る前に必ず確認する**: storyboard画像を生成すると、そこに写る人物＝以後の動画の人物が確定し**後で変えられない**（動画はこのstoryboardを土台にi2v化する）。候補参照が複数あるなら**どれをベースにするか着手前にユーザーに聞く**（勝手に1枚選んで作らない）。
-2. **「storyboard画像を作って」＝キーフレームで構成されたボードを作る**: 各パネルは捨てるモックでなく、**動画のi2vにそのまま使える実キーフレーム**。動画の最終アスペクト比（縦9:16等）で生成し、複数参照を混ぜず**1つのベースで全パネルの同一性を揃える**。各パネルに秒数ラベルを焼き込みテキスト絵コンテと1対1で対応させる（ラベル無しはNG）。
-3. **総尺は生成モデルの1回上限（Seedance=15秒）以内に収める**: 「1本もの（継ぎ目なし）」で作るなら、テキスト絵コンテの**総尺を単一生成の上限≤15秒**で設計する（AtlasCloud Seedance i2v/r2v は1回15秒が上限）。超えると多クリップ concat（つぎはぎ感）か延長（継ぎ目・同一性ドリフト）が必要になるので、**最初から15秒以内**に収める。カット割りも総尺≤15sを前提に（別クリップにする場合は各クリップ i2v 最短4s も考慮）。
-- 上の3ルールは storyboard「画像」を作る**経路B（キーフレーム→i2v）**向け。★**参照人物がある同一人物・新シーンは経路A（reference-to-video で直接生成・キーフレーム画像を作らない、下記ステップ3参照）を既定**にする。ただし**ベース参照の確認（ルール1）は経路Aでも必須**。手順の全体（不確かならCodex確認→テキスト先行→承認→経路A直接r2v or 経路Bキーフレーム）は記憶 [[storyboard-text-first-procedure]]。リアルは[[realism-naturalization-default-on]]の通り「人間の肌のリアル感」を最優先。
+2. **「storyboard画像を作って」＝1枚のシート画像にまとめて生成する（2026-07-14 ユーザー確定・旧「パネル個別生成」から変更）**: 全パネル（各ショットの開始/終了キーフレーム・秒数ラベル s01|0s 等を各パネルに付ける）＋**人物リファレンスのキャラクターシート列（複数の参照写真から作る・シート列は文字なし＝キャラシート固定ルール準拠）**を**1枚の画像として生成する**（SFW 既定＝Codex GPT Image）。理由: 1枚生成はパネル間の背景・内装・人物・照明の一貫性が個別生成より明確に高い（実測 2026-07-14: 個別生成はショット間で荒野の地形や部屋の内装がドリフトした）。**i2v 用の実キーフレームは、このシートを構図・シーン・同一性の正本（参照画像）として、パネルごとに動画の最終アスペクト比・フル解像度で個別に再生成する**（シート内の低解像度パネルをそのまま i2v に入れない）。
+3. **総尺は生成モデルの1回上限（Seedance=15秒）以内に収め、★総尺≤15秒なら本番生成は「1回の Seedance 生成」で作る（2026-07-14 ユーザー確定）**: Seedance はネイティブのマルチショット生成（1クリップ内のカット・場面転換）に対応しているので、**カットは ffmpeg concat で作らずプロンプトで指示して1回で生成する**（つぎはぎ感・ショット間の同一性ドリフトを避ける）。ffmpeg concat を使うのは**総尺>15秒**か、**ショット単位の再生成・差し替えが必要になった場合のみ**。字コンテの総尺は単一生成の上限≤15秒で設計する（AtlasCloud Seedance i2v/r2v は1回15秒が上限）。
+- 手順の全体（不確かならCodex確認→テキスト先行→承認→キーフレーム画像）は記憶 [[storyboard-text-first-procedure]]。リアルは[[realism-naturalization-default-on]]の通り「人間の肌のリアル感」を最優先。
 
-1. **動画全体を1つのテキスト・ストーリーボードにする（マルチショット可＝カット・場面転換を含んでよい）。** 1本の動画は複数ショットの連なり。各ショットに **番号 / タイムスタンプ（0–2.5s, 2.5–5s …）/ VISUAL:（何が映るか＝被写体・背景・構図）/ ACTION:（被写体・カメラの動き。カメラワークは `reference/camera-movements.md` の定型を使う）/ DIALOGUE・AUDIO:（セリフ・環境音・ASMR・BGM）** を書く。さらに**全ショット共通の STYLE ブロック**（画風・照明・被写界深度・カメラ・質感）と**メタ情報**（総尺 / 形式＝アスペクト比 9:16 等 / 想定視聴者 / 音の方向性）を頭に付ける。記号・矢印で誤魔化さず、**そのまま生成に使える具体記述**にする。
+1. **動画全体を1つの字コンテにする（マルチショット可＝カット・場面転換を含んでよい）。** 1本の動画は複数ショットの連なり。各ショットに **番号 / タイムスタンプ（0–2.5s, 2.5–5s …）/ VISUAL:（何が映るか＝被写体・背景・構図）/ ACTION:（被写体・カメラの動き。カメラワークは `reference/camera-movements.md` の定型を使う）/ DIALOGUE・AUDIO:（セリフ・環境音・ASMR・BGM）** を書く。さらに**全ショット共通の STYLE ブロック**（画風・照明・被写界深度・カメラ・質感）と**メタ情報**（総尺 / 形式＝アスペクト比 9:16 等 / 想定視聴者 / 音の方向性）を頭に付ける。記号・矢印で誤魔化さず、**そのまま生成に使える具体記述**にする。
 
 2. **ユーザーに提示して承認を得る。承認前に本番動画を生成しない**（キーフレーム用の静止画生成は続けてよい）。
 
-3. **承認後、動画を生成する。参照人物があるかで2経路を選ぶ（★2026-07-14 ユーザー確定：同一人物・新シーンは経路Aを既定に）。**
-   - **★経路A（推奨・既定）＝ 参照人物＋テキスト絵コンテから reference-to-video で"直接"生成（キーフレーム画像を挟まない）**: 本人を別の場所・別の状況で動かす動画（例: 仕事→スパでマッサージ）は、中間キーフレームを作らず r2v で直接生成（つぎはぎ感・工数減）。★**総尺≤15秒は複数ショット/カットも"1回の生成"にまとめる（ショット毎に分けない）**＝ショット別生成は背景・人物がショット間でドリフトするため（2026-07-14 ユーザー確定）。参照画像＋テキスト絵コンテ全体を1プロンプトで渡し、カット/アングル切替もその中に記述。総尺>15秒の時だけ複数回生成→`ffmpeg concat`。モデル: SFW/水着＝AtlasCloud Seedance `.../reference-to-video`（`cloud_atlascloud.py video`・参照1〜3枚。★**音声(ASMR/環境音含む)も動画と一緒に生成できる＝後付け不要**）／ NSFW寄り＝wan-2.7 reference系 or ローカル HunyuanCustom（`gen_hunyuan_custom.py`）。**★注意**: r2v は「手で胸を揉む」等の複雑な相互作用では破綻しやすい（[[hunyuancustom-r2v-nogo]]）→破綻したら経路Bにフォールバック。
-   - **経路B（フォールバック）＝ キーフレーム→i2v連鎖**: 参照人物が無い、または開始/終了画やカット尺を精密に制御したい時。1連続ショット（内部カット無し）＝ i2v のキーフレーム連鎖。実測(AtlasCloud): Kling `image-to-video`=3〜15秒 / Seedance=4〜15秒。隣接キーフレーム間＝ i2v 1クリップ（時間差は最短尺以上・15秒以下、N枚＝N-1クリップ、3秒未満間隔は不可）。生成単位ごとに `storyboard_<shot>_NN.png`（キーフレーム実画像）＋ `storyboard_<shot>_NN.txt` を作り、隣接コマを i2v の開始/終了画像に指定（Kling=`image`+`end_image` / Seedance=`image`+`last_image`）して生成。
-   - **ショット間のカット（場面転換）は、経路B または 総尺>15秒 の時に各ショットを別々に生成して `ffmpeg concat` で繋ぐ**（総尺≤15秒の経路Aは1回の生成にカットも含めるのでconcat不要）。
+3. **承認後の生成: 総尺≤15秒は分解せず1回の Seedance 生成で作る（カット込みをプロンプトで指示・2026-07-14 ユーザー確定）。以下の"生成単位"への分解は、総尺>15秒 またはショット別の再生成・差し替えが必要な場合のみ。**
+   - **1連続ショット（内部にカット無し）＝ i2v のキーフレーム連鎖**。隣接キーフレーム間＝ i2v 1クリップ。実測(AtlasCloud): Kling `image-to-video`=3〜15秒 / Seedance=4〜15秒。**隣接キーフレームの時間差は最短尺（Kling 3s / Seedance 4s）以上・15秒以下**（N枚＝N-1クリップ）。0.6s 等の細切れ・3秒未満間隔は i2v の境界にできない。生成単位ごとに `storyboard_<shot>_NN.png`（キーフレーム実画像）＋ `storyboard_<shot>_NN.txt`（各キーフレーム時刻・各クリップ尺・内容・カメラ）を作り、隣接コマを i2v の開始/終了画像に指定（Kling=`image`+`end_image` / Seedance=`image`+`last_image`）して生成。
+   - **ショット間のカット（場面転換）＝ 各ショットを別々に生成して `ffmpeg concat` で繋ぐ**（カットは編集で作る）。
 
-4. **★15秒は完成尺の上限ではない。** 複数クリップ/複数ショットを繋げばいくらでも伸ばせる。加えて**新しめのモデルはネイティブの長尺・延長(extend/last-frame継続)機能**を持つものがあり、1回のAPI/1クリップ＝15秒には縛られない。**「1ストーリーボード＝1生成API」ではない**——テキスト絵コンテが土台で、生成は複数回・複数手段でよい。
+4. **★15秒は完成尺の上限ではない。** 複数クリップ/複数ショットを繋げばいくらでも伸ばせる。加えて**新しめのモデルはネイティブの長尺・延長(extend/last-frame継続)機能**を持つものがあり、1回のAPI/1クリップ＝15秒には縛られない。**「1字コンテ＝1生成API」ではない**——字コンテが土台で、生成は複数回・複数手段でよい。
 
 5. **タイミングをフリーズフレームやスロー水増しで"それっぽく"作らない**（「途中で止まってるだけ」に見える）。動きは実生成クリップで作る。特殊時間演出(freeze/reverse)が要るなら VFX レイヤーで別途。
 
-**用語の整理（重要）**: 「**テキスト・ストーリーボード**」＝**動画全体**の設計図（マルチショット可・これが本命の成果物）。「**1連続ショット**」＝その中の**生成単位**（カット無しで i2v 連鎖できる1区間）。`scripts/check_storyboards.py` と `reference/storyboard-shot-boundary.md` は、この**生成単位のキーフレームファイル**（1ファイル＝1連続ショット・cut_count=0）が i2v で無理なく作れるかを検証するもので、**テキスト絵コンテ全体を1ショットに制限する意味ではない**（絵コンテはカットを持ってよい）。どこでショットを割る/連鎖するかの判定基準は `reference/storyboard-shot-boundary.md`。提出前に `"$UV" run scripts/check_storyboards.py <project>/storyboards` でキーフレームファイルの不変条件を機械チェック。雰囲気確認は `moodboard_*.png` と命名。関連プロジェクトのゲート（例: 75Gravity `.claude-memory/ask-before-video-generation.md`）とも整合させる。
+**用語の整理（重要）**: 「**字コンテ**」＝**動画全体**の設計図（テキストのショットリスト。マルチショット可・これが本命の成果物。旧称: テキスト・ストーリーボード）。「**1連続ショット**」＝その中の**生成単位**（カット無しで i2v 連鎖できる1区間）。`scripts/check_storyboards.py` と `reference/storyboard-shot-boundary.md` は、この**生成単位のキーフレームファイル**（1ファイル＝1連続ショット・cut_count=0）が i2v で無理なく作れるかを検証するもので、**字コンテ全体を1ショットに制限する意味ではない**（字コンテはカットを持ってよい）。どこでショットを割る/連鎖するかの判定基準は `reference/storyboard-shot-boundary.md`。提出前に `"$UV" run scripts/check_storyboards.py <project>/storyboards` でキーフレームファイルの不変条件を機械チェック。雰囲気確認は `moodboard_*.png` と命名。関連プロジェクトのゲート（例: 75Gravity `.claude-memory/ask-before-video-generation.md`）とも整合させる。
 
 ### ★合成用の人物プレートは「無地グレー背景」で生成する（マット信頼性・Codex second-opinion 2026-07-12）
 人物を抜いて別背景/逆行世界に合成する（例: 「人物順行×世界逆行」）なら、**人物レイヤーは中明度チャコールグレーの無地背景**で生成する。**複雑な実背景だと手・指・細い四肢が背景色や看板光に溶け、SAM2 初期マスクから欠落する**（実際に手が消えた）。
@@ -292,7 +299,7 @@ source scripts/env.sh
 > ★**人物・実写生成では画像内に文字を書かせない（z-image-turbo / Qwen-Image-Edit）**。人物やシーンを作るとき、**看板・ロゴ・字幕・透かし・服やスマホ画面の文字などの「画中テキスト」は入れさせない**。理由: 実機では**偶発的な文字（特に日本語・小さい/背景の文字）が崩れて（誤字・文字化け）実写感を壊す**。運用: ①**positive プロンプトに文字要素を書かない**、②negative に `text, letters, words, watermark, caption, subtitle, logo, signage, gibberish text` を必ず入れる（`gen_qwen_edit.py` の DEFAULT_NEG・リアル化既定ネガに既に入っている＝**外さない**）。z-image-turbo は guidance≈0 で negative が効きにくいので、**positive に文字を書かないこと自体が主対策**。
 > - 例外（画中に読める文字を"わざと"出したいとき）: 長く正確な文字は **`gen_image.py --backend qwen-image`（t2i の Qwen-Image 本体＝画中テキスト最強格）** を使う。z-image-turbo は短い英字ブランド語程度なら可（数枚出して綴りの正しい1枚を選ぶ）。**Qwen-Image-Edit は特に日本語の画中テキストが弱い**ので、編集で読める日本語を足すのは避け、必要なら後段で ffmpeg/画像編集でオーバーレイする。
 
-**SFW 画像の無指定時の既定は Seedream**（上の「既定モデル」表）。**まずモデルを宣言して承認を得てから生成する。**
+**SFW 画像の無指定時の既定は Codex（GPT Image / image_gen）**（2026-07-14 ユーザー確定。サブスク内で追加課金が無いため、SFW は従量課金クラウドより Codex を先に使う。拒否・障害時のみ AtlasCloud Seedream）。**まずモデルを宣言して承認を得てから生成する。**
 - ローカルで実機比較したいとき／Seedream が合わないときの候補（**実機評価**）: `z-image-turbo`（ローカル・人物の可愛さ/透明感が最良）/ Grok（生活感・シーンのリアルさが最良）/ Codex(GPT Image)（ナチュラル/構図忠実）。FLUX.1-dev は同用途では微妙（落ち着きすぎ）。「Seedream 既定です／ローカル3本で見比べますか？」と提案してよい。
 
 ```bash
@@ -423,9 +430,11 @@ bash scripts/grok_delegate.sh    # grok-media の契約を表示して委譲（�
 
 > **REQUIRED SUB-SKILL marker:** Grok 経路はすべて **grok-media** に従う（CLI 起動・auth gate `grok models`・`mktemp -d` clean-dir・NL ツール命名 image_gen/image_edit/image_to_video/reference_to_video・`~/.grok/sessions/.../{images,videos}/` からの出力回収・`grok -r` 復元）。本スキルでは binary path/flags/session paths を一切再定義しない。
 
-## OpenRouter（明示指定のみ — auto には入れない）
+## OpenRouter（★使用停止 — 2026-07-14 ユーザー指示。指名クラウドは AtlasCloud へ）
 
-**ユーザーが「OpenRouter で」と言ったときだけ使う。** Grok と同じ「指名されたら使う経路」で、`--backend auto` の VRAM 階段（local→modal→fal→grok）には **意図的に混ぜていない**（`probe_backend.py` の auto 解決も変更しない）。OpenRouter は LLM・画像・動画を 1 つの API キー / 課金レイヤーで使える。
+> **★2026-07-14 ユーザー指示: OpenRouter は今後使わない。** クラウドの指名経路はすべて **AtlasCloud（次節）** を使う。本節はユーザーが将来明示的に復帰させた場合の参照用に残す。（経緯: 残高 $0.29 で /images の与信が通らず、ユーザーが AtlasCloud への一本化を決定）
+
+**（停止前の規約）ユーザーが「OpenRouter で」と言ったときだけ使う。** Grok と同じ「指名されたら使う経路」で、`--backend auto` の VRAM 階段（local→modal→fal→grok）には **意図的に混ぜていない**（`probe_backend.py` の auto 解決も変更しない）。OpenRouter は LLM・画像・動画を 1 つの API キー / 課金レイヤーで使える。
 
 - **キー**: `~/.config/openrouter.key`（1 行・`chmod 600`）。無ければ `$OPENROUTER_API_KEY`。`~/.config/` は公開リポ `~/.claude` の外なので commit に載らない（`gmail-smtp.pass` と同じ流儀）。発行は https://openrouter.ai/keys（`sk-or-v1-...`）。
   ```bash
@@ -445,9 +454,9 @@ bash scripts/grok_delegate.sh    # grok-media の契約を表示して委譲（�
   ```
 - **要点**: 画像は `chat/completions` + `modalities:["image","text"]`（結果は base64 data-URL を自動デコード保存）。動画は**非同期**（`POST /videos` → polling → DL）で、ポーリングは wall-clock 期限と試行回数の二重ガードで必ず打ち切る。動画 model 例: `google/veo-3.1`, `alibaba/wan-2.7`, `kwaivgi/kling-v3.0-std`。画像 model 例: `google/gemini-2.5-flash-image-preview`, `black-forest-labs/flux.2-pro`。**id は変動するので確証が要るときは `models` サブコマンドで確認**。
 
-## AtlasCloud（OpenRouter を使い切ったときの二次バックエンド — auto には入れない）
+## AtlasCloud（クラウドの指名経路・第一 — auto には入れない）
 
-**OpenRouter が残高切れ（HTTP 402）等で使えないときの二次フォールバック。** OpenRouter と同じ「指名されたら使う経路」で、`--backend auto` の VRAM 階段（local→modal→fal→grok）には **入れない**（`probe_backend.py` の auto 解決も変更しない）。LLM・画像・動画を 1 つのキー / 課金レイヤーで使える点は OpenRouter と同じだが、**API の形が違う**（下記）。
+**★2026-07-14 ユーザー指示により、指名クラウド経路の第一（従来の「OpenRouter 402 時の二次」から昇格）。** Seedream（SFW画像既定）・Seedance（SFW動画既定）・wan-2.7（NSFW動画既定）はすべてここ。「指名されたら使う経路」であることは変わらず、`--backend auto` の VRAM 階段（local→modal→fal→grok）には **入れない**（`probe_backend.py` の auto 解決も変更しない）。キーは Linux（akitaken）と Windows 機の両方の `~/.config/atlascloud.key` に配置済み（2026-07-14）。LLM・画像・動画を 1 つのキー / 課金レイヤーで使える点は OpenRouter と同じだが、**API の形が違う**（下記）。
 
 - **キー**: `~/.config/atlascloud.key`（1 行・末尾改行なし・`chmod 600`）。無ければ `$ATLASCLOUD_API_KEY`。読み出したら必ず `.strip()`。**キーの中身は出力・ログ・エラーに出さない**。
 - **エントリ**: `scripts/cloud_atlascloud.py`（`requests` のみ）。5 サブコマンド `llm` / `image` / `video` / `models`（id 探索）/ `schema`（モデル固有フィールド確認）。

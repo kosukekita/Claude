@@ -1,13 +1,15 @@
 ---
 type: reference
-title: テキスト・ストーリーボードのテンプレート（動画生成の設計図）
-description: 動画を作る前に書く「文字の絵コンテ」の普遍テンプレ。マルチショット・タイムスタンプ・VISUAL/ACTION/DIALOGUE・共通STYLE・メタ情報。任意で絵コンテ画像も生成
-tags: [storyboard, 絵コンテ, video, planning, shot-list, commercial, template]
+title: 字コンテ（テキスト・ショットリスト）のテンプレート（動画生成の設計図）
+description: 動画を作る前に書く「字コンテ」（テキストのショットリスト）の普遍テンプレ。マルチショット・タイムスタンプ・VISUAL/ACTION/DIALOGUE・共通STYLE・メタ情報。任意で絵コンテ画像も生成
+tags: [字コンテ, storyboard, 絵コンテ, video, planning, shot-list, commercial, template]
 ---
 
-# テキスト・ストーリーボードのテンプレート
+# 字コンテ（テキスト・ショットリスト）のテンプレート
 
-動画生成の一番の土台は**文字のストーリーボード（ショットリスト）**。これを書いて承認を得てから生成する。**1本の動画＝複数ショット（カット・場面転換を含んでよい）**。各ショットを生成単位に分解して作り、繋いで完成（詳細は SKILL.md「動画生成フロー」）。**15秒は上限ではない**——クリップ/ショットを繋ぐ＋モデルの長尺/延長機能で伸ばせる。
+> **用語**: ストーリーボード／絵コンテ＝**画像**を指す語。テキスト版は「**字コンテ**」（shot list）と呼ぶ（「テキスト・ストーリーボード」とは呼ばない。2026-07-14 確定）。
+
+動画生成の一番の土台は**字コンテ（テキストのショットリスト）**。これを書いて承認を得てから生成する。**1本の動画＝複数ショット（カット・場面転換を含んでよい）**。各ショットを生成単位に分解して作り、繋いで完成（詳細は SKILL.md「動画生成フロー」）。**15秒は上限ではない**——クリップ/ショットを繋ぐ＋モデルの長尺/延長機能で伸ばせる。
 
 ## 1) メタ情報（ヘッダー）
 - **総尺**: 例 30 秒
@@ -35,8 +37,8 @@ tags: [storyboard, 絵コンテ, video, planning, shot-list, commercial, templat
 ## 4) フッター
 - 総尺 / 形式（アスペクト比）/ スタイル一言。
 
-## 5)（任意）ストーリーボードを"1枚の絵コンテ画像"にする（クライアント提示用）
-テキスト絵コンテが本命。見せ方として、ショットリストを**インフォグラフィック画像**（3列×N行グリッド・番号バッジ・タイムスタンプ・各コマ画像・VISUAL/ACTION/DIALOGUE の3欄）に出す汎用プロンプト骨子:
+## 5)（任意）字コンテを"1枚の絵コンテ画像"にする（クライアント提示用）
+字コンテが本命。見せ方として、ショットリストを**インフォグラフィック画像**（3列×N行グリッド・番号バッジ・タイムスタンプ・各コマ画像・VISUAL/ACTION/DIALOGUE の3欄）に出す汎用プロンプト骨子:
 > Create a clean, premium **storyboard infographic**. White minimalist layout. Title "STORYBOARD" + [PROJECT NAME] + subtitle [CONCEPT]. Info boxes: Duration / Style / Audience / Audio. **N panels in a 3-column grid**, each panel = numbered badge + timestamp + a realistic cinematic scene image + three text sections **VISUAL: / ACTION: / DIALOGUE:**. Footer: total duration, format (aspect ratio), style. Professional creative-agency look, clean spacing, rounded panel borders, accent color.
 
 差し替え: `[PROJECT NAME]` / `[CONCEPT]` / パネル数 / 尺 / アスペクト / アクセント色。**案件固有語（ASMR 開封・商品名など）はこの骨子に残さない**。
