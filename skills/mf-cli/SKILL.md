@@ -24,6 +24,20 @@ MF は AVS/Express 製の GUI アプリで CLI 駆動の公式手段は無い（
 5. **材料（テキスト・GUI不要）🔑**: `data\props\*.dat` はテキスト。`Keyak Sample(Eq).dat` の弾性率式が Keyak 区分則（`33900ρ^2.2 / 5307ρ+469 / 10200ρ^2.01`）で、**プロジェクトの `fe/hu_to_E.py` と完全一致**。形式=`<density閾値> <flag> <coef> <exp> <const>`（val = coef·ρ^exp + const）。均質材料=`basicdata_en.mat`（name/ν/E/density/critical/yield/…）。
 6. **ソルバ**: `to_exec.exe [EXEC.BINP] [EXEC.INP] (LOG)` が BINP→INP 変換（SOLVER-TYPE V1/V2 判定）→ `solver2.exe`（Intel Fortran + MKL Pardiso, EXEC.INP を読む）→ 結果 `.Bdsp`(変位)/`.Bstr`(応力)。solver.log の SOLUTION PARAMS: DRUCKER-PRAGER ALPHA=0.07(Bessho降伏)。プロジェクト→EXEC.BINP は `solv_cli`/`bat_solv`（GUI だが `CMfilesData::WriteInputData` を持つ）。
 
+## 🔴🔴 要素タイプの真実 = **Tet4 と tri3 しかない**（実機実験で確定・最重要）
+**MF solver2 が扱える 3D 連続体要素は 4節点1次四面体(Tet4)ただ一種。SHELL は 3節点1次三角形ただ一種。六面体も二次要素も、入口(メッシャ)でも裏口(EXEC.INP直書き)でも不可能。**
+
+- **パーサの実挙動**: `SOLID` 行の節点IDは**ちょうど4個しか読まれない**。行末の「節点数フィールド」(`... 4`)は分岐に使われず**読まれてすらいない**。
+  実証: 健全な Tet4 パッチテスト(解析解と機械精度一致)の SOLID 行に実在IDを4個追記し節点数欄を `8` と詐称しても、`EXEC.Bdsp`/`EXEC.Bstr` が **MD5 バイト単位で完全一致**。→「節点数を8にすれば hex になる」抜け道は**存在しない**。SHELL も 3個固定。
+- **hex8 を書くと**: `forrtl severe(157) access violation` で即死。ただし *hex として拒否された* のではない。hex の先頭4節点は必ず同一平面(底面)なので四面体として拾うと体積ゼロ → det(J)=0 → 発散。**先頭4IDだけを残した純 Tet4 ファイルが EXEC.LOG まで完全一致のクラッシュ**を起こす。節点順を変えても結果不変。
+- 🔴**Tet10 を書くと＝最も危険な失敗様式**: **エラーも警告も出さず `##$$ExSv end 1 1` で正常終了する。** しかし中間節点6個は黙って捨てられ、結果は角4節点のみの Tet4 版と **MD5 完全一致**。
+  → **「2次要素で精度を上げたつもりが、無言で1次に落ちている」事故が起こりうる。** EXEC.INP 生成コードには **「SOLID の節点IDはちょうど4個 / SHELL は3個」の fail-loud アサーションを必ず入れる**こと。
+- **バイナリ証拠**: solver2.exe/solver.exe に `HEXA/HEX8/BRICK/TETRA/TET4/TET10/PENTA/WEDGE/PRISM/C3D4/C3D8/C3D10` は ASCII・UTF-16LE 両方で**出現数ゼロ**。要素ラベル表は `SOLID(BONE)/SOLID/SHELL(BONE)/SHELL/RUBBER` の5つのみ。`to_exec.exe` の書式文字列は `SOLID` 直後に `    4`、`mesher.exe` は `SHELL%5d%5d%5d%5d    3 ...` と**節点数がリテラル定数で焼き込まれている**。
+- **マニュアル**: 付録4.4「使用要素」は【4節点ソリッド】【3節点シェル】【ギャップ】のみ。「**要素内の歪みは一定となります**」と明記(＝定ひずみ四面体)。「六面体/8節点/10節点/中間節点/高次要素」はマニュアル4冊すべてで**0ヒット**。
+- **メッシャ側も四面体固定**: バックエンドは ICEM CFD に `TETRA_4` / `TRI_3` を明示指定して FIDAP(FDNEUT) 出力させている。fTetWild も四面体専用。
+- **外部メッシュの取り込みは不可**: MF が読めるのは STL/IMP の**表面形状のみ**。他ソルバの FE メッシュ(節点・要素)をインポートする機能は無い。相互運用は MF→他ソルバの一方向のみ。
+- 👉 **含意: MF で精度を上げる手段は p細分(要素次数)ではなく h細分(メッシュ細分)だけ。** 査読で問われるメッシュ収束性は h細分で示すしかない。「Tet10 にして精度を上げる」は**原理的に不可能**なので検討時間を使わないこと。
+
 ## 🎯 決め手 = solver2 の入力 EXEC.INP を自前生成する（メッシュ/材料/BCは自前、ソルバだけMF）
 mesher/GUI authoring は親 GUI プロセス依存で CLI 不可（断念）。代わりに **`solver2.exe` の入力 `EXEC.INP` が完全に素直な人間可読テキスト（FIDAP風固定幅）と判明** → メッシュ・材料・BC を自前 Python で書いて EXEC.INP を生成し、`solver2.exe`（引数なし、cwd の固定名 EXEC.INP を読む）でFEAだけ回す。
 
@@ -42,6 +56,14 @@ mesher/GUI authoring は親 GUI プロセス依存で CLI 不可（断念）。�
 ```
 CT値[HU] →[検量線]→ 密度[g/cm3] →[Keyak則]→ ヤング率[MPa]
 ```
+- 🔴**PROPT は4コードに分かれる（旧メモの「PROPT00122 が全要素数」は誤り）**:
+  `PROPT00122`=**骨ソリッド(不均質・要素ごとに全部違う)**, `PROPT00012`=他材料ソリッド(全行同一値: ν=0.28, E=1.110E+04 kgf/mm2=108.9GPa, ρ=4.43 → Ti-6Al-4V),
+  `PROPT10012`=他材料ソリッド2(全行同一: ν=0.34, E=196.1GPa, ρ=8.03 → CoCr/SUS), `PROPT00121`=**骨シェル(不均質)**。
+  前3者の和 = SOLID 数、最後 = SHELL 数。**不均質なのは骨要素だけで、インプラントは均質材**。
+- **材料の生成規則 = average-then-convert**: 要素内17点で CT値(ρ)をサンプル → **要素内で平均** → その後 Keyak 則 E=aρ^b に通す。
+  GUI 生成モデルの全 314,260 骨要素で E=Keyak(ρ_element) が**相対誤差0.15%以内で一致**することを実測確認済み。
+  👉 これは「MFは要素ごとに不均質なEを持つ」動かぬ証拠であると同時に、「**要素内の材料変化は原理的に表現不可**(定ひずみ四面体＋要素1材料)」という限界の証拠でもある。
+  凸なべき則を平均後に通すため、**薄い高密度層＝皮質骨は系統的に軟らかく評価される**(皮質を体積比30%含む要素は Voigt 平均の0.373倍＝剛性を63%過小評価)。
 - **PROPT列 = `PROPT00122(solid)/00121(shell)` + id(%10d) + ν・E・density・crit・yield・relax・0・Efloor・Ecap(各 E9.3=`%.3E`を%9s、間にスペース1)**。`relax`=応力緩和係数(骨0.05)、`Efloor/Ecap`=E下限/上限クリップ[kgf/mm2]。正確な桁位置は捕捉版(exec_capture_*)と1バイト照合すること(固定幅厳守)。
 - 🔴**単位: E・crit・yield・Efloor・Ecap = [kgf/mm2](MPaでない！ MPa値÷9.80665)。density = [kg/mm3](g/cm3値×1e-6)**。GUI捕捉版がKeyak式+単位変換でピタリ一致して確定。MPaのまま書くとMFは9.8倍硬い材料と解釈し、特に薄肉シェルで応力が非物理発散する。
 - **要素ID**: SHELLとSOLIDは**別系統の1始まり独立採番**(SOLID 1..M, SHELL 1..nSH)。PROPT00121もSHELL IDに対応し1始まり。
@@ -57,10 +79,18 @@ CT値[HU] →[検量線]→ 密度[g/cm3] →[Keyak則]→ ヤング率[MPa]
 テキスト: 材料 `.dat/.mat`、節点グループ `#MFgroup-points`、メッシュ `inputs.json`。
 
 ## 未確定（触る前に実機確認）
+- 🔴**変位制御(DISP + PLNK 222)の荷重符号**。荷重制御(FORCE)では「負の fz → 引張」が確定したが、変位制御でも同じ符号反転が起きるかは未実験。**本番の破断解析は変位制御が主経路なので必ず埋めること**。単位立方体の一軸パッチテストを回帰テストとして常設し「圧縮を指示したら σ3=−P/A になる」を assert するのが確実。
+- **シェル板厚**。GUI 捕捉モデルは SHELL 全 34,384 枚が **0.001mm ＝ 膜剛性∝t・曲げ剛性∝t^3 で構造寄与ゼロ**(接触面 CSURF/CBODY 用)で、Bessho/Miura 型の 0.2〜0.4mm 皮質シェルではない。**このモデルでは皮質を四面体だけが担っている**。先行研究プロトコル再現を主張するなら板厚設定を必ず確認する。
+- **ポアソン比**。捕捉モデルは ν=0.4(全骨要素一定)。Miura 2017 は ν=0.3。どの先行研究プロトコルを再現すると主張するかで決まる。
+- **CNTEL 第3〜5スロットの意味**。RUBB カードの綴り・列レイアウト・専用 PROPT も不明。使わない。
 - `solver2`/`mesher` の直接引数順。GUI系（proj2text/matdbase/matedit/img2proj/proj_man）の無人実行可否（MFC GUI、headless 不可の可能性大 → 材料割当・BC・結果出力の一部は GUI 自動化に頼る恐れ）。材料割当(.prop)・荷重拘束(.cond/.forc)・EXEC.BINP 生成の GUI 回避経路が最難関。
 - 一次資料 `doc\mf_man.pdf`（219頁）。pdftoppm は無いので **pypdf でテキスト抽出**して読む。
 
 ## Common Mistakes
+- 🔴**「Tet10 にすれば精度が上がる」と思って10節点を書く → MFは無言で中間節点を捨てて Tet4 として解き、正常終了する**。エラーも警告も出ない。精度が静かに落ちる。生成コードに「節点IDちょうど4個」の assert を入れる。
+- 🔴**「節点数フィールドを8にすれば hex が通る」と考える → 通らない**。そのフィールドは読まれていない。hex は先頭4節点(同一平面)を四面体として拾って体積ゼロで死ぬだけ。
+- 🔴**FORCE カードの符号が座標軸と逆**: 負の `fz` を書くと **+z へ変位し「引張」**になる。−z へ圧縮したければ**正の `fz`** を書く。線形弾性の応力符号で確定(負fz → σ1=+10 全要素＝引張 / 正fz → σ3=−10＝圧縮)。線形なら鏡像で実害ないが、**Drucker-Prager＋方向性クラックの非線形破断解析では引張/圧縮が非対称なので致命的**。※変位制御(DISP+PLNK 222)経路の符号は**未検証**。
+- **CNTEL 第3スロットを RUBBER と思い込む → 違う**。第3に 16 を書くと LOG に「RUBBER: 0 / GAP: 48(=16×3)」と出る。**第1=SOLID・第2=SHELL のみ確定。第3以降は 0 のままにする**。
 - PowerShell で MF exe 起動 → EPERM。必ず Bash + `dangerouslyDisableSandbox`。
 - exe を Windows パスで `timeout` に渡す → exit 127。exe は POSIX パス。
 - 圧縮 .mhd を inferSend に渡す → FileNotFoundError（.mhd を探す）。非圧縮で書き出す。
