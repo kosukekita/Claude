@@ -223,8 +223,71 @@ def _decode_image_data_url(url: str, out: Path) -> None:
     out.write_bytes(raw)
 
 
+def _image_via_images_endpoint(args: argparse.Namespace, key: str) -> int:
+    """Dedicated POST /images route — the ONLY way to control output dimensions
+    (aspect_ratio / resolution / size). chat/completions ignores textual aspect
+    requests entirely (verified 2026-07-14: seedream-4.5 returns 2048x2048 square
+    no matter what the prompt or reference canvas says). Reference images go in
+    input_references; the result comes back as data[0].b64_json."""
+    body: dict = {"model": args.model, "prompt": args.prompt}
+    if args.aspect_ratio:
+        body["aspect_ratio"] = args.aspect_ratio
+    if args.resolution:
+        body["resolution"] = args.resolution
+    for img in args.image or []:
+        body.setdefault("input_references", []).append(
+            {"type": "image_url", "image_url": {"url": _to_image_url(img)}}
+        )
+    log(f"[OpenRouter] image (/images) -> {args.model} "
+        f"(aspect_ratio={args.aspect_ratio or '-'} resolution={args.resolution or '-'})")
+
+    def _post() -> requests.Response:
+        return requests.post(
+            f"{API_BASE}/images",
+            headers=auth_headers(key),
+            json=body,
+            timeout=HTTP_TIMEOUT,
+        )
+
+    resp = _post()
+    for attempt in range(1, 5):
+        transient = resp.status_code in (429, 500, 502, 503) or (
+            resp.status_code == 400 and "Provider returned error" in resp.text
+        )
+        if not transient:
+            break
+        wait = 4 * attempt
+        log(f"  transient HTTP {resp.status_code}; retry {attempt}/4 after {wait}s")
+        time.sleep(wait)
+        resp = _post()
+    if resp.status_code == 402 and not args.no_fallback:
+        return _fallback_image(args)
+    _raise_for_openrouter(resp)
+    data = resp.json()
+    try:
+        item = data["data"][0]
+    except (KeyError, IndexError, TypeError) as exc:
+        die(f"ERROR: unexpected /images response shape ({exc}): {json.dumps(data)[:500]}")
+    out = Path(args.out).expanduser()
+    b64 = item.get("b64_json")
+    if b64:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_bytes(base64.b64decode(b64))
+    elif item.get("url"):
+        _download(item["url"], out, key=key)
+    else:
+        die(f"ERROR: /images item has neither b64_json nor url: {json.dumps(item)[:300]}")
+    log(f"saved -> {out.resolve()}")
+    print(str(out.resolve()))
+    return 0
+
+
 def cmd_image(args: argparse.Namespace) -> int:
     key = resolve_api_key()
+    # Dimension control requested -> must use the dedicated /images endpoint
+    # (chat/completions has no size/aspect params and ignores prompt-level ones).
+    if getattr(args, "aspect_ratio", None) or getattr(args, "resolution", None):
+        return _image_via_images_endpoint(args, key)
     content: list = [{"type": "text", "text": args.prompt}]
     # Optional input images for image-edit style prompts (data URL or http).
     for img in args.image or []:
@@ -652,6 +715,11 @@ def build_parser() -> argparse.ArgumentParser:
     pi.add_argument("--image", action="append", default=None,
                     help="input image for edit-style prompts (path/url); repeatable")
     pi.add_argument("--out", default="image.png", help="output image path")
+    pi.add_argument("--aspect-ratio", default=None, dest="aspect_ratio",
+                    help="output aspect ratio, e.g. 16:9|9:16|1:1 (uses the dedicated "
+                         "/images endpoint; chat route cannot control dimensions)")
+    pi.add_argument("--resolution", default=None,
+                    help="output resolution tier 512|1K|2K|4K (dedicated /images endpoint)")
     _add_fallback_flags(pi)
     pi.set_defaults(func=cmd_image)
 
