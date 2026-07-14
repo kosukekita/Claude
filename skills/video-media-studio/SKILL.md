@@ -37,7 +37,7 @@ allowed-tools: Bash, Read, Write, Glob, SendUserFile, AskUserQuestion
 
 | 種別 | 既定モデル | 入口 |
 |---|---|---|
-| **SFW 画像** | **Seedream** | `cloud_atlascloud.py image`（bytedance/seedream 系。参照画像あり＝`.../edit`・`--image` 複数可・`--size W*H` で 16:9 等を明示） |
+| **SFW 画像** | **Codex（GPT Image / image_gen）** | `codex exec --skip-git-repo-check`（参照画像は `-i`・プロンプトは stdin。**サブスク内＝追加課金なし。2026-07-14 ユーザー確定**）。拒否・障害・サイズ要件不適合時のフォールバック＝AtlasCloud Seedream（`cloud_atlascloud.py image`・参照あり=`bytedance/seedream-*/edit`・`--image` 複数可・`--size W*H` で 16:9 明示） |
 | **SFW 動画** | **Seedance** | `cloud_atlascloud.py video`（seedance i2v。`--image`+`--last-image` でキーフレーム連鎖） |
 | **NSFW 画像・参照なし (t2i)** | **z-image**（ローカル `z-image-turbo`・無検閲・無料） | `gen_image.py --backend z-image-turbo` |
 | **NSFW 画像・参照あり (i2i)** | **Qwen-Image-Edit-2511**（ローカル最新・無検閲・同一人物保持） | `gen_qwen_edit.py --repo Qwen/Qwen-Image-Edit-2511` |
@@ -293,7 +293,7 @@ source scripts/env.sh
 > ★**人物・実写生成では画像内に文字を書かせない（z-image-turbo / Qwen-Image-Edit）**。人物やシーンを作るとき、**看板・ロゴ・字幕・透かし・服やスマホ画面の文字などの「画中テキスト」は入れさせない**。理由: 実機では**偶発的な文字（特に日本語・小さい/背景の文字）が崩れて（誤字・文字化け）実写感を壊す**。運用: ①**positive プロンプトに文字要素を書かない**、②negative に `text, letters, words, watermark, caption, subtitle, logo, signage, gibberish text` を必ず入れる（`gen_qwen_edit.py` の DEFAULT_NEG・リアル化既定ネガに既に入っている＝**外さない**）。z-image-turbo は guidance≈0 で negative が効きにくいので、**positive に文字を書かないこと自体が主対策**。
 > - 例外（画中に読める文字を"わざと"出したいとき）: 長く正確な文字は **`gen_image.py --backend qwen-image`（t2i の Qwen-Image 本体＝画中テキスト最強格）** を使う。z-image-turbo は短い英字ブランド語程度なら可（数枚出して綴りの正しい1枚を選ぶ）。**Qwen-Image-Edit は特に日本語の画中テキストが弱い**ので、編集で読める日本語を足すのは避け、必要なら後段で ffmpeg/画像編集でオーバーレイする。
 
-**SFW 画像の無指定時の既定は Seedream**（上の「既定モデル」表）。**まずモデルを宣言して承認を得てから生成する。**
+**SFW 画像の無指定時の既定は Codex（GPT Image / image_gen）**（2026-07-14 ユーザー確定。サブスク内で追加課金が無いため、SFW は従量課金クラウドより Codex を先に使う。拒否・障害時のみ AtlasCloud Seedream）。**まずモデルを宣言して承認を得てから生成する。**
 - ローカルで実機比較したいとき／Seedream が合わないときの候補（**実機評価**）: `z-image-turbo`（ローカル・人物の可愛さ/透明感が最良）/ Grok（生活感・シーンのリアルさが最良）/ Codex(GPT Image)（ナチュラル/構図忠実）。FLUX.1-dev は同用途では微妙（落ち着きすぎ）。「Seedream 既定です／ローカル3本で見比べますか？」と提案してよい。
 
 ```bash
