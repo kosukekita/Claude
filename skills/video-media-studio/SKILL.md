@@ -134,7 +134,7 @@ flowchart TD
    - **1連続ショット（内部にカット無し）＝ i2v のキーフレーム連鎖**。隣接キーフレーム間＝ i2v 1クリップ。実測(AtlasCloud): Kling `image-to-video`=3〜15秒 / Seedance=4〜15秒。**隣接キーフレームの時間差は最短尺（Kling 3s / Seedance 4s）以上・15秒以下**（N枚＝N-1クリップ）。0.6s 等の細切れ・3秒未満間隔は i2v の境界にできない。生成単位ごとに `storyboard_<shot>_NN.png`（キーフレーム実画像）＋ `storyboard_<shot>_NN.txt`（各キーフレーム時刻・各クリップ尺・内容・カメラ）を作り、隣接コマを i2v の開始/終了画像に指定（Kling=`image`+`end_image` / Seedance=`image`+`last_image`）して生成。
    - **ショット間のカット（場面転換）＝ 各ショットを別々に生成して `ffmpeg concat` で繋ぐ**（カットは編集で作る）。
 
-4. **★15秒は完成尺の上限ではない。** 複数クリップ/複数ショットを繋げばいくらでも伸ばせる。加えて**新しめのモデルはネイティブの長尺・延長(extend/last-frame継続)機能**を持つものがあり、1回のAPI/1クリップ＝15秒には縛られない。**「1字コンテ＝1生成API」ではない**——字コンテが土台で、生成は複数回・複数手段でよい。
+4. **★15秒は完成尺の上限ではない。** 複数クリップ/複数ショットを繋げばいくらでも伸ばせる。加えて**新しめのモデルはネイティブの長尺・延長(extend/last-frame継続)機能**を持つものがあり、1回のAPI/1クリップ＝15秒には縛られない（**具体的な video extend / 長尺化の2経路は下記『動画を15秒超に伸ばす』節**）。**「1字コンテ＝1生成API」ではない**——字コンテが土台で、生成は複数回・複数手段でよい。
 
 5. **タイミングをフリーズフレームやスロー水増しで"それっぽく"作らない**（「途中で止まってるだけ」に見える）。動きは実生成クリップで作る。特殊時間演出(freeze/reverse)が要るなら VFX レイヤーで別途。
 
@@ -173,6 +173,11 @@ source scripts/env.sh
   "$UV" run scripts/chain_video.py --scenes-dir ./shots --prompts-file scenes.json \
     --first-clip s0.mp4 --model wan2.2-i2v-a14b --start 1 --end 8
   ```
+- **★動画を15秒超に伸ばす（video extend / 長尺化・クラウド）**: Seedance i2v/r2v の1回上限15秒は**完成尺の上限ではない**。続きを生成して繋げば総尺は無制限。用途で2経路（フィールドは版で変わるので `cloud_atlascloud.py schema --model <id>` で確定する）:
+  - **経路① 最終フレーム連鎖（今すぐ使える・入力は画像のみ）**: クリップ生成 → `ffmpeg -sseof -0.1 -i prev.mp4 -frames:v 1 last.png` で最終フレーム抽出 → 次クリップの `--image`(i2v) に渡す → 反復 → `ffmpeg concat`。上記ローカル `chain_video.py` と同理屈をクラウド Seedance/wan i2v に適用（`cloud_atlascloud.py video --model bytedance/seedance-2.0/image-to-video --image last.png ...`。`--extra-json '{"return_last_frame":true}'` で最終フレームも返せる）。★動きの向き・速度は境界でリセットされる（静止・カット・緩い動きの境目向き）。
+  - **経路② 専用 video-extend エンドポイント（サーバ側で動きごと継続・実在確認済み 2026-07-15）**: 直前クリップを渡すと続きを生成。実在モデル: `ltx-2.3-quality/extend-video`(`video_url` / `extend_direction`=forward|backward / `num_frames` 9–481の 8n+1 / `match_input_fps` / `generate_audio`)、`alibaba/wan-2.5/video-extend`(`video` / `duration` 5–10s / `audio`)、`alibaba/wan-2.2-spicy/video-extend`(`video_url` / `duration` 5|8s)、`xai/grok-imagine-video/extend-video`(`video_url` 2–15s / `duration` 2–10s / ≤720p)、`pixverse/v6/video-extend`。★**動画入力(`video_url`/`video`/`reference_videos`)は到達可能な URL/asset が要る**——`cloud_atlascloud.py` の `_resolve_media_input` は URL/base64 は素通しだが**ローカル動画のアップロードは未対応（画像専用）**。ローカル動画で使うなら公開URL/tunnel で渡すか、経路①を使う。Seedance r2v の `reference_videos`(最大3本・合計≤15s) も継続/編集用途。
+  - **長尺化の実務(Codex 2026-07-15)**: ①各クリップで**人物・衣装・場所・照明・カメラ方向を同一に記述し「次の動作」だけ変える**（画風/人物記述をクリップ毎に変えない）②同一性維持は直前動画＋同じ人物/背景画像を毎回参照に再投入（完全一致は保証されず、繰り返すほどドリフト累積 → 要所で参照画像を再注入 or ショット切替）③**音声は境界で変わる**ので長尺は各クリップ `generate_audio:false` で映像だけ連結 → BGM/環境音/台詞を後処理で一本化（音声継続 `reference_audios` のシームレス性は不明）④継ぎ目は0.5秒ほどオーバーラップ+編集でクロスフェード/カット点（編集上の推奨・API機能ではない）。
+  - 参考(一般API): Google Veo3.1=自生成動画のみ・7秒×最大20回・結合≤148秒／Luma Dream Machine も Extend Video あり。Kling/Vidu/Runway の「任意動画の専用extend」可否は不明（v2v編集や last-frame i2v は別物）。
 - Grok での t2v が欲しい場合 → **grok-media**（image_gen → image_to_video の 2 段）。
 - **★無指定時の既定動画モデル**: **SFW＝Seedance**（`cloud_atlascloud.py video`）/ **NSFW＝AtlasCloud wan-2.7（spicy）**（上の「既定モデル」表）。`gen_video.py` の Wan（t2v=1.3b/i2v=a14b）は**ローカルで作りたいとき**の選択肢。**生成前にどのモデルで作るか宣言し、承認を得てから生成する。**
 - **1本の動画から別カメラアングル/マルチカメラ映像**（同じシーンを別視点で再撮影・novel-view。**v2v＝入力は動画1本まるごと。r2vではない**）→ **LTX-2.3 CrossView IC-LoRA**（`reference/ltx-crossview-multicam.md`・**✅ 実機動作確認済み 2026-07-13**）。ヘッドレスCLI **`scripts/gen_ltx_crossview.py --ref R.mp4 --azimuth "slightly to the left" --elevation higher --distance closer --out O.mp4 --gpu 0 --no-sage`**（方位/高さ/距離は crossview 固定語彙・全63通りは `reference/crossview_captions_all_63.txt`）。**★起動は `systemd-run --user` で**（この環境は fork/nohup/run_in_background の数分GPUプロセスを exit144 で殺すが、systemd 起動なら生き残る＝phase1と同じ）。実測 1024×1024/97f を ~186秒・ピーク~45GB(単一A6000)。基盤~42GB・custom node・ワークフロー実行用パッチは導入/適用済み（詳細はリファレンス）。
