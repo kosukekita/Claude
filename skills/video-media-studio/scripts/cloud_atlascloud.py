@@ -356,6 +356,13 @@ def cmd_video(args: argparse.Namespace) -> int:
         rimgs = [_resolve_media_input(key, x) for x in args.reference_image]
         if rimgs:
             body["reference_images"] = rimgs  # seedance-2.0 reference-to-video (up to 9; "image 1..N" in prompt)
+    # --- video inputs (video extend / continuation). Local files are uploaded via uploadMedia. ---
+    if getattr(args, "video_url", None):
+        body["video_url"] = _resolve_video_input(key, args.video_url)  # ltx/wan-2.2-spicy/grok extend-video
+    if getattr(args, "video", None):
+        body["video"] = _resolve_video_input(key, args.video)          # wan-2.5/video-extend, wan-2.7 continuation
+    if getattr(args, "reference_video", None):
+        body["reference_videos"] = [_resolve_video_input(key, x) for x in args.reference_video]  # seedance r2v (≤3, total ≤15s)
     if args.sync:
         body["enable_sync_mode"] = True
     _merge_extra_json(body, args.extra_json)
@@ -480,12 +487,14 @@ def _file_to_data_url(path: Path) -> str:
 
 
 def _upload_media(key: str, path: Path) -> str:
-    """★UNVERIFIED: uploadMedia has NOT been exercised against the live API. The
-    multipart field name (`file`) and the `url` response key are taken from the
-    docs only. On ANY failure we stop with a clear instruction, because passing a
-    public URL or base64 is the reliable path."""
+    """Upload a LOCAL media file (video/image) via multipart and return its public URL.
+    ★VERIFIED 2026-07-15 against the live API. Response shape:
+      {"code":200,"message":"success","data":{"type":"video","download_url":"https://...oss...mp4",
+       "filename":"...","size":N}} — the URL is data.download_url (NOT `url`).
+    Used mainly for VIDEO inputs (video extend / reference_videos): videos are too large for
+    base64 data URLs and the extend endpoints require a reachable URL (video_url/video)."""
     url = f"{MEDIA_BASE}/model/uploadMedia"
-    log(f"uploadMedia (UNVERIFIED) -> {path.name}")
+    log(f"uploadMedia -> {path.name}")
     try:
         with path.open("rb") as fh:
             r = requests.post(
@@ -497,16 +506,29 @@ def _upload_media(key: str, path: Path) -> str:
         if r.status_code >= 400:
             raise RuntimeError(f"HTTP {r.status_code} {_atlas_error_text(r)}")
         data = r.json()
-        media_url = data.get("url") or (data.get("data") or {}).get("url")
+        inner = data.get("data") or {}
+        media_url = (inner.get("download_url") or inner.get("url")
+                     or data.get("download_url") or data.get("url"))
         if not media_url:
-            raise RuntimeError(f"no `url` in uploadMedia response: {json.dumps(data)[:300]}")
+            raise RuntimeError(f"no download_url in uploadMedia response: {json.dumps(data)[:300]}")
         return media_url
     except Exception as exc:  # noqa: BLE001 — any failure funnels to the same advice
         die(
-            f"ERROR: uploadMedia でローカルファイルのアップロードに失敗しました"
-            f"（uploadMedia は未検証です）: {exc}\n"
-            f"→ 画像は公開 URL か base64 で渡してください。"
+            f"ERROR: uploadMedia でローカルファイルのアップロードに失敗しました: {exc}\n"
+            f"→ 代わりに公開 URL を直接渡してください。"
         )
+
+
+def _resolve_video_input(key: str, ref: str) -> str:
+    """Turn a VIDEO argument into a reachable URL for the API. Public URLs / asset:// /
+    data: refs pass through; a LOCAL FILE is uploaded via uploadMedia (videos are too big
+    for base64). Used by video-extend (video_url/video) and Seedance reference_videos."""
+    if ref.startswith(("http://", "https://", "asset://", "data:")):
+        return ref
+    p = Path(ref).expanduser()
+    if p.exists():
+        return _upload_media(key, p)
+    return ref  # not a URL and not a local file: assume it is already a URL / asset id
 
 
 def _download(url: str, out: Path) -> None:
@@ -582,6 +604,12 @@ def build_parser() -> argparse.ArgumentParser:
                     help="reference images (1-3), comma-separated URLs/base64/paths")
     pv.add_argument("--reference-image", action="append", default=None, dest="reference_image",
                     help="reference_images for reference-to-video (repeatable, up to 9; local path/URL/base64; refer as 'image 1..N' in prompt)")
+    pv.add_argument("--video-url", default=None, dest="video_url",
+                    help="input video to EXTEND (video_url field): ltx-2.3-quality/extend-video, wan-2.2-spicy/video-extend, grok extend. local path -> uploadMedia -> URL")
+    pv.add_argument("--video", default=None,
+                    help="input video (video field): alibaba/wan-2.5/video-extend, wan-2.7 continuation. local path -> uploadMedia -> URL")
+    pv.add_argument("--reference-video", action="append", default=None, dest="reference_video",
+                    help="reference_videos for Seedance r2v extension (repeatable, up to 3, total <=15s; local path/URL)")
     pv.add_argument("--extra-json", default=None, dest="extra_json",
                     help='model-specific fields as JSON, e.g. \'{"aspect_ratio":"9:16","duration":5}\'')
     pv.add_argument("--sync", action="store_true",
