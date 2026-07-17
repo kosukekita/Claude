@@ -11,6 +11,8 @@ allowed-tools: Bash, Read, Write, Glob, SendUserFile, AskUserQuestion
 
 **Core principle: LOCAL-GPU-FIRST, graceful fallback.** まずローカルの 2x RTX A6000（各48GB）で動かす。VRAM が足りない・GPU が塞がっている・認証が無い等で初めて、`local-single → local-offload → local-multi-GPU(Wan) → cloud(Modal/fal) → Grok` の順に降りる。**どのバックエンドを選んだか・なぜかは毎回ログに残す**。この 96GB リグでは実質ほぼ全モデルが local-single に収まるので、cloud/Grok は本当の最終手段。
 
+> **★画像・動画内の文字はデフォルトで入れない（恒久ルール）。** ユーザーが明示的に指示した場合を除き、生成・編集する画像や動画に、字幕、キャプション、タイトル、ロゴ、ウォーターマーク、ラベル、看板、衣服の文字、画面/UI 上の文字など、読める文字要素を含めない。元素材に文字がある編集では、ユーザーが保持を求めていない限り、新たな文字を追加しない。生成プロンプトでは文字要素を正の指示に書かず、対応モデルでは `text, letters, words, watermark, caption, subtitle, logo, signage, gibberish text` を negative に入れる。
+
 > **REQUIRED SUB-SKILL: `grok-media`** — Grok 経路（最終フォールバック）は **すべて grok-media スキルに従う**。CLI 起動・auth gate・clean-dir・NL ツール命名・出力回収を本スキルで再実装しない。`scripts/grok_delegate.sh` は grok-media への 1 本のシームでしかない。
 
 ## 前提・環境（verified facts）
@@ -303,8 +305,8 @@ source scripts/env.sh
 
 > **参照画像を iPhone で選ぶ（メール通知 + Tinder風スワイプ選択システム）**: 毎朝の nsfw-auto パイプラインが生成する参照候補18枚を、メールで届くリンクから iPhone で ○/✕ スワイプして選ぶ常駐 Web アプリ（Tailscale 限定・PIN不要・セッション非依存）。「アプリが空になる／DONE済みを選び直す（status を戻し `swipe_state.json` を削除）／到達できない」等の**操作・再アーム手順・設計判断（なぜTelegramでなくメール+Tailscaleか）**は `reference/tinder-swipe-selection.md` を参照。
 
-> ★**人物・実写生成では画像内に文字を書かせない（z-image-turbo / Qwen-Image-Edit）**。人物やシーンを作るとき、**看板・ロゴ・字幕・透かし・服やスマホ画面の文字などの「画中テキスト」は入れさせない**。理由: 実機では**偶発的な文字（特に日本語・小さい/背景の文字）が崩れて（誤字・文字化け）実写感を壊す**。運用: ①**positive プロンプトに文字要素を書かない**、②negative に `text, letters, words, watermark, caption, subtitle, logo, signage, gibberish text` を必ず入れる（`gen_qwen_edit.py` の DEFAULT_NEG・リアル化既定ネガに既に入っている＝**外さない**）。z-image-turbo は guidance≈0 で negative が効きにくいので、**positive に文字を書かないこと自体が主対策**。
-> - 例外（画中に読める文字を"わざと"出したいとき）: 長く正確な文字は **`gen_image.py --backend qwen-image`（t2i の Qwen-Image 本体＝画中テキスト最強格）** を使う。z-image-turbo は短い英字ブランド語程度なら可（数枚出して綴りの正しい1枚を選ぶ）。**Qwen-Image-Edit は特に日本語の画中テキストが弱い**ので、編集で読める日本語を足すのは避け、必要なら後段で ffmpeg/画像編集でオーバーレイする。
+> **人物・実写生成のモデル別補足（z-image-turbo / Qwen-Image-Edit）**: 上の「画像・動画内の文字はデフォルトで入れない」ルールを必ず適用する。実機では偶発的な文字（特に日本語・小さい/背景の文字）が崩れ、誤字・文字化けで実写感を壊す。`gen_qwen_edit.py` の DEFAULT_NEG とリアル化既定ネガから文字禁止語を外さない。z-image-turbo は guidance≈0 で negative が効きにくいため、positive に文字要素を書かないこと自体を主対策にする。
+> - **ユーザーが画中の文字を明示的に求めた場合のみ例外**: 長く正確な文字は **`gen_image.py --backend qwen-image`（t2i の Qwen-Image 本体＝画中テキスト最強格）** を使う。z-image-turbo は短い英字ブランド語程度なら可（数枚出して綴りの正しい1枚を選ぶ）。**Qwen-Image-Edit は特に日本語の画中テキストが弱い**ため、必要なら後段で ffmpeg/画像編集でオーバーレイする。
 
 **SFW 画像の無指定時の既定は Codex（GPT Image / image_gen）**（2026-07-14 ユーザー確定。サブスク内で追加課金が無いため、SFW は従量課金クラウドより Codex を先に使う。拒否・障害時のみ AtlasCloud Seedream）。**まずモデルを宣言して承認を得てから生成する。**
 - ローカルで実機比較したいとき／Seedream が合わないときの候補（**実機評価**）: `z-image-turbo`（ローカル・人物の可愛さ/透明感が最良）/ Grok（生活感・シーンのリアルさが最良）/ Codex(GPT Image)（ナチュラル/構図忠実）。FLUX.1-dev は同用途では微妙（落ち着きすぎ）。「Seedream 既定です／ローカル3本で見比べますか？」と提案してよい。

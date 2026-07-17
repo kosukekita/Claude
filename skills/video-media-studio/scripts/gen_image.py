@@ -5,7 +5,10 @@
 #     "torch==2.5.1",
 #     "torchvision==0.20.1",
 #     "numpy",
-#     "diffusers @ git+https://github.com/huggingface/diffusers",
+#     # Pin the known-good revision used by the morning pipeline.  Tracking the
+#     # moving default branch makes an otherwise local generation depend on
+#     # GitHub being reachable at 06:00.
+#     "diffusers @ git+https://github.com/huggingface/diffusers@23b000433065e2d402080603d73544321d3bc82e",
 #     "transformers>=4.56",
 #     "accelerate",
 #     "safetensors",
