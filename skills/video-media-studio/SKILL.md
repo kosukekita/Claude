@@ -48,6 +48,7 @@ allowed-tools: Bash, Read, Write, Glob, SendUserFile, AskUserQuestion
 | **NSFW 動画** | **AtlasCloud wan-2.7**（NSFW は `wan-2.7-spicy`） | `cloud_atlascloud.py video --model atlascloud/wan-2.7-spicy/image-to-video` |
 
 - 上表は**無指定時の出発点**。ユーザーが具体モデルを指定したらそれに従う。
+- **★クラウド動画の解像度既定（2026-07-17 ユーザー確定）: テスト生成＝`480p`、本番生成＝`1080p`（`bitrate_mode:"high"` 推奨・Instagram の配信上限 1080×1920 に一致）。** Seedance 2.0 の resolution は 480p/720p/1080p/4k の4ティア（既定は 720p なので明示指定する）。`4k`（2160×3840・10-bit HEVC）は YouTube 等 4K を配信できる媒体向けのマスターが明示的に要る場合のみ使う — IG は Graph API の「横幅 ≤1920px」制約で 4K 縦動画をそのまま投稿できない。この既定は品質優先ルールと矛盾しない（テストの目的は構図・動き・制約の検証であり、解像度を上げても検証精度は変わらない。本番を 1080p 超にするかは配信先で判断）。
 - **正確なモデルID**は版が変わるので直書きせず、`cloud_atlascloud.py models --type Image|Video` で解決する（例: `bytedance/seedream-v5.0-pro/edit` / `bytedance/seedance-2.0/image-to-video` / `atlascloud/wan-2.7-spicy/image-to-video`）。モデル固有フィールドは `cloud_atlascloud.py schema --model <id>` が正本。SFW 動画 Seedance は i2v なので入力キーフレーム画像が要る（承認前に試作キーフレームを作ってよい）。
 - **非リアル系（アニメ/漫画/絵画調）NSFW** は上表でなく **Chroma(manga,paint)＋Pony(anime,manga)** が既定（下の「NSFW 画像のモデル使い分け」表）。上表の z-image/Qwen-Edit はフォトリアル NSFW 用。
 - 別モデルが明らかに適する用途（画中テキスト→`qwen-image`、r2v＝参照人物→任意シーン→HunyuanCustom/VACE 等）は、宣言時に「既定は〇〇ですが本件は△△が適します。どちらにしますか？」と提案してよい。
