@@ -66,8 +66,13 @@ stays monochrome pencil):
 - BLUE arrows = the camera movement
 - GREEN short handwritten text labels inside each panel = framing/composition note
   (panel1 "<...>", panel2 "<...>", ...)
-- ORANGE arrows = the lighting direction
-- YELLOW arrows = elemental VFX / energy flow
+- ORANGE arrows = the lighting direction. ALWAYS draw these as a pair of two or three SHORT,
+  STRAIGHT, PARALLEL arrows entering from the very edge or corner of the panel and pointing inward.
+  Never long, never curved, never in the middle of the action.
+- YELLOW arrows = elemental VFX / energy flow. ALWAYS draw these as LONG strokes that follow the
+  effect itself inside the scene (rising energy, a vortex, impact rays). Never a short parallel
+  pair at the panel edge.
+（オレンジと黄色は色が近いので、上の"形と配置の文法"で区別させる＝下の解説参照）
 
 Under each panel, small black handwritten-style caption text = lens / shot note:
 1 "<WIDE / ORBITING / HANDHELD>", 2 "<...>", ...
@@ -84,6 +89,22 @@ Landscape 16:9 sheet. Save the image to <out_dir>/board.png
 GPT Image は放っておくと凡例ストリップを描くので、上の `Do NOT draw a legend...` を明示的に入れる
 （`Fill the full sheet ... leave no reserved band for a legend` まで書くと確実）。
 **副次効果: 凡例帯が消えた分、同じ12コマでも1コマが大きく描かれる**（実測 2026-07-17・絵の情報量が上がるので歓迎）。
+
+### ★オレンジ（光）と黄色（VFX）は「形と配置」で区別する — 凡例を足さない
+2026-07-17 にユーザーから「オレンジと黄色は色が似ていて紛らわしい。ボードにも凡例を復活させるべきか？」と
+検討が入り、**Claude と Codex が独立に同じ結論**（＝復活させない）に達したので確定した。以後この議論を蒸し返さない。
+
+- **凡例は今回の問題を解決しない**: 凡例が教えるのは「オレンジ＝光／黄色＝VFX」という**色の意味**であって、
+  目の前の矢印が**どちらの色か**は教えない。混同しているのは意味ではなく**色の知覚**なので、凡例を足しても
+  「2色ある」と分かるだけで照合の手間が増える。
+- 復活の代償: ボードは r2v の参照に渡すので**文字が増えるほど映像への漏れリスクが上がる**／1コマが小さくなる。
+  凡例は字コンテに必ずあり、レビューは字コンテと並べて行うのでボード単独で読む場面が無い。
+- **採用した解**: 上のプロンプト定型のとおり**線の文法を固定**する（オレンジ＝画面端から入る短い平行な2〜3本／
+  黄色＝現象に沿う長いストローク）。実測ではモデルは放っておいてもこう描き分けており、明文化するだけで足りる。
+- **不採用**: 「黄色をマゼンタに変える」（Codex の第一推奨で色としては最も確実だが、**6色はユーザーが提示した
+  参照ボードの規約そのもの**なので、規約自体の変更はユーザーの決定事項。勝手に変えない）。
+- 弱点として自覚しておく: 縮小表示・低彩度印刷・色調変換が挟まると色の接近が効いてくる。**そのときは形の文法が
+  最後の砦**なので、文法を崩したボードが出てきたら再生成する。
 
 **矢印は字コンテに書いたものだけ描く**。字コンテに `BLUE:` が無いカットに青矢印を勝手に足さない
 （＝動画のシーン・動作を無断で足さないルールと同じ。SKILL.md「6要素」）。
@@ -116,4 +137,6 @@ GPT Image は放っておくと凡例ストリップを描くので、上の `Do
 - [ ] 各パネルにカット番号と秒数ラベル
 - [ ] 字コンテに書いた矢印が全部描かれている／書いていない矢印が増えていない
 - [ ] **凡例ストリップが描かれていない**（凡例は字コンテ側。描かれていたら再生成）
+- [ ] **オレンジ（光）＝画面端から入る短い平行な2〜3本／黄色（VFX）＝現象に沿う長いストローク**になっている
+      （色が近いので形で区別する。文法が崩れて両者が同じ形になっていたら再生成）
 - [ ] ユーザーに提示して**承認を取った**（字コンテの承認はボードの承認ではない）
