@@ -1,0 +1,111 @@
+---
+type: reference
+title: 演出ボード（StoryBoard）＝鉛筆ラフ＋矢印の作り方
+description: 字コンテを鉛筆モノクロのラフ絵コンテ（色矢印つき）にしてユーザー承認を取り、承認済みボード＋参照で動画を生成するための実機検証済みプロンプト定型と罠
+tags: [storyboard, 絵コンテ, 演出ボード, codex, image_gen, video, pencil, 矢印]
+---
+
+# 演出ボード（StoryBoard）— 鉛筆ラフ＋矢印
+
+**位置づけ**: 字コンテ（テキスト）を**絵にした設計図**。動画生成の**ゲート2**（SKILL.md「動画生成フロー」2b）。
+**キーフレーム画像とは別物** — ボードは構図・動き・カメラ・光・VFX の設計を担い、人物の同一性は参照写真が担う。
+だから**人物はラフでよい**（似せる必要がない）。
+
+**実機検証済み（2026-07-17 / Codex 0.144.5 + GPT Image）**: 下の定型で、鉛筆モノクロのラフに
+赤=身体・青=カメラ・橙=光・黄=VFX・緑=フレーミング注記・黒=ショット注記が正しく描き分けられたボードが出た。
+**4パネル・12パネル（4列×3行）とも成功**。12パネルでも凡例ストリップ・レンズ表記（`24mm WIDE / ESTABLISHING / LANDING`）・
+秒数（`00:00:01`）まで破綻せず描けた。**所要 約6〜9分/枚**（12パネルは長め）。`timeout` は 900 秒以上取る。
+
+## 生成コマンド
+
+```bash
+codex exec -s workspace-write --skip-git-repo-check --cd <out_dir> -m gpt-5.6-sol - < board_prompt.txt
+```
+
+参照写真を人物の当たりに使いたいときだけ `-i <ref.png>`（**似せるためではなく、体型・衣装の当たり用**）。
+
+### ★罠1: Codex が「rendering now」と言って画像を作らずにターンを終える（実機で再現）
+`codex exec` が終了したのに PNG が無く、ログの最後が「The storyboard is rendering now」「The generation
+is still running; I'm waiting...」で終わる。**画像生成は数分かかるので、これを"失敗"と即断しない**
+（12パネルは実測で ~9分。`timeout` を 900 秒以上にして待つ）。そのうえでプロンプト末尾に**完了条件を明示**する:
+
+```
+IMPORTANT: Actually call the image_gen tool and WAIT for it to finish. Do NOT end your turn
+saying it is 'rendering'. Your turn is only complete once the file <out_dir>/board.png exists
+on disk — verify with ls before finishing. If image generation is refused, say REFUSED and the reason.
+```
+
+### ★罠2: PNG が保存されない（sandbox 初期化失敗）
+`cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns` が `1` なら bwrap が死んでいる。
+記憶 [[codex-imagegen-bwrap-apparmor-docker-fix]] の docker ワンライナーで `0` にする。
+`bwrap --ro-bind / / --unshare-user --uid 0 echo BWRAP_OK` が通れば復活。
+
+## プロンプト定型（`<>` を差し替え）
+
+```
+Generate a single image: a hand-drawn PENCIL STORYBOARD sheet, <N> panels in a <cols>x<rows> grid
+on off-white paper.
+
+ART STYLE (critical): rough monochrome graphite pencil sketch, loose gestural linework, visible
+construction lines and hatching, smudged shading. NOT photoreal, NOT painted, NOT 3D render, NOT
+colored artwork. It must look like a film director's rough storyboard drawn by hand in pencil.
+
+Each panel has a thin black rectangular border, a small panel number in the top-left corner, and a
+small timestamp label (e.g. "0-1.25s").
+
+Subject in all panels: <人物・衣装・場所の一言。ラフでよい>
+Panel 1: <字コンテ shot1 の VISUAL を一行で>
+Panel 2: <...>
+（カット数ぶん並べる。1カット＝1パネル）
+
+ANNOTATIONS drawn ON TOP of the pencil art (these are the ONLY colored elements — everything else
+stays monochrome pencil):
+- RED curved arrows = the body movement / action trajectory
+- BLUE arrows = the camera movement
+- GREEN short handwritten text labels inside each panel = framing/composition note
+  (panel1 "<...>", panel2 "<...>", ...)
+- ORANGE arrows = the lighting direction
+- YELLOW arrows = elemental VFX / energy flow
+
+Under each panel, small black handwritten-style caption text = lens / shot note:
+1 "<WIDE / ORBITING / HANDHELD>", 2 "<...>", ...
+
+At the bottom of the sheet, a legend strip in the same handwritten style:
+"RED = BODY MOVEMENT", "BLUE = CAMERA MOVEMENT", "GREEN = FRAMING / COMPOSITION",
+"ORANGE = LIGHTING DIRECTION", "YELLOW = ELEMENTAL VFX / ENERGY", "BLACK TEXT = LENS / SHOT NOTE"
+
+Landscape 16:9 sheet. Save the image to <out_dir>/board.png
+```
+
+**矢印は字コンテに書いたものだけ描く**。字コンテに `BLUE:` が無いカットに青矢印を勝手に足さない
+（＝動画のシーン・動作を無断で足さないルールと同じ。SKILL.md「6要素」）。
+
+## 承認後 — 動画生成への渡し方
+
+**★ユーザー確定（2026-07-17）: ボード画像も参照に入れる。**
+
+```bash
+"$UV" run scripts/cloud_atlascloud.py video \
+  --model bytedance/seedance-2.0/reference-to-video \
+  --reference-image board.png \
+  --reference-image ref1.png --reference-image ref2.png \
+  --prompt "<字コンテ本文＋ボードの矢印を文章化＋下の否定文>" --duration 15
+```
+
+**必ず初回出力を目視する（漏れ検査）**: r2v は参照を強くコピーするので、**鉛筆のモノクロ画風や
+矢印そのものが映像に出る**危険がある（既知の実測: 参照写真の服装・裸足をそのまま採用する挙動）。
+否定文を必ず入れる:
+
+> `photoreal live-action footage, NOT a pencil sketch, no drawn arrows or annotations in frame`
+
+**それでも漏れるならボードを参照から外し、字コンテ＋ボードの文章化だけで生成する**（構図はプロンプトで担保）。
+漏れたまま納品しない。
+
+## チェックリスト（提出前）
+
+- [ ] パネル数＝字コンテのカット数（1カット＝1パネル）
+- [ ] 鉛筆モノクロ。有彩色は凡例の矢印・注記だけ（フォトリアル化・彩色・リアル化スターターを足していない）
+- [ ] 各パネルにカット番号と秒数ラベル
+- [ ] 字コンテに書いた矢印が全部描かれている／書いていない矢印が増えていない
+- [ ] 下端に凡例ストリップ
+- [ ] ユーザーに提示して**承認を取った**（字コンテの承認はボードの承認ではない）

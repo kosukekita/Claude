@@ -1,15 +1,15 @@
 ---
 type: reference
 title: 字コンテ（テキスト・ショットリスト）のテンプレート（動画生成の設計図）
-description: 動画を作る前に書く「字コンテ」（テキストのショットリスト）の普遍テンプレ。マルチショット・タイムスタンプ・VISUAL/ACTION/DIALOGUE・共通STYLE・メタ情報。任意で絵コンテ画像も生成
-tags: [字コンテ, storyboard, 絵コンテ, video, planning, shot-list, commercial, template]
+description: 動画を作る前に書く「字コンテ」（テキストのショットリスト）の普遍テンプレ。マルチショット・タイムスタンプ・VISUAL/ACTION/DIALOGUE・矢印凡例・共通STYLE・メタ情報
+tags: [字コンテ, storyboard, 絵コンテ, video, planning, shot-list, commercial, template, 矢印, 凡例]
 ---
 
 # 字コンテ（テキスト・ショットリスト）のテンプレート
 
-> **用語**: ストーリーボード／絵コンテ＝**画像**を指す語。テキスト版は「**字コンテ**」（shot list）と呼ぶ（「テキスト・ストーリーボード」とは呼ばない。2026-07-14 確定）。
+> **用語**: テキスト版＝「**字コンテ**」（shot list）。**画像版＝演出ボード（StoryBoard）＝鉛筆ラフ＋矢印**（作り方は `reference/directing-board.md`）。i2v に入れるフォトリアルの実画像は「**キーフレーム画像**」と呼んで区別する（3層の定義は SKILL.md「動画生成フロー」）。
 
-動画生成の一番の土台は**字コンテ（テキストのショットリスト）**。これを書いて承認を得てから生成する。**1本の動画＝複数ショット（カット・場面転換を含んでよい）**。各ショットを生成単位に分解して作り、繋いで完成（詳細は SKILL.md「動画生成フロー」）。**15秒は上限ではない**——クリップ/ショットを繋ぐ＋モデルの長尺/延長機能で伸ばせる。
+動画生成の一番の土台は**字コンテ（テキストのショットリスト）**。これを書いて承認を得る（**ゲート1**）→ 字コンテを**演出ボード**の絵にして承認を得る（**ゲート2**）→ 生成、の順（詳細は SKILL.md「動画生成フロー」）。**1本の動画＝複数ショット（カット・場面転換を含んでよい）**。**15秒は上限ではない**——クリップ/ショットを繋ぐ＋モデルの長尺/延長機能で伸ばせる。
 
 ## 1) メタ情報（ヘッダー）
 - **総尺**: 例 30 秒
@@ -22,6 +22,18 @@ tags: [字コンテ, storyboard, 絵コンテ, video, planning, shot-list, comme
 `realistic cinematic look, soft natural lighting with gentle shadows, shallow depth of field with creamy background bokeh, shot on a real camera, premium commercial style` ＋ 必要なら視点指定（例 `POV hands only, no face visible` / `eye-level handheld`）。
 リアル感の底上げは `reference/realism-naturalization-prompts.md`（実写を求める／「AIっぽい」と言われたら足す）。
 
+## 2b) ★矢印の凡例（必ずここで定義する・2026-07-17 ユーザー確定）
+演出ボード（鉛筆ラフの絵コンテ）はこの凡例に従って矢印を描く。**字コンテに書いた矢印だけがボードに現れる**。
+
+| 色 | 意味 |
+|---|---|
+| **RED = BODY MOVEMENT** | キャラクターの身体の動き・アクションの軌道 |
+| **BLUE = CAMERA MOVEMENT** | カメラの動き・カメラワーク |
+| **GREEN = FRAMING / COMPOSITION**（矢印＋テキスト） | 構図の決定・フレーミングの意図 |
+| **ORANGE = LIGHTING DIRECTION** | 光源の方向・ライティングの設計 |
+| **YELLOW = ELEMENTAL VFX / ENERGY** | エフェクト・エネルギーの流動 |
+| **BLACK TEXT = LENS / SHOT NOTE** | レンズの選定・カットに関する技術的メモ |
+
 ## 3) 各ショットの記述（ショットリスト本体）
 | 欄 | 書く内容 |
 |---|---|
@@ -30,6 +42,7 @@ tags: [字コンテ, storyboard, 絵コンテ, video, planning, shot-list, comme
 | **VISUAL:** | 画面に映るもの（被写体・背景・構図・レンズ感） |
 | **ACTION:** | 被写体／カメラの動き（カメラワークは `reference/camera-movements.md` の定型を使う） |
 | **DIALOGUE / AUDIO:** | セリフ・環境音・効果音・BGM の示唆 |
+| **矢印指示** | 上の凡例のうち、そのカットで指示したいものを明記（例 `RED: 右下→左上へ跳ね上がる / BLUE: 低い位置から右へオービット / ORANGE: 右奥からの逆光 / BLACK: 35mm ハンドヘルド`）。**テキスト欄を矢印記号で省略しない**（凡例＋具体記述の両方を書く） |
 | （任意）SFX テロップ | 画面に乗せる短い擬音／掛け声（例 POP! / TEAR! / POUR~）。※オンスクリーン文字は画中テキストが得意なバックエンドで。**人物実写では画中テキスト抑制ルール**（SKILL.md「文字を書かせない」）に注意 |
 
 **ショットの割り方**: カメラのカット・場面転換・時間ジャンプがあれば別ショット（＝別の生成単位、最後に `ffmpeg concat`）。カット無しで滑らかに繋がる区間は1連続ショット（i2v キーフレーム連鎖）。判定基準は `reference/storyboard-shot-boundary.md`。
