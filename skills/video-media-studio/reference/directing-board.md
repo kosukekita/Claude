@@ -13,8 +13,10 @@ tags: [storyboard, 絵コンテ, 演出ボード, codex, image_gen, video, penci
 
 **実機検証済み（2026-07-17 / Codex 0.144.5 + GPT Image）**: 下の定型で、鉛筆モノクロのラフに
 赤=身体・青=カメラ・橙=光・黄=VFX・緑=フレーミング注記・黒=ショット注記が正しく描き分けられたボードが出た。
-**4パネル・12パネル（4列×3行）とも成功**。12パネルでも凡例ストリップ・レンズ表記（`24mm WIDE / ESTABLISHING / LANDING`）・
-秒数（`00:00:01`）まで破綻せず描けた。**所要 約6〜9分/枚**（12パネルは長め）。`timeout` は 900 秒以上取る。
+**4パネル・12パネル（4列×3行）とも成功**。12パネルでもレンズ表記（`24mm WIDE / ESTABLISHING`）・
+秒数（`00:01`）・緑のフレーミング注記まで破綻せず描けた。**所要 約6〜18分/枚**（12パネルは長め）。
+`timeout` は **900 秒以上**取る。**待ち方**: ログの最後が「still running / waiting」で止まって見えても
+生きているので即断で殺さない。ファイルの出現をポーリングして待つ。
 
 ## 生成コマンド
 
@@ -70,12 +72,18 @@ stays monochrome pencil):
 Under each panel, small black handwritten-style caption text = lens / shot note:
 1 "<WIDE / ORBITING / HANDHELD>", 2 "<...>", ...
 
-At the bottom of the sheet, a legend strip in the same handwritten style:
-"RED = BODY MOVEMENT", "BLUE = CAMERA MOVEMENT", "GREEN = FRAMING / COMPOSITION",
-"ORANGE = LIGHTING DIRECTION", "YELLOW = ELEMENTAL VFX / ENERGY", "BLACK TEXT = LENS / SHOT NOTE"
+Do NOT draw a legend, key, or colour-explanation strip anywhere on the sheet. No "RED = ..." /
+"BLUE = ..." captions. The only text is the panel numbers, the timestamps, the green framing
+notes inside panels, and the black lens/shot note under each panel.
 
 Landscape 16:9 sheet. Save the image to <out_dir>/board.png
 ```
+
+**★凡例（各矢印の説明）はボードに描かない**（2026-07-17 ユーザー確定・実機検証済み）。**凡例は字コンテ側で定義済み**なので
+ボードに載せると重複。ボードに載るのは**矢印そのもの＋各パネルの注記（番号・秒数・緑のフレーミング注記・黒のレンズ注記）だけ**。
+GPT Image は放っておくと凡例ストリップを描くので、上の `Do NOT draw a legend...` を明示的に入れる
+（`Fill the full sheet ... leave no reserved band for a legend` まで書くと確実）。
+**副次効果: 凡例帯が消えた分、同じ12コマでも1コマが大きく描かれる**（実測 2026-07-17・絵の情報量が上がるので歓迎）。
 
 **矢印は字コンテに書いたものだけ描く**。字コンテに `BLUE:` が無いカットに青矢印を勝手に足さない
 （＝動画のシーン・動作を無断で足さないルールと同じ。SKILL.md「6要素」）。
@@ -107,5 +115,5 @@ Landscape 16:9 sheet. Save the image to <out_dir>/board.png
 - [ ] 鉛筆モノクロ。有彩色は凡例の矢印・注記だけ（フォトリアル化・彩色・リアル化スターターを足していない）
 - [ ] 各パネルにカット番号と秒数ラベル
 - [ ] 字コンテに書いた矢印が全部描かれている／書いていない矢印が増えていない
-- [ ] 下端に凡例ストリップ
+- [ ] **凡例ストリップが描かれていない**（凡例は字コンテ側。描かれていたら再生成）
 - [ ] ユーザーに提示して**承認を取った**（字コンテの承認はボードの承認ではない）
