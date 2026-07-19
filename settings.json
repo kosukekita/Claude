@@ -167,7 +167,8 @@
   "enabledPlugins": {
     "codex@openai-codex": true,
     "chrome-devtools-mcp@claude-plugins-official": true,
-    "security-guidance@claude-plugins-official": true
+    "security-guidance@claude-plugins-official": true,
+    "claude-code-setup@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "openai-codex": {
