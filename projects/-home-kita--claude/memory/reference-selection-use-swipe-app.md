@@ -18,6 +18,8 @@ metadata:
 - 詳細runbook: video-media-studioスキル `reference/tinder-swipe-selection.md`（再アーム＝`latest_ref_batch.txt`書換＋status戻し＋`swipe_state.json`削除）。
 - 実例(2026-07-13): 長谷川バーテンダー6枚 → `~/media-out/nsfw-auto/manual_hasegawa_bartender/`（1-6.png+manifest+persona+status）→ send_swipe_link.mjs でリンク送信。
 
+**★リンクの開き方(2026-07-20 実障害と対処):** 朝のswipeメールのリンクが iPhone で開けない相談。原因は**Gmailアプリ内ブラウザが `http://IP:ポート` を開けない**こと（Tailscale接続・サーバ稼働・HTTP200・akitaken緑オンライン=到達性は全て正常だった。tailscale ping で iPhone まで pong 確認）。**最初のスクショの「アプリで開く/毎回確認する」は Android の画面で iPhone には出ない**（別端末の可能性）。★対処＝**リンク長押し→コピー→Safariに貼り付け**で開けた。★恒久化: `send_swipe_link.mjs` の主リンクを**MagicDNSホスト名 `http://akitaken.tail7c9257.ts.net:8710/...`（動的取得＋フォールバック）**に変更し**予備で生IPも併記**、本文を「Tailscale ON→開けない時はコピー→Safari」に更新済み（両リンクHTTP200検証済）。次回メールから自動適用。
+
 **★違反履歴（2026-07-13・二重の失敗）:** バーテンダー6枚を**自作HTMLの"Tinder風カード"グリッドで Gmail にインライン画像送信**した。(1)UI違反＝既存swipeアプリを使わなかった (2)**プライバシー違反＝NSFW画像を Gmail(第三者サーバ)に漏らした**。ユーザー「UIが全然違う」「ルール化しといて」。→ 以後この種の"参照を選ばせる"依頼は反射的に本ルール(swipeアプリ+リンクのみ)を適用する。
 
 関連: [[image-cache-volatile-use-media-out]] [[gmail-send-smtp-attachments]] [[nsfw-auto-pipeline-explicit-video]] [[quality-over-speed-media-gen]]
