@@ -1,5 +1,6 @@
 # Memory Index
 
+- [project_revert_guard_snapshot_hook_flaky.md](project_revert_guard_snapshot_hook_flaky.md) — Windowsでrecord-file-snapshot.ps1が間欠不発火→revertガードが自分の直前Editを誤ブロック(2026-07-21実測・未修正)。対処はRead再読込→同Edit再実行。snapshot手動書き換えは迂回なので不可
 - [feedback_character_sheet_no_text_no_crop.md](feedback_character_sheet_no_text_no_crop.md) — リファレンスシート固定ルール2点(文字/ラベル一切なし・元画像からアップ切り取り禁止で全パネル生成)。ユーザー確定2026-07-07。正本はcharacter-sheet-template.md冒頭★固定ルール節
 - [feedback_flux2_reference_image_editing.md](feedback_flux2_reference_image_editing.md) — FLUX.2-dev/kleinはオープンウェイトで参照画像編集可(image=[PIL]渡すだけ・最大10枚)。gen_image.pyがt2iのみだったのは実装漏れ。pro/flexはAPI専用でローカル不可。FLUX.1参照編集はKontext
 - [feedback_slide_icon_approach.md](feedback_slide_icon_approach.md) — slide-makingでSVGアイコン手書きは失敗する。リファレンスPNGクロップ→base64埋め込みが唯一の確実な方法
