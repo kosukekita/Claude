@@ -198,7 +198,7 @@ CTA の不在・唐突／QUALITY CHECKS MUST のいずれかの違反。
 | フェーズ2 | 比喩の面白さでなく**商品の仕組みの理解しやすさ**を優先（正本準拠）。ファーストビューC案・図版・アイコン選定の基点になる |
 | フェーズ3 | **ファーストビュー専用の3案**（design-orchestrator の ■3 サイトコンセプト3案とは別物 — サイト用フローで代替しない）。スタイルの基点は styles-catalog / INDUSTRY DEFAULTS / product-color-palettes.md。ユーザーがスタイルを明示指定（Nothing/Swiss 等・RULE PRECEDENCE 3）した場合は Style をその規律内に固定し、コピー/構図/信頼要素で3方向を比較する（案比較自体は省略しない） |
 | フェーズ4 | **心理10段階の順序が正**（orchestrator の「最初に知りたい→…」5段階順序は LP では使わない）。「6. 証拠を見る」に置けるのは §1 #6 で提供された根拠・実績のみ（未提供は `〔要差し替え〕` か証拠セクション縮小 — 縮小の条件は §1 #6） |
-| フェーズ5 | 既存 QUALITY CHECKS MUST / DEFAULT VISUAL QUALITY と併用（矛盾時は MUST が正）。「CTA の色だけを浮かせない」と DEFAULT VISUAL QUALITY「CTA が最も目立つ要素」は両立させる — 色の孤立でなく、文脈・配置・余白・サイズで最も目立たせる |
+| フェーズ5 | 既存 QUALITY CHECKS MUST / DEFAULT VISUAL QUALITY と併用（矛盾時は MUST が正）。「CTA の色だけを浮かせない」と DEFAULT VISUAL QUALITY「CTA が最も目立つ要素」は両立させる — 色の孤立でなく、文脈・配置・余白・サイズで最も目立たせる。**ファーストビュー等のキービジュアル画像の生成は video-media-studio スキルの `reference/key-visual-director.md`（用途=LPファーストビュー）に委譲する** |
 | フェーズ6 | 反証は**仕様段階**の監査。実装後の Step 4 品質チェック（実測検証）は別途必須 — 相互に代替不可。「法的・倫理的に問題のある表現」の検査には【禁止事項】と薬機法・景表法・特商法の観点を含める |
 
 **増分変更**: L4 承認後の追加・変更は、該当分の設計を追記・更新し、変更分への反証を再実施したうえで、

@@ -107,6 +107,9 @@ R3 承認後にスライド追加・構成変更が生じたら、該当分の�
 アイコンが必要と判断したら、**確認を待たず次の順に自動で取りに行く**（パーツのみ・**テキストは含めない**）。
 作業ディレクトリの `parts/` に集めてから埋め込む。
 
+> **表紙・キービジュアル級の1枚絵**（スライド表紙の背景ビジュアル等）はパーツではなく、
+> **video-media-studio スキルの `reference/key-visual-director.md`（K0〜K2・3案比較＋監査）**で生成する（2026-07-21 ユーザー確定）。
+
 1. **まず theSVG を試す（既定の第一候補）**: `uv run scripts/fetch_icon.py --slug <name> --variant <v>`。
    ブランド/技術ロゴ・汎用装飾アイコン（矢印・チェック・DB 等）はほぼここで揃う。slug 推定は `references/thesvg-usage.md` の「よく使う slug」と manifest（`icons.json`）を当てる。
 2. **theSVG に無ければ GPT Image で作る（フォールバック）**: `fetch_icon.py` が **HTTP 404 → 非ゼロ終了**したら（＝そのアイコンが theSVG に無い）、
