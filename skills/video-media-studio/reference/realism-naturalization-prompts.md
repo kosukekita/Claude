@@ -105,3 +105,18 @@
 
 - ネガティブが効くのは z-image-turbo / sdxl系 / chroma / qwen-image。FLUX.1/2-dev・Klein は negative 非対応なのでポジティブ側に `no ...` で明示（入れ墨ルールと同じ流儀）。
 - 既定のタトゥー禁止ネガ（`tattoo, tattoos, body ink, lettering on skin`）とは併存させる（置き換えない）。
+
+## 年齢リアリズム（★2026-07-21 ユーザー確定・年齢が分かる人物に自動適用）
+
+**被写体の年齢が分かっている人物（ペルソナの age・ユーザー指定年齢）は、汎用リアル化に加えて「年齢相応の肌サイン」を明示的に列挙する。** 汎用の `visible pores` レベルでは皺・シミは出ない（実測 2026-07-21: 青木彩乃35歳・Seedance 2.0 r2v の v5→v6 比較。v5=毛穴指定のみ→アイドル的ツル肌、v6=下の定型追加→目尻の小皺・シミ・ほくろ・自然な肌トーンが出た）。原因は2つ: ①生成モデルは放置すると若く・滑らかに倒す ②r2v/i2v の参照写真自体がツル肌だと同方向に引っ張る。
+
+**実機検証済みの英文定型（AGE-REALISTIC SKIN 段落・年齢と部位は差し替え）** — 動画(Seedance/wan等)・指示追従系画像(Codex/Qwen-Edit)にそのまま使える:
+
+```
+AGE-REALISTIC SKIN (critical): she is in her mid-30s and her skin must honestly show it — fine lines at the corners of her eyes and a subtle crease at the edge of her mouth when she smiles, faint nasolabial lines, a few small faint sun spots and tiny moles scattered on her face, neck, chest and shoulders, slightly uneven natural skin tone, visible pores and fine skin texture everywhere including her chest. NOT airbrushed, NOT porcelain-smooth, NOT a flawless idol look — a beautiful real woman of 35 photographed on a real camera.
+```
+
+- 年齢帯で強度を調整する（20代前半=ほぼ汎用リアル化のみ／30代=上の定型／40代以降=皺・シミの語彙を段階的に強める）。「beautiful real woman of <age>」の年齢を必ずペルソナに合わせる。
+- **年齢不明の人物には適用しない**（勝手に老けさせない）。適用・不適用で迷ったらユーザーに確認。
+- ローカル diffusion 向けキーワード変換: ポジ `fine lines around eyes, faint sun spots, small moles, uneven natural skin tone, mature skin texture` ／ ネガ `porcelain skin, flawless skin, baby face, airbrushed`（対応モデルのみ）。
+- 日本語自然文で渡す場合（Grok等）: 「35歳相当の肌にしてください。微笑んだときの目尻・口元の小皺、うっすらしたほうれい線、顔・首・胸元の薄いシミやほくろ、均一すぎない自然な肌トーンを残し、陶器のような完璧な肌にしないでください」。
