@@ -1,0 +1,20 @@
+---
+name: creative-prompt-default-flows
+description: ユーザーのクリエイティブディレクター系プロンプトをスキル既定フロー化する定型パターン（2026-07-21確立・スライド/サイト/LPの3本完了）
+metadata: 
+  node_type: memory
+  type: project
+  originSessionId: ebaa69e7-513b-42e6-b8dd-3f06de095786
+---
+
+ユーザーは自作の「AIディレクター」プロンプト群を、対応スキルの**既定フロー**として順次組み込んでいる（「次は〇〇です」+プロンプト全文貼付の形式で依頼が来る）。完了済み:
+
+1. **スライド** → `skills/slide-making/references/creative-direction.md`（ブリーフ7項目・R0〜R3）
+2. **Webサイト（複数ページ）** → `skills/ui-ux-design/references/design-orchestrator.md`（ブリーフ6項目・W0〜W4）
+3. **LP（1ページ行動特化）** → `skills/ui-ux-design/references/lp-direct-response.md`（ブリーフ7項目＋禁止事項固定指示・L0〜L4）。LP/サイトの分類は**導線で機械判定**（自称目的でのすり抜け禁止）
+
+**定型パターン**（次も同じ手順で）: skill-writingスキルのTDD厳守 — ①RED=現行スキルでサブエージェント3シナリオ実測（Workflowで並列・合理化をverbatim記録） ②GREEN=referencesに正本ファイル新規作成（§1 {{}}ゲート「未指定は必ず質問」＋充足判定は文字どおりのみ／§2 プロンプト全文改変禁止／§3 ラウンド統合マップ／§4 RED実測合理化への反論表＋Red Flags）＋SKILL.mdルーティング接続 ③同シナリオ再実行＋整合監査＋敵対的抜け穴ハント ④REFACTOR（2〜3周で打ち止め・漸近） ⑤コミット&push。
+
+**毎回出る抜け穴の定番**（新規正本には最初から入れる): 充足判定の推定強弁／「任せる」の包括解釈／「質問不要」→仮定一覧付き1問→通知型（順序規律・ターン境界の実装分離・無応答≠拒否）／ヘッドレスの【完備×人間由来転記×委任明記】／省略は工程名特定のみ・一括提案禁止・同意連鎖禁止／要約の最低要素定義／最終監査ラウンドの統合禁止／停止級の列挙定義／増分変更の承認義務／実在情報の捏造・自力調達禁止（〔要差し替え〕方式）。
+
+関連: [[project_skill_consolidation]]
