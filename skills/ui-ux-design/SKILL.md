@@ -70,7 +70,7 @@ description: "Web/mobile UI の設計・実装・レビュー・改善で使用�
 - **Stack**: React, Next.js, Vue, HTML+Tailwind（デフォルト）等
 
 ### Step 2: デザイン方向の決定
-新規設計時のみ以下の5要素を決定して提示：
+新規設計時のみ以下の5要素を決定して提示（**新規Webサイト/LP では W2 の3案選択後に確定** — orchestrator 参照）：
 
 1. **Pattern** — ランディングページ構造 / レイアウトパターン
 2. **Style** — UIスタイル（68スタイル(50 UI+8 LP+10 DB)から選択。詳細は `references/styles-catalog.md`）
@@ -135,6 +135,10 @@ QUALITY CHECKS セクションの MUST 項目を全て確認してから出力�
 - Inter + Lucide のデフォルト組み合わせをそのまま使用（意図を持って選ぶなら可）
 - "Lorem ipsum" や "Empower your workflow" 等の generic コンテンツ
 - z-index の無計画な乱用
+
+> 「realistic content」「generic コンテンツ禁止」は**構成とトーンの具体性**を指す。実在を装う固有情報
+> （料金・実績・お客様の声・統計・住所・監修者等）の創作を正当化しない — ユーザー未提供の実在情報は
+> 質問するか `〔要差し替え〕` プレースホルダーで明示する（`design-orchestrator.md §1 #6`）。
 
 ---
 
@@ -202,7 +206,7 @@ hover: scale-up、active: scale-down、disabled: opacity-50、loading: pulse/spi
 
 | Stack | ポイント |
 |---|---|
-| HTML + Tailwind（デフォルト） | Semantic HTML5、utility-first、Container: `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8` |
+| HTML + Tailwind（デフォルト） | Semantic HTML5、utility-first、Container: `max-w-7xl mx-auto px-5 sm:px-6 lg:px-8`（`px-4`=16px はモバイルガター min 20px を下回るため不可） |
 | React / Next.js | shadcn/ui 推奨、`use client`/`use server` 適切な使い分け、`references/design-systems.md` 参照 |
 | Vue / Nuxt | Composition API + `<script setup>`、Nuxt UI 推奨 |
 | SwiftUI | System colors / Dynamic Type / SF Symbols |
