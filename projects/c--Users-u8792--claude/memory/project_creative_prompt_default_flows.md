@@ -12,6 +12,7 @@ metadata:
 1. **スライド** → `skills/slide-making/references/creative-direction.md`（ブリーフ7項目・R0〜R3）
 2. **Webサイト（複数ページ）** → `skills/ui-ux-design/references/design-orchestrator.md`（ブリーフ6項目・W0〜W4）
 3. **LP（1ページ行動特化）** → `skills/ui-ux-design/references/lp-direct-response.md`（ブリーフ7項目＋禁止事項固定指示・L0〜L4）。LP/サイトの分類は**導線で機械判定**（自称目的でのすり抜け禁止）
+4. **キービジュアル画像（広告/Web/スライド用・非人物）** → `skills/video-media-studio/reference/key-visual-director.md`（必須質問は用途・概念の2項目のみ＝ユーザー確定、残り{{}}はディレクターが3案内で設計・K0〜K2）。**★1本ルールはリアル人物・動画限定に分離**（2026-07-21確定、非人物KVは3案+改善版=計4枚既定・順次生成）。人物境界=「識別可能なリアル人物が写るか」で統一（主役か否か不問）。**「プロ級監査ブロック」本文は未受領**＝§3暫定監査6項目が代替中、ユーザーから届いたら§2追補・§3差し替え（ファイル編集時のみ有効）
 
 **定型パターン**（次も同じ手順で）: skill-writingスキルのTDD厳守 — ①RED=現行スキルでサブエージェント3シナリオ実測（Workflowで並列・合理化をverbatim記録） ②GREEN=referencesに正本ファイル新規作成（§1 {{}}ゲート「未指定は必ず質問」＋充足判定は文字どおりのみ／§2 プロンプト全文改変禁止／§3 ラウンド統合マップ／§4 RED実測合理化への反論表＋Red Flags）＋SKILL.mdルーティング接続 ③同シナリオ再実行＋整合監査＋敵対的抜け穴ハント ④REFACTOR（2〜3周で打ち止め・漸近） ⑤コミット&push。
 
