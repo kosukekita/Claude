@@ -31,7 +31,8 @@ description: "Web/mobile UI の設計・実装・レビュー・改善で使用�
 
 | タスク種別 | 判断基準 | 処理フロー |
 |---|---|---|
-| **新規ページ / LP / Dashboard** | 「作って」「設計して」「作成して」 | 要件分析 → デザインシステム定義 → 実装 → 品質チェック |
+| **新規Webサイト / LP（コーポレート・サービス・採用・ポートフォリオ・メディア等）** | 「サイトを作って」「ホームページ」「LPを作って」「全面リニューアル」 | **`references/design-orchestrator.md` が既定フロー**: W0 ブリーフ6項目ゲート → ■1〜■8（要件構造化/中心視覚概念/3案/情報設計/ページ設計/デザインシステム/実装構成/反対監査）→ W4 承認後に実装 → 品質チェック |
+| **新規 Dashboard / アプリ画面UI**（サイト以外の新規） | 「ダッシュボード作って」「管理画面」「アプリのUI」 | 要件分析 → デザインシステム定義 → 実装 → 品質チェック |
 | **既存UI の修正 / レビュー** | 「直して」「改善して」「レビューして」「このUIを」 | 問題特定 → 最小修正 → 品質チェック |
 | **コンポーネント実装** | 特定コンポーネント名（modal, button, form 等） | references 参照 → アクセシビリティ確認 → 実装 |
 | **Swiss / editorial / グリッド駆動 / identity** | 「Swiss design」「International Typographic Style」「雑誌風」「グリッドシステム」「Vignelli」「Müller-Brockmann」「グリッドが乗ってるか検証して」「wayfinding/サイン」 | `references/swiss-modernism.md` の規律に従う → `scripts/` でトークン/scaffold 生成 → `verify_grid.js` で 0px 検証 |
@@ -48,6 +49,11 @@ description: "Web/mobile UI の設計・実装・レビュー・改善で使用�
 ---
 
 ## CORE WORKFLOW
+
+> **新規Webサイト/LP は `references/design-orchestrator.md` の W0〜W4 が既定フロー**（ユーザー確定 2026-07-21）。
+> ブリーフ6項目（サイトの種類/事業/利用者/行動/印象/掲載情報）の**未指定分は着手前に必ず質問**し、
+> Step 1〜4 はそのフローの内部で使う（Step 2 の5要素確定は W2 の3案選択後。W4 承認前に実装しない。
+> 利用端末は既定でスマホ最優先＋PC最適化）。Dashboard・アプリ画面・既存修正は従来どおり Step 1 から。
 
 ### Step 1: 要件分析
 - **Product type**: SaaS, e-commerce, portfolio, dashboard, landing page 等
@@ -233,6 +239,7 @@ AVOID:       [anti-patterns for this project]
 
 ## REFERENCES
 
+- `references/design-orchestrator.md` — **新規Webサイト/LP の既定フロー正本**（ブリーフ6項目ゲート・■1〜■8プロンプト全文・W0〜W4統合マップ・合理化反論表）
 - `references/styles-catalog.md` — 68スタイル完全一覧（50 UI + 8 LP + 10 DB）
 - `references/color-typography.md` — カラー選定理論のみ（色理論・役割・業界別の色の方向性）。フォントは google-fonts-selection.md、チャートは chart-selection.md、hex トークンは product-color-palettes.md を参照
 - `references/product-color-palettes.md` — 具体的なプロダクト別カラートークン（SaaS、医療、金融、EC、モバイルアプリ等）
