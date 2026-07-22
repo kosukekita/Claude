@@ -49,6 +49,15 @@ Uses `video-media-studio`'s `cloud_atlascloud.py` (AtlasCloud) for i2v. `$UV` fr
 ```
 **★ Freeze reality (confirmed 2026-07-11):** Seedance/Kling i2v have NO motion/static control param and **cannot be forced to perfectly freeze — they always add slight slow-motion**, especially for liquids (solid objects freeze better). The aggressive "completely static / zero motion / NOT slow motion" prompt above minimizes it but does not eliminate it. **A mathematically perfect freeze + moving camera is only achievable with DepthFlow depth-parallax (see below) — but that has "cardboard" 3D.** So: single-image → (perfect freeze + cardboard 3D via DepthFlow) OR (clean 3D + slight slow-mo via i2v). Pick one; you cannot have both. For most viral clips the slight slow-mo i2v reads fine (bullet-time is itself slow-mo + camera).
 
+**★ Freeze prompt cookbook (verified 2026-07-22, beer-foam freeze-orbit session — apply ALL of these whenever prompting a freeze/bullet-time i2v):**
+1. **Gaze: freeze it in WORLD space, never "locked on camera".** A frozen statue must NOT keep eye contact while the camera orbits — prompting eye-contact tracking = eye movement = freeze break. Write: `Her eyes and her gaze stay frozen exactly as in the first frame — she never blinks, her eyes never move, her expression never changes.` (Seedance obeys this.) In QC, the gaze "looking away" at the end of the orbit is CORRECT physics (world-fixed gaze + camera moved), not a violation.
+2. **Liquids don't just slow-mo — they GROW.** Foam/splash balloons and multiplies over the clip (a 15s take grew a lattice 3× the original and stuck to her face). Counter explicitly: `The foam and the droplets never grow, never multiply, never spread and never fall — the droplet count stays exactly constant and the splash silhouette stays perfectly identical in every frame, petrified like a glass sculpture; no foam ever touches her face.`
+3. **Freeze drift integrates over duration.** 15s Seedance take failed (foam balloon), same prompt at 10s passed. For deliverables >10s: generate 10s and retime (`setpts=1.5*PTS`; a constant-speed orbit retimes cleanly; add frame interpolation only if judder shows).
+4. **Wide arcs hallucinate the revealed background** — signboards WITH TEXT and crowd figures appeared once the arc exceeded ~45° into unseen space. Keep the arc ≤~40–45° and add: `The arc is short enough that NO new background area is ever revealed — the background stays exactly what is visible in the first frame, only shifting with parallax; no signs, no text, no letters, no people ever appear.` Negative: `wide arc, new background revealed, text, letters, signboard, banner, extra people`.
+5. **Pivot the arc on the body area that must stay centered**: `the camera arc pivots around <area> — it stays at the exact center of the frame for the entire video, while her face stays fully visible in the upper part of the frame.`
+6. **Kill the opening static hold**: i2v tends to hold the first frame before moving — `already in smooth orbital motion at the very first frame, no static hold`.
+7. **Seedance i2v accepts duration up to 15** (schema range 4–15) — but see #3; don't use it for freezes.
+
 **Method B — generate the explosion, subject holds pose**:
 ```
 "$UV" run cloud_atlascloud.py video --model bytedance/seedance-2.0/image-to-video \
@@ -60,8 +69,8 @@ Uses `video-media-studio`'s `cloud_atlascloud.py` (AtlasCloud) for i2v. `$UV` fr
 ## Model choices (verified 2026-07-10)
 
 - **Still**: Codex GPT Image = best realism + scene (no face-consistency need). Seedream 5 = reference-consistent, slightly gravure-idealized. Local Qwen-Edit-2511 = keep a persona's exact face, uncensored.
-- **i2v**: **Seedance 2.0 = most dramatic burst / cleanest freeze-orbit (recommended)**. Kling v3 pro = more controlled/subtle.
-- Always verify motion with `ffmpeg ... ssim` between first/last frame — do not judge "it moved" from two eyeballed frames (SSIM≈1.0 = static).
+- **i2v**: **Seedance 2.0 = most dramatic burst / cleanest freeze-orbit (recommended)**. **Kling FAILS person-freeze (verified 2026-07-22: kwaivgi/kling-v3.0-pro i2v animated the subject — expression cycled through a live laugh, foam turned into a pouring stream — despite the aggressive freeze prompt + cfg_scale 0.7).** Use Kling only for non-freeze camera work.
+- Verify motion objectively, never by eye. Static camera → `ffmpeg ... ssim` between first/last frame (SSIM≈1.0 = static). **Orbiting camera → first-vs-last is INVALID (huge parallax); extract 1 fps frames and compare ADJACENT pairs** for splash-silhouette constancy (grow/fall/multiply = fail), plus a full-speed scrub for blinks/expression changes.
 
 ## Realism (default)
 
@@ -73,7 +82,9 @@ Apply `video-media-studio`'s realism naturalization by default (visible pores, r
 - **Tried single-image 3D reconstruction (TripoSR/LGM/TripoSplat/Hunyuan3D)** for a person+scene → breaks; those are object-only. Don't.
 - **DepthFlow single-layer 2.5D parallax** → "cardboard"/edge-tearing, not clean 3D. Also: CLI default is **static** (no animation preset); needs `WINDOW_BACKEND=headless` + a Python `DepthScene` subclass whose `update()` animates `self.state.offset/isometric` (see `depthflow/examples/presets.py`). Use only for small, strictly-frozen parallax; not for big clean orbits.
 - **i2v on water expecting it to freeze** → fluid falls. Solid food/plates freeze; for water use Method B or a very explicit "freeze frame, only camera" prompt and accept some motion.
-- **Judged motion by eye** → measure with SSIM.
+- **Prompted "eyes locked on the camera" during an orbit** → forces eye tracking = the "statue" moves. Freeze the gaze as in the first frame (cookbook #1).
+- **Let the arc run wide (>45°) into unseen background** → hallucinated text signboards / crowd figures late in the clip (cookbook #4).
+- **Judged motion by eye** → measure objectively (SSIM for static camera; 1 fps adjacent-pair comparison for orbits).
 
 ## Related
 
