@@ -83,10 +83,14 @@ Flow (async, 3 steps): **container** `POST /{ig_user_id}/media`
   `CBOR:ActionsSoftwareAgentName = BytePlus_ModelArk`, plus real timestamps.
 - **`ffprobe` misses it** (it only sees container/stream tags, not EXIF/XMP/atom/
   C2PA-CBOR-JUMBF). Verify with **`exiftool -G1 -a -s`**.
-- **`ffmpeg -map_metadata -1 -map_chapters -1 -c copy` remux drops C2PA + Encoder
-  LOSSLESSLY** (no re-encode; the C2PA manifest is a top-level box that remux
-  discards). If you must re-encode, libx264 single-pass leaves
-  `CompressorName`/`Encoder` → do encode → `-c copy` remux (2 stages).
+- **`ffmpeg -map_metadata -1 -map_chapters -1 -c copy` remux drops C2PA + the
+  SOURCE's Encoder LOSSLESSLY** (no re-encode; the C2PA manifest is a top-level
+  box that remux discards). **BUT the remux itself writes a NEW `Encoder=Lavf...`
+  tag — add `-fflags +bitexact -flags:v +bitexact -flags:a +bitexact` to suppress
+  it** (verified 2026-07-22: a plain clean-remux failed the metadata checker on
+  `Encoder = Lavf60.16.100`; the bitexact remux passed). If you must re-encode,
+  libx264 single-pass leaves `CompressorName`/`Encoder` → do encode → bitexact
+  `-c copy` remux (2 stages).
 - A metadata **checker must treat `CBOR`/`C2PA`/`JUMBF` exiftool groups as leaks**,
   not just `XMP`/`IPTC`/`ICC`/EXIF — otherwise a video with an embedded model
   name passes when the `Encoder` tag happens to be absent.
