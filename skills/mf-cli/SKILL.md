@@ -1,6 +1,6 @@
 ---
 name: mf-cli
-description: Use when driving Mechanical Finder (整形外科CT-FE商用ソフト, インストール先 C:\mfinder_ee130, V13 EE) from the command line WITHOUT its GUI — DICOM読込・骨セグメント・メッシュ生成・材料割当・ソルバを裏側のバックエンドexe(dicom_if/inferSend/FloatTetwild/mesher/to_exec/solver2)で直接叩いて自動化・バッチ化したいとき。MFのGUI(3D節点選択が本質でpywinauto不可)をコマンドラインで回避、Bessho型破断解析のヘッドレス実行、複数症例バッチ展開。トリガー: MFをCLIで/GUIなしで/バッチで/Mechanical Finder headless/破断解析を自動化。
+description: Use when running Mechanical Finder (整形外科CT-FE商用ソフト V13 EE) FEA without its GUI — MFで非線形/線形FEAを回す、solver2 を叩く、EXEC.INP を生成する、破断解析をヘッドレス実行する、複数症例をバッチで回す、Linux(akitaken)やWineでMFを動かす、DICOM読込・骨セグメント・メッシュ生成・材料割当を裏側のバックエンドexeで自動化する、いずれの場合も。トリガー: MFで解く/MFのFEA/MFをCLIで/GUIなしで/バッチで/Mechanical Finder headless/破断解析を自動化/solver2/EXEC.INP/akitakenでFEA/LinuxでMF/Wineで動かす。
 ---
 
 # Mechanical Finder を CLI で駆動する
@@ -8,13 +8,80 @@ description: Use when driving Mechanical Finder (整形外科CT-FE商用ソフ�
 ## Overview
 MF は AVS/Express 製の GUI アプリで CLI 駆動の公式手段は無い（マニュアル219頁にコマンドライン手順なし、solv_cli/bat_solv/proj2text/img2proj は引数なしで GUI を開くだけ）。荷重・拘束は 3D OpenGL ビューでの**節点選択**が本質で pywinauto では届かない。**しかし GUI が裏で叩くバックエンド exe 群を直接起動すれば GUI を回避してパイプラインを組める。材料則・節点グループはテキスト**。
 
-## 実行作法（最重要 — ここで必ずつまずく）
+## 🔴🔴 実行機は **akitaken（Linux + Wine）が既定**。Windows で FEA を回さない（★最上位の実行ルール）
+
+**MF の FEA（solver2 = 線形・非線形・破断）は akitaken で実行する。Windows 機での実行は既定ではない。**
+2026-07-23 に実機で全面検証済み（Windows 機は i9-14900KF、akitaken は AMD EPYC 7552 48c / 251GB RAM）。
+
+```bash
+# これ1行。EXEC.INP のあるディレクトリを渡すだけ
+ssh akitaken '/data/kita/mf_work/mfrun.sh /data/kita/mf_work/<case> 12'
+# 正常終了 = run_result.txt に rc=0 かつ ExSv_end_1_1=1
+```
+
+| 何 | どこ |
+|---|---|
+| MF 本体 | `/data/kita/mfinder_ee130/`（bin, runtime。897ファイル 1.8GB） |
+| Wine | `/data/kita/wine/wine-11.13-staging-amd64-wow64/`（kron4ek portable。**root不要**） |
+| WINEPREFIX | `/data/kita/wineprefix` |
+| 実行ラッパ | `/data/kita/mf_work/mfrun.sh <workdir> [threads]` |
+| 生成器一式 | `/data/kita/mf_work/gen_linux/`（`P:` シンボリックリンク済み） |
+| Python | `/data/kita/UKA_FEA_PINN/.venv/bin/python`（numpy+SimpleITK。**uv は無い**） |
+
+### なぜ akitaken か（実測。推測ではない）
+- **ライセンス不要**: `solver2.exe`/`solver.exe`/`to_exec.exe` に**ライセンスチェックが存在しない**。
+  `License.dat` と `mf_info` を両方消しても同一結果で完走することを対照実験で確認済み
+  （文字列走査でも `LICVER|HOSTID|CUSTID` のヒット 0。GUI 系 `mecha.exe`=7件 / `mesher.exe`=6件 とは対照的）。
+- **結果が同一**: 同一 EXEC.INP → 要素ステータス完全一致（スレッド数・並列度を変えた **17ラン全部**）。
+  変位の最大相対差 1.19e-07（= float32 の機械イプシロン）、応力 9.5e-06、相対差>1e-4 は 0 件。
+- **スループット 5.6倍**: 1本×24スレッド=135秒/本 に対し **8本×6スレッド=24.3秒/本**。
+  ⚠**スレッドは8超で飽和する**（8th=154s / 24th=135s / 48th=146s）。
+  👉 **教師データ生成は「1本を48スレッド」ではなく「多数本を6〜12スレッドで並列」**。
+- **メモリ**: 251GB。PARDISO が in-core で回る（out-of-core 回避＝精度ではなく速度の話）。
+
+### EXEC.INP の生成も akitaken でできる（Windows 不要）
+`make_exec_inp.py` / `canonical_guard.py` / `mf_material_oracle.py` は **Windows 依存ゼロ**。
+同一入力で **Windows と EXEC.INP がバイト完全一致**することを md5 で確認済み。正本ガードも Linux で作動する。
+唯一の障害は絶対パス定数3つ（`CALIB_ROOT` / `SITE_CALIB_JSON` / `CANON_MD`）だが、
+akitaken には pCloud が `/home/kita/pCloudDrive` にマウント済みなので、**cwd に symlink を置けばコード無改変で解決**する
+（Linux では `P:\...` は「バックスラッシュを含む1個のファイル名」なので symlink 名にできる）:
+```bash
+cd /data/kita/mf_work/gen_linux   # 下記3本は設置済み
+ln -sfn /home/kita/pCloudDrive "P:"
+ln -sfn /home/kita/pCloudDrive/Data/NAIST/Uzumasa/Calibration 'P:\Data\NAIST\Uzumasa\Calibration'
+ln -sfn /home/kita/pCloudDrive/Code/Research/PINN/UZUMASA_DATA_STRUCTURE.md 'P:\Code\Research\PINN\UZUMASA_DATA_STRUCTURE.md'
+MF_TET_ORIENT=mf MF_LOAD_SENSE=compression /data/kita/UKA_FEA_PINN/.venv/bin/python make_exec_inp.py \
+  <FDNEUT> <CT.mhd> <case> <out_dir> <load_N> matnl force 3.0 30 <none|auto>
+```
+CT・骨マスク・校正は `/data/kita/Uzumasa_CT/` にローカル実在。四面体化は
+`/data/kita/tools/fTetWild/build/FloatTetwild_bin`（Linuxネイティブ、1側5〜7分）。
+
+### Windows がまだ要るのは GUI 側バックエンドだけ
+`mecha / mesher / dicom_if / inferSend / matedit / proj2text` は**ライセンスチェックを持つ**ので Windows。
+ただし **EXEC.INP を自前生成する現行パイプラインではどれも不要**。
+
+### 「今回は Windows でいいか」を潰す（★合理化への反論）
+| 言い訳 | 現実 |
+|---|---|
+| 「小さいケースだから Windows で十分」 | 小さいほど転送コストも小さい。akitaken 側は1行で回る。分ける理由がない |
+| 「転送が面倒」 | EXEC.INP を `scp` 1回だけ。生成自体も akitaken でできるので転送ゼロにできる |
+| 「Windows の方が結果が確か」 | 逆。17ラン全部で要素ステータスが一致し、float32 精度で同値と実測済み |
+| 「ライセンスが心配」 | solver2 にライセンスチェックは無い（対照実験で確認）。回避行為も一切していない |
+| 「akitaken が空いてるか分からない」 | `ssh akitaken uptime` で1秒で分かる。48コアある |
+| 「急いでいる」 | akitaken の方が速い。急いでいるなら尚更 akitaken |
+
+**Windows で FEA を回してよいのは、ユーザーが明示的にそう指示したときだけ。**
+
+---
+
+## 実行作法（Windows 側 = GUI バックエンド用のフォールバック）
 - **Bash ツール + `dangerouslyDisableSandbox: true`**。PowerShell の `Start-Process`（外部 spawn）は EPERM で不可。Bash の `timeout` 経由で MF exe を起動する。
 - **exe 自体は POSIX パス** `/c/mfinder_ee130/bin/pc11_64/xxx.exe`（Windows 形式 `C:/...` だと `timeout` が exit 127 で見つけられない）。
 - **exe に渡す引数は Windows パス** `D:\...`（シングルクォートで `\` を保持）＋ `MSYS_NO_PATHCONV=1`（Git Bash のパス変換を止める）。MF は POSIX パスを解さない。
 - **CWD 依存が強い**: `inputs.json`/`ftet.mesh`/`EXEC.*`/`mf_tmp*` を相対名で読む exe が多い。**1コマンド内で `cd <workdir> && exe...` と連結**（Bash は呼出し間で cwd がリセットされる）。
 - 作業ディレクトリ = `D:\mf_work\<case>`（C ドライブ逼迫回避）。長時間 exe（inferSend / FloatTetwild / solver）は `run_in_background: true`。
-- 各 exe 冒頭でライセンスチェック（ノードロック `C:\mfinder_ee130\License.dat`）。GUI 系（mecha/matedit 等）はウィンドウを開くので無人ループに不向き。headless 確実なのは `dicom_if / inferSend / FloatTetwild_bin / SplitByInnerBoundary / mesher / to_exec / solver(2)`。
+- 🔴**ライセンスチェックは「全 exe」ではない**（2026-07-23 実測で訂正）。`solver2 / solver / to_exec` は**チェックを一切持たない**（`License.dat` と `mf_info` を消しても同一結果で完走）。チェックを持つのは GUI 側の `mecha`(7件) / `mesher`(6件) など。**「MF を動かすにはノードロックライセンスが要る」は solver には当てはまらない。**
+- GUI 系（mecha/matedit 等）はウィンドウを開くので無人ループに不向き。headless 確実なのは `dicom_if / inferSend / FloatTetwild_bin / SplitByInnerBoundary / mesher / to_exec / solver(2)`。
 
 ## パイプライン各段（bin = `C:\mfinder_ee130\bin\pc11_64`）
 1. **DICOM読込 ✅実証済**: `dicom_if.exe <代表dcm1枚> <out_prefix> <mf_info> F256 <lst>` → `mf_tmp.ctm`(CTボリューム)/`.pai`/`.sys`。dcm1枚を渡すとそのディレクトリ全体を読む。**実引数の具体値**: 代表dcm=ディレクトリ内の任意1枚(`$(ls <dir>/slice0000.dcm)` 等); out_prefix=作業Dの `mf_tmp`; mf_info=**同梱の入力ファイル `C:\mfinder_ee130\mf_info`**(事前に存在、そのまま渡す); **F256=フィルタ/フォーマットトークン、症例に依らず固定でよい**; lst=dicom_if が書く出力DICOMリスト。実コマンド例は `C:\mfinder_ee130\temp\dicom_if.log` の1行目にも残る。⚠inferSend(段2)は別途 **非圧縮 mf_tmp.mhd** を要求する(dicom_ifの .ctm とは別物)。
@@ -41,7 +108,9 @@ MF は AVS/Express 製の GUI アプリで CLI 駆動の公式手段は無い（
 ## 🎯 決め手 = solver2 の入力 EXEC.INP を自前生成する（メッシュ/材料/BCは自前、ソルバだけMF）
 mesher/GUI authoring は親 GUI プロセス依存で CLI 不可（断念）。代わりに **`solver2.exe` の入力 `EXEC.INP` が完全に素直な人間可読テキスト（FIDAP風固定幅）と判明** → メッシュ・材料・BC を自前 Python で書いて EXEC.INP を生成し、`solver2.exe`（引数なし、cwd の固定名 EXEC.INP を読む）でFEAだけ回す。
 
-**solver2 実行**: `cd <workdir> && solver2.exe`（引数なし）。cwd の `EXEC.INP` を読み `EXEC.Bdsp`/`EXEC.Bstr`/`EXEC.LOG` を書く。`##$$ExSv end 1 1`=正常終了。
+**solver2 実行**: 🔴**既定は akitaken** — `ssh akitaken '/data/kita/mf_work/mfrun.sh <workdir> 12'`（上の実行機セクション参照）。
+solver2 は引数なしで cwd の `EXEC.INP` を読み `EXEC.Bdsp`/`EXEC.Bstr`/`EXEC.LOG` を書く。`##$$ExSv end 1 1`（**stdout。EXEC.LOG ではない**）=正常終了。
+Windows で直に叩く場合のみ `cd <workdir> && solver2.exe`。
 
 **EXEC.INP 固定幅フォーマット（1バイトもズレ不可＝forrtl severe(64) input conversion error）**: 全キーワードで id 終端=col15。TITLE/CNTND/NODE/CNTEL/SOLID/SHELL/PROPT/CNTRL/CNTR2/CNTR3/PRPLT/PRPL2/CNTLP/CNTPR/KUKAN/NGLD/NLOAD/TBLLD/FORCE/DISP/NGLK/NPLNK/PLNK/END。制御ブロック(CNTR2/CNTR3/PRPLT/PRPL2/CNTLP/CNTPR)と拘束ヘッダ(NGLK/NPLNK)を欠くと STEP=0/access violation。
 
@@ -236,6 +305,11 @@ sigma_t (引張臨界応力) = 0.8 * sigma_y   （実測 median=0.800000）
 - 一次資料 `doc\mf_man.pdf`（219頁）。pdftoppm は無いので **pypdf でテキスト抽出**して読む。
 
 ## Common Mistakes
+- 🔴🔴**FEA を Windows で回す → 既定違反**。solver2 は akitaken で回す（ライセンス不要・結果同一・スループット5.6倍を実測済み）。「小さいから」「急いでいるから」は理由にならない（上の合理化表を読め）。
+- 🔴**スレッドを48に上げる → 効かない**。8超で飽和（8th=154s / 24th=135s / 48th=146s）。**多数本を6〜12スレッドで並列**が正解。
+- 🔴**`##$$ExSv end 1 1` を EXEC.LOG から grep する → 常に0件**。このマーカは **stdout** に出る。`run_stdout.txt` を見る。
+- 🔴**EXEC.LOG は CRLF**。`grep -oE "[0-9]+$"` は `\r` で外れて「不一致」を誤検出する。必ず `tr -d "\r"` を噛ませる。
+- **古い EXEC.INP と新生成物を比べて「Linux が壊れている」と誤断定する**。生成器はバージョンで出力が変わる（要素数・Efloor/Ecap・HUサンプリング法）。**プラットフォーム差を疑う前に、節点座標が一致するか＝同じメッシュかを見る**。
 - 🔴🔴**「MFにash変換が無いから、自前パイプラインのash変換もバグだ」と考える → 【重大な誤り】。**
   MFのash無しKeyakはMF自身の125kVp校正とセットで自己整合する。別の校正を使うなら別の話。
   **Uzumasa の確定チェーンは rho_HA →[Eberle2013 ash]→ rho_ash → Keyak**（正本 UZUMASA_DATA_STRUCTURE.md:123）。
@@ -257,3 +331,4 @@ sigma_t (引張臨界応力) = 0.8 * sigma_y   （実測 median=0.800000）
 
 ## 関連
 プロジェクト固有の詳細・実証ログは `<project>/.claude-memory/mf_cli_pipeline.md`。
+akitaken 実行環境の構築経緯・実測値の全数は `P:\Code\Research\PINN\.claude-memory\project_mf_solver2_on_linux_wine.md`。
