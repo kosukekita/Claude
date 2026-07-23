@@ -94,6 +94,15 @@ discovery/plan/brainstorming フェーズはブロックしない。クイズは
 - **ループ時の対処**: 指示を重ねるのではなく、会話をクリアするかアプローチを根本から変える
 - **Hooks 活用**: ファイル変更時に Prettier・型チェックを自動実行して技術的負債を防ぐ
 
+## Office 文書（Word/Excel/PowerPoint）は officecli で直接作成する（md 非経由・ユーザー確定 2026-07-24）
+
+**成果物が `.docx` / `.xlsx` / `.pptx` のときは、markdown を中間生成せず `officecli` で直接作成・編集する**（`officecli` スキル＝コマンド正本。導入済み v1.0.141・Codex 側 `~/.agents/skills/` にも登録済み）。理由: md→変換ワークフローは、変換後のファイルを手で直すと md と現物が乖離する。**現物の Office ファイルが唯一の正**とし、修正も officecli の in-place 編集で行う（md 再生成→再変換で上書きしない。revert 防止ルールと同旨）。md を作るのは成果物自体が md 指定のときだけ。
+
+- 検品: `view stats` / `view issues` ＋ 見た目は `view screenshot`（**★この機のLinuxでは `env -u LD_LIBRARY_PATH -u LD_PRELOAD` 前置が必須**。anaconda 汚染でブラウザ検出が死ぬ。失敗が続いたら `officecli close <file>` で汚染環境の常駐を落としてから再試行）。ブラウザ不要の `view html` でも可
+- 空 docx は Heading1 等の組込みスタイルが styles part に未定義で警告が出る（表示は成立。厳密なスタイルが要る場合はスタイル定義かテンプレから開始）
+- その他の実測罠: 画像等の `src` は**絶対パス**で渡す（常駐プロセスが相対パスを自分の cwd で解決する）／プロパティ名は要素ごとに違う（shape=`w/h`・picture=`width/height`・リストは `bullet=bullet|numbered|alpha|roman`）→**迷ったら推測せず `officecli help <format> <element>`**（スキーマ内蔵・エラーメッセージも正解を教える）
+- スライドは **slide-making スキルの PPTX パス＝officecli が既定**（HTML パス・python-pptx は代替）。デザイン規範・1920×1080 等は slide-making 側の規定に従う
+
 ## Markdown 作成時は OKF を付ける（ナレッジ/ドキュメント系のみ）
 
 設計メモ・仕様書・調査メモ・議事録・README・手順書など、人が読む/AIに渡す `.md` を新規作成するときは OKF YAML フロントマターを付ける。最小必須は `type` のみ。

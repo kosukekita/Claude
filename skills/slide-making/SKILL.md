@@ -2,7 +2,7 @@
 name: slide-making
 description: >
   ドラフト（Markdown等のテキスト）を 1920×1080 の発表スライドに変換するスキル。
-  出力は2系統: HTMLパス（1スライド=1HTML→PNG/PDF 派生）と PPTXパス（python-pptx でネイティブ直接生成、HTML不経由）。
+  出力は2系統: HTMLパス（1スライド=1HTML→PNG/PDF 派生）と PPTXパス（officecli でネイティブ直接生成が既定・python-pptx は代替、HTML不経由）。
   どちらが欲しいか未指定なら、着手前に必ず確認する。
   アイコン・図版はまず theSVG から取得し、無ければ Codex の GPT Image（image_gen）でパーツのみ生成する。テキストは常に HTML/python-pptx 側で正確に組む（画像に焼き込まない）。
   Use when user turns a draft/markdown into presentation slides, or requests
@@ -23,10 +23,14 @@ PNG・PDF は HTML パスの派生物。両方欲しいと言われた場合の�
 | 入力 | 選択 | 主成果物 | 派生 |
 |------|------|----------|------|
 | ドラフトテキスト | **HTMLパス** | `slide-NN.html` | PNG（`render_slide.py`）/ PDF（`--pdf`） |
-| ドラフトテキスト | **PPTXパス** | `deck.pptx`（python-pptx ネイティブ） | （必要なら PNG 目視用） |
+| ドラフトテキスト | **PPTXパス** | `deck.pptx`（officecli ネイティブが既定） | （必要なら PNG 目視用） |
 
 > **PPTX は HTML を経由しない。** HTML→画像→pptx 貼り付けや外部変換 API は使わない。
-> `scripts/build_pptx.py` で直接 `.pptx` を生成する。
+> **★PPTX の既定ツール＝officecli（ユーザー確定 2026-07-24・実測検証済み）**: `.pptx` を直接作成・**in-place 編集**でき、
+> `view screenshot --grid N`（★`env -u LD_LIBRARY_PATH -u LD_PRELOAD` 前置必須）/ `view stats` / `view issues` で自己検品できる。
+> コマンド正本は **officecli スキル**（迷ったら `officecli help pptx <element>`。shape=`w/h`・picture=`width/height`・
+> リストは `bullet=bullet|numbered`・画像 `src` は絶対パス）。**markdown を中間生成しない**（グローバル CLAUDE.md の
+> Office 直接作成ルール）。代替＝`scripts/build_pptx.py`（python-pptx・deck.json スペック方式。officecli が使えない環境用）。
 > **両方欲しい時も「HTMLを変換」しない。** HTML と PPTX は表現単位が違う（CSS相対配置 vs 絶対座標）ので機械変換できない。
 > HTML でデザインを詰めてよいが、PPTX は**同じ意図から spec を直接書いて**ネイティブ生成する（並行制作）。
 
