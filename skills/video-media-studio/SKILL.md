@@ -1,7 +1,7 @@
 ---
 name: video-media-studio
 description: >
-  動画・画像をローカルGPU優先（フォールバックでクラウド/Grok）で生成・編集するスキル。text-to-video / image-to-video（Wan・LTX-2/LTX-Video）、ローカル画像生成（FLUX・Qwen-Image・SD3.5・Z-Image）、ffmpeg による動画編集（トリム・連結・速度・字幕・音声合成・リサイズ・GIF）、VRAM を実測してローカル単一GPU/オフロード/クラウド/Grok を自動選択する。Use when the user wants to generate a video or image locally, run text-to-video / image-to-video, animate a still, batch-generate media on own GPU, build b-roll/motion clips, OR edit/process existing video (trim, concat, change speed, add subtitles, overlay/watermark, add or mix audio, resize/crop, fps, extract frames, make GIF/thumbnail, re-encode). Trigger phrases: 動画生成, ローカルで動画, 画像から動画, テキストから動画, 静止画を動かす, b-roll, モーション素材, Wan, LTX, ローカル画像生成, FLUX, Qwen-Image, キャラクターシート, リファレンスシート, キャラ設定画, 三面図, character sheet, 動画編集, 動画をトリム, 動画を連結, 速度変更, 字幕を焼き込む, BGMを付ける, 音声を差し替える, ウォーターマーク, リサイズ, GIF化, サムネ抽出, 再エンコード, generate video, text-to-video, image-to-video, local image gen, edit video, ffmpeg, trim, concat, subtitles, watermark, resize, crop, gif. Do NOT trigger for: Grok 指定の単発生成のみ（grok-media を直接使う。本スキルは Grok を最終フォールバックとして内包）, スライド/PPTX 作成（slide-making）, インフォグラフィック・図解（infographic）, 学術ポスター（make-poster）, コードレビュー, 論文検索。
+  動画・画像を生成・編集するスキル（SFW生成は Higgsfield CLI 最優先→エラー時 Codex/AtlasCloud、NSFW はローカルGPU、フォールバックでクラウド/Grok）。text-to-video / image-to-video（Higgsfield・Wan・LTX-2/LTX-Video）、画像生成（Higgsfield・FLUX・Qwen-Image・SD3.5・Z-Image）、ffmpeg による動画編集（トリム・連結・速度・字幕・音声合成・リサイズ・GIF）、VRAM を実測してローカル単一GPU/オフロード/クラウド/Grok を自動選択する。Use when the user wants to generate a video or image locally, run text-to-video / image-to-video, animate a still, batch-generate media on own GPU, build b-roll/motion clips, OR edit/process existing video (trim, concat, change speed, add subtitles, overlay/watermark, add or mix audio, resize/crop, fps, extract frames, make GIF/thumbnail, re-encode). Trigger phrases: 動画生成, ローカルで動画, 画像から動画, テキストから動画, 静止画を動かす, b-roll, モーション素材, Wan, LTX, ローカル画像生成, FLUX, Qwen-Image, キャラクターシート, リファレンスシート, キャラ設定画, 三面図, character sheet, 動画編集, 動画をトリム, 動画を連結, 速度変更, 字幕を焼き込む, BGMを付ける, 音声を差し替える, ウォーターマーク, リサイズ, GIF化, サムネ抽出, 再エンコード, generate video, text-to-video, image-to-video, local image gen, edit video, ffmpeg, trim, concat, subtitles, watermark, resize, crop, gif. Do NOT trigger for: Grok 指定の単発生成のみ（grok-media を直接使う。本スキルは Grok を最終フォールバックとして内包）, スライド/PPTX 作成（slide-making）, インフォグラフィック・図解（infographic）, 学術ポスター（make-poster）, コードレビュー, 論文検索。
 allowed-tools: Bash, Read, Write, Glob, SendUserFile, AskUserQuestion
 ---
 
@@ -46,8 +46,8 @@ allowed-tools: Bash, Read, Write, Glob, SendUserFile, AskUserQuestion
 
 | 種別 | 既定モデル | 入口 |
 |---|---|---|
-| **SFW 画像** | **Codex（GPT Image / image_gen）** | `codex exec --skip-git-repo-check`（参照画像は `-i`・プロンプトは stdin。**サブスク内＝追加課金なし。2026-07-14 ユーザー確定**）。拒否・障害・サイズ要件不適合時のフォールバック＝AtlasCloud Seedream（`cloud_atlascloud.py image`・参照あり=`bytedance/seedream-*/edit`・`--image` 複数可・`--size W*H` で 16:9 明示） |
-| **SFW 動画** | **Seedance** | `cloud_atlascloud.py video`（seedance i2v。`--image`+`--last-image` でキーフレーム連鎖） |
+| **SFW 画像** | **★Higgsfield CLI（サブスク有効中の最優先・2026-07-23 ユーザー確定）** | `higgsfield generate create <image_job_type> --prompt ... [--image-references <path>] --wait`（下の「Higgsfield CLI」節が正）。**Higgsfield がエラーのとき（未認証/サブスク切れ/クレジット不足）→従来既定へフォールバック**: Codex（GPT Image / image_gen・`codex exec --skip-git-repo-check`・参照は `-i`・プロンプト stdin）→ さらに拒否/障害時 AtlasCloud Seedream（`cloud_atlascloud.py image`・参照あり=`bytedance/seedream-*/edit`・`--image` 複数可・`--size W*H`） |
+| **SFW 動画** | **★Higgsfield CLI（同上）** | `higgsfield generate create <video_job_type> --prompt ... --start-image <path> --wait --wait-timeout 20m`。**エラー時→従来既定へフォールバック**: AtlasCloud Seedance（`cloud_atlascloud.py video`・`--image`+`--last-image` でキーフレーム連鎖） |
 | **NSFW 画像・参照なし (t2i)** | **z-image**（ローカル `z-image-turbo`・無検閲・無料） | `gen_image.py --backend z-image-turbo` |
 | **NSFW 画像・参照あり (i2i)** | **Qwen-Image-Edit-2511**（ローカル最新・無検閲・同一人物保持） | `gen_qwen_edit.py --repo Qwen/Qwen-Image-Edit-2511` |
 | **NSFW 動画** | **AtlasCloud wan-2.7**（NSFW は `wan-2.7-spicy`） | `cloud_atlascloud.py video --model atlascloud/wan-2.7-spicy/image-to-video` |
@@ -58,6 +58,21 @@ allowed-tools: Bash, Read, Write, Glob, SendUserFile, AskUserQuestion
 - **正確なモデルID**は版が変わるので直書きせず、`cloud_atlascloud.py models --type Image|Video` で解決する（例: `bytedance/seedream-v5.0-pro/edit` / `bytedance/seedance-2.0/image-to-video` / `atlascloud/wan-2.7-spicy/image-to-video`）。モデル固有フィールドは `cloud_atlascloud.py schema --model <id>` が正本。SFW 動画 Seedance は i2v なので入力キーフレーム画像が要る（承認前に試作キーフレームを作ってよい）。
 - **非リアル系（アニメ/漫画/絵画調）NSFW** は上表でなく **Chroma(manga,paint)＋Pony(anime,manga)** が既定（下の「NSFW 画像のモデル使い分け」表）。上表の z-image/Qwen-Edit はフォトリアル NSFW 用。
 - 別モデルが明らかに適する用途（画中テキスト→`qwen-image`、r2v＝参照人物→任意シーン→HunyuanCustom/VACE 等）は、宣言時に「既定は〇〇ですが本件は△△が適します。どちらにしますか？」と提案してよい。
+
+## Higgsfield CLI（SFW 生成の最優先クラウド・実測 2026-07-23・サブスク約1ヶ月）
+
+**ユーザー確定 2026-07-23: Higgsfield サブスク有効中は SFW 画像・動画の生成を Higgsfield CLI で最優先する。エラーになったら（サブスク終了後を含む）従来の既定（画像=Codex→Seedream / 動画=AtlasCloud Seedance）へフォールバックし、切り替えた旨をユーザーに一言報告する。NSFW はこれまでどおりローカル既定（z-image / Qwen-Edit / wan2.7 系）— Higgsfield に送らない。**
+
+- install: `npm install -g @higgsfield/cli`（導入済み 2026-07-23・v1.1.19）。alias: `higgs` / `hf`
+- 認証: `higgsfield auth login`（ブラウザ OAuth PKCE・API キー不要）。確認は `higgsfield auth token` / `higgsfield account`（残クレジット）
+- **モデル ID を直書きしない**: `higgsfield model list --image` / `--video` で列挙し、**`higgsfield model get <job_type>` が受理パラメータの正本**（ヘルプ例に出る job_type: `nano_banana_2`, `seedance_2_0`）。preset / workflow は `preset list` / `workflow list`（`generate workflow reframe --video ./src.mp4 --aspect-ratio 9:16` 等）
+- 生成: `higgsfield generate create <job_type> --prompt "..." [--param value]...`
+  - 参照/開始終了画像: `--image-references <path|uuid>` / `--start-image` / `--end-image`（短縮 `--image` / `--video` / `--audio`。**ローカルパスは自動アップロード**。事前アップは `higgsfield upload create <file>` → uuid）
+  - 同期待ち: `--wait --wait-timeout 20m --wait-interval 5s` → 結果 URL を print（DL は curl）。`--json` で生 JSON
+  - 事前コスト見積: `higgsfield generate cost <job_type> --prompt ...`／ジョブ再取得: `generate get <job_id>`・`generate wait <job_id>`
+- **★エラー検知の罠（実測 2026-07-23）: 失敗でも exit code 0 のことがある**（未認証時に `Error: Not authenticated.` + `Hint: Run: hf auth login` を出しつつ exit 0）。**成否は exit code でなく、出力中の `Error:` の有無と結果 URL の有無で判定**する
+- **フォールバック発火条件**: `Not authenticated` / サブスク・支払い・クレジット不足系エラー / 5xx・タイムアウトの連発 / 必要モデルが `model list` に無い —— いずれかで従来既定へ切り替える（同じ失敗のリトライループで粘らない）
+- 生成規律は従来どおり全部効く: **モデル宣言→承認 / 1本→検品→次の1本 / テスト=480p相当→本番=1080p相当 / 縦9:16既定 / リアリズム自然化句**（Higgsfield でも解像度・比率パラメータは `model get` で確認して明示する）
 
 ## バックエンド自動選択（THE core decision）
 
@@ -111,6 +126,7 @@ flowchart TD
 | local-single(fp8/4bit) | flux.2-dev | t2i 最新最高 | bf16>80 / fp8~32 / 4bit~20GB | YES（fp8/4bit） | flux.1-dev |
 | cloud-modal | 上記いずれか | all | provider GPU | n/a | cloud-fal |
 | cloud-fal | wan/ltx/flux hosted | all | hosted | n/a | grok |
+| **higgsfield（CLI・SFW最優先）** | `model list` で解決（nano_banana_2 / seedance_2_0 等） | t2i,i2v,t2v,workflow | none（subscription） | n/a | Codex → AtlasCloud（画像）/ AtlasCloud Seedance（動画） |
 | grok（delegate） | image_gen / image_to_video / reference_to_video | t2i,i2v,(t2v=2段) | none（subscription） | n/a | terminal |
 | ffmpeg（local） | n/a | trim/concat/speed/subs/overlay/audio/resize/fps/frames/gif/thumb/reencode | CPU/GPU | YES | — |
 | local-single(offload) | **Qwen-Image-Edit-2511 + アニメ LoRA** | **★NSFW リアル動画→アニメ v2v（本命・同一人物保持）** | bf16 ~40GB（`--offload model`） | YES（`gen_v2v_qwen.py`・`--gpu N`・両GPU並列で時短） | — |
