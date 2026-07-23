@@ -215,6 +215,13 @@ flowchart TD
 2c. **★承認済みボードは動画生成の参照として渡す（2026-07-17 ユーザー確定）。** r2v の `--reference-image` に**ボード＋人物参照を両方**入れ、プロンプトは字コンテ＋ボードの矢印を文章化したもの。
    - **★必ず初回出力で「画風・矢印の漏れ」を目視確認する**: r2v は参照を強くコピーするので、**鉛筆のモノクロ画風や矢印そのものが映像に出る**危険がある（既知の実測: 参照写真の服装・裸足をそのまま採用する挙動）。プロンプトに `photoreal live-action footage, NOT a pencil sketch, no drawn arrows or annotations in frame` を明示し、それでも漏れるなら**ボードを参照から外し、字コンテ＋ボードの文章化だけで生成する**（構図はプロンプトで担保）。この判定は目視で行い、漏れたまま納品しない。
 
+2d. **★参照動画/参照スチルがあるときの補助ツール: Storyboard Reference Studio（実測 2026-07-23・Apache-2.0・`~/tools/storyboard-reference-studio` にビルド済み）**
+   - 何者か: 参照映像→**シーン検出で1カット1フレーム自動抽出**（auto_board）→9:16等へリフレーム→カメラムーブ矢印・ショットメタデータ（size/angle/lens/movement/transition）→**生成器別プロンプト**を書き出すローカル Electron アプリ（オフライン・ffmpeg 同梱）。出力= board package（フレーム毎 still.png+prompt.txt・prompts.json・contact-sheet.png・board.md）／アニマティック MP4／PDF 絵コンテ／shot-list CSV。
+   - **使いどころ**: 「この動画の構図・カット割りを再現したい」系、バズ動画解析→レシピ化、参照フレームへの矢印注釈ボード。**コンセプトから起こす鉛筆ラフボード（上の 2b）を置き換えない**——参照素材が無い企画は従来どおり 2b。
+   - 起動（Linux 実測の罠）: `cd ~/tools/storyboard-reference-studio && env -u LD_LIBRARY_PATH -u LD_PRELOAD npm start`。**`env -u` は必須**（anaconda の LD_LIBRARY_PATH 汚染で glib シンボルエラー `g_once_init_leave_pointer` になり起動不能）。画面なし検証は `xvfb-run -a` を前置。
+   - エージェント操作（実測）: アプリ起動中に `~/.config/storyboard-reference/control.json`（port+Bearer token）が生成される → `POST http://127.0.0.1:<port>/rpc` へ `{"action":"<name>","params":{...}}`（疎通確認は `GET /health`）。MCP 登録も可: `claude mcp add storyboard -- node ~/tools/storyboard-reference-studio/mcp/storyboard-mcp.mjs`。アクション: `get_state / add_frame / auto_board(scene|interval|count) / set_label / set_crop / describe_frame / extract_frame / set_shot_meta / set_frame_duration / add_annotation / clear_annotations / export_board / export_animatic / export_pdf / export_shotlist`（export/auto_board 系は長時間許容のタイムアウト内蔵）。
+   - **★制約（実測）: メディアの取り込みだけは GUI 操作**（ドラッグ&ドロップ/ダイアログ。制御 API に import アクションが無い）。分担=**ユーザーがアプリを開いて参照動画を投入 → 以降の抽出・ボード化・注釈・プロンプト・エクスポートはエージェントが /rpc で実行**。describe_frame（Claude vision プロンプト生成）は資格情報が要るが、エージェント自身がスチルを見てプロンプトを書けば不要。
+
 3. **承認後の生成: 総尺≤15秒は分解せず1回の Seedance 生成で作る（カット込みをプロンプトで指示・2026-07-14 ユーザー確定）。以下の"生成単位"への分解は、総尺>15秒 またはショット別の再生成・差し替えが必要な場合のみ。**
    - **1連続ショット（内部にカット無し）＝ i2v のキーフレーム連鎖**。隣接キーフレーム間＝ i2v 1クリップ。実測(AtlasCloud): Kling `image-to-video`=3〜15秒 / Seedance=4〜15秒。**隣接キーフレームの時間差は最短尺（Kling 3s / Seedance 4s）以上・15秒以下**（N枚＝N-1クリップ）。0.6s 等の細切れ・3秒未満間隔は i2v の境界にできない。生成単位ごとに `storyboard_<shot>_NN.png`（キーフレーム実画像）＋ `storyboard_<shot>_NN.txt`（各キーフレーム時刻・各クリップ尺・内容・カメラ）を作り、隣接コマを i2v の開始/終了画像に指定（Kling=`image`+`end_image` / Seedance=`image`+`last_image`）して生成。
    - **ショット間のカット（場面転換）＝ 各ショットを別々に生成して `ffmpeg concat` で繋ぐ**（カットは編集で作る）。
