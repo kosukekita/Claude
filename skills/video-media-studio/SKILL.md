@@ -64,7 +64,7 @@ allowed-tools: Bash, Read, Write, Glob, SendUserFile, AskUserQuestion
 **ユーザー確定 2026-07-23: Higgsfield サブスク有効中は SFW 画像・動画の生成を Higgsfield CLI で最優先する。エラーになったら（サブスク終了後を含む）従来の既定（画像=Codex→Seedream / 動画=AtlasCloud Seedance）へフォールバックし、切り替えた旨をユーザーに一言報告する。NSFW はこれまでどおりローカル既定（z-image / Qwen-Edit / wan2.7 系）— Higgsfield に送らない。**
 
 - install: `npm install -g @higgsfield/cli`（導入済み 2026-07-23・v1.1.19）。alias: `higgs` / `hf`
-- 認証: `higgsfield auth login`（ブラウザ OAuth PKCE・API キー不要）。確認は `higgsfield auth token` / `higgsfield account`（残クレジット）
+- 認証: `higgsfield auth login`（ブラウザ OAuth PKCE・API キー不要）。**★認証後にワークスペース選択が必須**（実測 2026-07-23: 未選択だと `Error: No workspace selected.` を exit 0 で返し cost/status/生成が全部止まる）→ `higgsfield workspace list` → `higgsfield workspace set <id>`。残クレジットは `higgsfield account status` / `workspace list` に表示
 - **モデル ID を直書きしない**: `higgsfield model list --image` / `--video` で列挙し、**`higgsfield model get <job_type>` が受理パラメータの正本**（ヘルプ例に出る job_type: `nano_banana_2`, `seedance_2_0`）。preset / workflow は `preset list` / `workflow list`（`generate workflow reframe --video ./src.mp4 --aspect-ratio 9:16` 等）
 - 生成: `higgsfield generate create <job_type> --prompt "..." [--param value]...`
   - 参照/開始終了画像: `--image-references <path|uuid>` / `--start-image` / `--end-image`（短縮 `--image` / `--video` / `--audio`。**ローカルパスは自動アップロード**。事前アップは `higgsfield upload create <file>` → uuid）
