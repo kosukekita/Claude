@@ -498,6 +498,7 @@ NSFW 人物のフォトリアル/絵画生成は**ローカル一択**（Codex/G
 - 新しい衣装の追加手順: 着衣写真（スクショ可）→ Seedream 5.0 Pro 等の参照編集で「Extract ONLY the clothing... ghost-mannequin, NO person/face/skin, no UI/text」抽出 → ここに保存（実測レシピ 2026-07-25。網タイツ等の透け素材は中が肌色トーンに見えることがある＝実用上は問題なし）
 - 現在の収録:
   - `outfit-purple-satin-corset-tulle-tutu-fishnet-thighboots.png` — 紫サテンのストラップレスコルセットビスチェ＋紫オンブレのチュールチュチュ＋網タイツ＋紫サテンのサイハイヒールブーツ
+  - `outfit-white-plunge-vneck-draped-jersey-mini-dress.png` — 白のディーププランジVネック・ドレープジャージーのミニワンピース（肩ギャザー・ラッシュドウエスト・フレアスカート）
 
 ### 男性人物の体型・構図リファレンス（必読・固定）
 
