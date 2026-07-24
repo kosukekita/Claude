@@ -33,6 +33,7 @@ allowed-tools: Bash, Read, Write, Glob, SendUserFile, AskUserQuestion
 | (3) 動画編集 | 既存動画のトリム/連結/速度/字幕/音声/リサイズ/GIF 等 | `reference/ffmpeg-recipes.md` + `edit_video.py`（GPU/バックエンド判定不要・完全ローカル）|
 | (4) 動画スタイル変換 v2v | **既存動画**を別スタイルに変換（リアル↔アニメ等）し、**同じ人物を固定**したまま動きを保つ。NSFW 可 | **★NSFW リアル動画→アニメ動画は `gen_v2v_qwen.py`（Qwen-Image-Edit + アニメ LoRA・実機実証の本命）が第一選択**。汎用スタイル変換や動きの強い拘束が要る場合のみ `gen_v2v_style.py`（SDXL img2img + ControlNet + IP-Adapter）。下の「動画スタイル変換フロー」参照 |
 | (5) r2v（参照→任意シーン動画） | **参照人物 1 枚 + テキスト**で、その人物を**全く別のシチュ**（例: 浴室でシャワー）の動画にする。**モーション元動画は不要**。NSFW 可 | **`gen_hunyuan_custom.py`（HunyuanCustom・headless ComfyUI）**。VACE r2v（`gen_wan_vace.py`）は別人モーション動画を骨格転写する方式で任意シーンは作れない＝**テキストだけで任意シーンにするなら HunyuanCustom**。下の「r2v フロー」参照 |
+| (6) モーションデザイン動画（コード駆動・導入 2026-07-25） | **AIモデル生成でなくコードで決定論的に作る動画**: 製品/アプリ/Web のプロモ・UIデモ・機能紹介・データビズ動画・タイトルモーション・ビート同期カット編集・実ページスクショの 2.5D カメラワーク。**ピクセル精度の文字・UI 表示が主役の動画はこちら**（AI 生成は文字が崩れる） | **video-shotcraft スキルへ委譲**（Remotion ベース・106 ショットレシピカード＋動くプレビューギャラリー・検収済み Ink Press テンプレ 36s/1080p・ビート同期/SFX 設計の方法論込み。実体 `~/tools/video-shotcraft`、`~/.claude/skills/` と `~/.agents/skills/`（Codex）に symlink 済み）。レンダ: template で `npm install && npx remotion render`（Remotion が自前 headless shell を取得）。**ハイブリッド可**: 本スキルで生成した AI 実写クリップ・画像・BGM を Remotion コンポジションの素材として組み込める（AI 素材 × コード駆動テロップ/トランジション/カット） |
 
 ## ★既定モデル（何も指定が無いとき）＋ 生成前のモデル宣言・承認（必須）
 
