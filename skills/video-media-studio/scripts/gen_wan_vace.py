@@ -86,6 +86,15 @@ def log(msg: str) -> None:
     print(f"[gen_wan_vace] {msg}", file=sys.stderr, flush=True)
 
 
+def prepare_detector(detector):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if device.type == "cpu":
+        torch.set_num_threads(min(8, os.cpu_count() or 1))
+    detector.to(device)
+    log(f"detector device: {device}; CUDA_VISIBLE_DEVICES={os.environ.get('CUDA_VISIBLE_DEVICES')}")
+    return detector
+
+
 def fit_frames(raw: list[Image.Image], width: int, height: int, frames: int) -> list[Image.Image]:
     if not raw:
         raise ValueError("motion/mask video has no frames")
@@ -114,7 +123,7 @@ def make_pose_video(frames: list[Image.Image], include_face: bool) -> list[Image
     from controlnet_aux import OpenposeDetector  # noqa: PLC0415
 
     log("loading OpenposeDetector (lllyasviel/Annotators) for VACE pose control")
-    detector = OpenposeDetector.from_pretrained("lllyasviel/Annotators")
+    detector = prepare_detector(OpenposeDetector.from_pretrained("lllyasviel/Annotators"))
     return [
         detector(frame, include_hand=True, include_face=include_face).convert("RGB").resize(frame.size, Image.LANCZOS)
         for frame in frames
@@ -125,7 +134,7 @@ def make_depth_video(frames: list[Image.Image]) -> list[Image.Image]:
     from controlnet_aux import MidasDetector  # noqa: PLC0415
 
     log("loading MidasDetector (lllyasviel/Annotators) for VACE depth control")
-    detector = MidasDetector.from_pretrained("lllyasviel/Annotators")
+    detector = prepare_detector(MidasDetector.from_pretrained("lllyasviel/Annotators"))
     return [detector(frame).convert("RGB").resize(frame.size, Image.LANCZOS) for frame in frames]
 
 
