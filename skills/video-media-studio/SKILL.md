@@ -200,7 +200,7 @@ flowchart TD
    3. **参照の役割分離**: 演出ボード=構図・カメラ・イベント順専用／写真=同一性専用とプロンプトで明記。静止画参照は時間キーフレームとして機能しない
    4. **モーション検証 A/B**: 速度感・タイミングだけを比較する検証は 720p・`generate_audio:false`・seed固定で行ってよい（**通常テストの既定は 480p のまま**。480p では足の接地や揺れの位相が潰れて誤判定しやすいときの限定昇格）
    5. **リタイミング後処理は±10〜20%の微修正のみ**: 生成された時間発展そのものは後処理の速度変更では直らない。タイミング崩れの本修正は再生成
-   6. Seedance の `reference_videos` によるモーション転写は**未検証**（効くという一次情報なし）。試すなら安いテスト1本で挙動確認から
+   6. 参照動画からの**モーション転写は「モーションコピー フロー」参照**（深度ビデオ方式・ユーザー提供レシピ 2026-07-25。実生成は初回の安いテスト1本で検証してから本番）
 
 2. **ゲート1: 字コンテをユーザーに提示して承認を得る。**
 
@@ -282,6 +282,26 @@ source scripts/env.sh
   - **骨格5要素**（差し替え時も全部残す）: ①`super casual real smartphone home video footage`（スマホ実録感）②`slight authentic handheld shake`（控えめな本物の手ブレ）③`normal frame rate with smooth natural motion`（通常フレームレート・自然な動き）④`rapid-fire montage with constant quick jump cuts every 1–2 seconds`（1〜2秒ごとのジャンプカット・モンタージュ＝この様式の核）⑤`pure raw home video feel with no cinematic polish or heavy effects`（無加工ホームビデオ感）
   - **★`cinematic` という語を混ぜない**（ベースライン実測 2026-07-21: 指示なしだと "cinematic but unpolished" と書いてしまい様式が壊れる。この様式はシネマティック既定・camera-movements の「最もシネマティックな動きを選ぶ」ルールの**例外**で、1クリップ1動きも適用しない＝ジャンプカット群が様式そのもの）
   - 字コンテ承認→演出ボード承認の3ゲート、音の既定（自然な環境音のみ）は通常どおり適用。
+
+## モーションコピー フロー（参照動画の「人物の動きだけ」転写・ユーザー提供レシピ 2026-07-25）
+
+**参照動画のダンス・武術・歩きなどの動作・歩様・リズムだけをコピーし、人物とシーンは差し替えたいとき**の手順。**モデルは固定しない**（video reference と image reference を同時に受ける動画モデルならどれでも。対応表↓）。
+
+1. **参照動画→深度（depth）ビデオに変換**（実装は Codex に委譲・ローカル処理）: 各フレームの深度マップを推定して動画化（例: Depth-Anything v2 をフレームワイズ適用→ffmpeg で mp4 化。fps・尺は元動画準拠）。深度化の目的＝**元人物の顔・服・見た目情報を消し、動き・歩き方・リズムだけを残す**（元人物の外見が転写先に漏れるのを防ぐ）。
+2. **目標人物の画像＋新しいシーンの画像を準備**（既存の人物 ref／wardrobe 衣装 ref／シーン画像。無ければ画像生成フローで作成）。
+3. **動画モデルに参照の役割を明示して生成**:
+   - 深度ビデオ → **動作・歩き方・リズムをロック**
+   - 人物画像 → **キャラクターの外見（顔・体型・衣装）をロック**
+   - （任意）シーン画像 → 背景・環境をロック
+   - プロンプト例: `The depth video defines ONLY the motion, gait and rhythm — follow its movement exactly, do not copy any appearance from it. The person image defines the character's appearance. The scene image defines the environment.`
+
+**video ref の渡し方（モデル非固定・入口だけ列挙）**:
+- **Higgsfield CLI**: `generate create <video_job_type> --video-references <depth.mp4> --image-references <person.png> [<scene.png>]`（job_type は `model list --video`、受理パラメータは `model get <job_type>` が正本）
+- **AtlasCloud Seedance r2v**: `cloud_atlascloud.py video --model bytedance/seedance-2.0/reference-to-video --reference-video depth.mp4`＋人物/シーンは `reference_images[]`（`reference_videos` は ≤3本・合計≤15s。ローカル動画は自動アップロード）
+- **Kling v3 系**: elements の `refer_videos`（kling-v3-omni は element 3つまで）
+- **ローカル代替**: VACE r2v（`gen_wan_vace.py`）＝OpenPose **骨格**転写方式（深度でなく骨格。NSFW可・無検閲・実装済み。クラウドに出せない素材はこちら）
+
+規律: 動画生成は許可制・1本→検品→次。**深度ビデオ方式の実生成は未検証（2026-07-25 時点・ユーザー提供の一次レシピ）**→ 初回は安いテスト1本（480p相当・短尺）で「①動きとリズムが転写されている ②元人物の見た目が漏れていない ③目標人物の同一性維持」を確認してから本番。
 
 ## r2v フロー（参照人物 1 枚 + テキスト → 任意シーン動画）= `gen_hunyuan_custom.py`
 
