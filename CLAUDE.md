@@ -115,11 +115,16 @@ URL付きで「参照して」と指示されたら、必ずそのサイトの�
 
 公開URLは WebFetch/WebSearch を使い、足りなければ curl で HTML/埋め込みJSON/JS を読む、描画後DOMを読む、公開・PIIなしの場合のみ `https://r.jina.ai/<元URL>` を使う、の順で粘る。Jina Reader は第三者プロキシなので、認証付き・社内/機密・個人情報URLには使わない。詳細手順は [[web-original-fetch-playbook]]。
 
-## 外部AI相談のフォールバック（Codex/Grok が使えないとき）
+## LLM作業のルーティング（Claude拒否・障害時の代替と明示選択・ユーザー確定 2026-07-25）
 
-Claude 系の知見で足りる相談はこのセッションで答え、OpenRouter/AtlasCloud で `anthropic/claude-*` を呼ばない（二重課金）。外部AIを使うのは、Codex/Grok がレート制限・障害で使えず、Claude 以外の独立視点（OpenAI/Grok/Gemini/DeepSeek 等）が必要なときだけ。
+Claude Code 本体のモデルは Claude 系のみ（ハーネス仕様・他社モデルへ変更不可）。代替は**委譲**で実現する。**Claude（私）がタスクを拒否した場合、そこで止めず、該当サブタスクを下の台帳で外部LLMに発注して結果を統合するのを標準動作とする**（正当な研究・創作文脈での過剰拒否対策。ユーザーの作業を黙って放置しない）。
 
-第一候補は `~/.claude/bin/or-consult.mjs`、OpenRouter が 402/429 等で使えない場合のみ AtlasCloud を使う。APIキーの中身は表示せず、医学研究データ等は PII を含めない形で相談する。具体的なコマンド、モデルID、max-tokens、AtlasCloud の落とし穴は記憶 [[external-ai-consult-fallback]]。
+- **明示選択トリガー**: 「Codexで/GPTで」「Grokで」「ローカルLLMで」→ フォールバックを待たず指名先へ直行
+- **A. 通常タスク（SFW・文章/分析/コード）**: Claude（無料・最優先）→ Codex `codex exec --skip-git-repo-check "…"` → Grok `grok -p "…"` → ローカル `ask-local "…"` → OpenRouter `or-consult.mjs`／AtlasCloud llm（従量・最後）
+- **B. NSFW・際どい創作文章**: Grok（サブスク・寛容）→ ローカル無検閲 `ask-local-unc "…"`（huihui_ai/qwen3-abliterated:30b）→ OpenRouter の無検閲系。GPT 系は拒否傾向のため B では使わない
+- **C. 医療・研究系で過剰拒否が出たとき**: Codex（GPT-5.6・医療推論に強い）→ ローカル `ask-local "…" gpt-oss:120b`（高品質・初回ロード重い）/ `qwen3:30b`（軽速）→ それでも断られる内容のみ `ask-local-unc`
+- **ユーザー直接入口（Claude 非経由の自衛策・実測済 2026-07-25）**: `ask-gpt` / `ask-grok` / `ask-local "…" [model]` / `ask-local-unc`（`~/.local/bin`・**このLinux機のみ**。他PCは同スクリプトの再設置要）。セッション内なら `!ask-grok "…"` の形で実行可。**セッション丸ごと別モデル**にしたいときは `codex` / `grok` を直接起動（どちらもフルエージェントTUI）
+- 従来規則は維持: OpenRouter/AtlasCloud で `anthropic/claude-*` を呼ばない（二重課金）。APIキーの中身は表示しない。医学研究データは PII を除去して渡す。OpenRouter のコマンド・モデルID・落とし穴は記憶 [[external-ai-consult-fallback]]
 
 ## ツールコール漏洩バグへの対処
 
