@@ -63,3 +63,4 @@
 - [候補者推薦書docxの書式保持編集](recommendation-letter-docx-editing.md) — 推薦書はrun.text差し替えで書式温存(add_paragraphは書式飛ぶ)。データ源=cv-profileスキル/新研究=P:/Code/Research/PINN/UKA_FEA_PINN/CLAUDE.md(別フォルダのPINN接触力提案docxは別テーマ・混同注意)。全角1200字以内、査読者は医師、確定値無しは＿＿＿、★「過去業績が新研究にどう活きるか」の橋渡し必須。Win:cp932化け→UTF-8ファイル経由/path forward slash/要バックアップ。被引用はSemanticScholar+OpenAlex APIで確認
 - [並走claudeのauto-pushが手動mergeを壊す](concurrent-claude-autopush-clobbers-merge.md) — 他セッションのStopフックがMERGE_HEAD/マーカーを見ずcommit&push。手動merge前にps確認、解決は一気に。復旧は上書きコミット(--force不要)。33コミット規模の分岐はrebaseよりmergeが安全
 - [同目的動画を勝手に複数生成しない](no-multi-candidate-video-without-instruction.md) — ★恒久(2026-07-15指示): 指示無き限り動画/画像は同目的で複数候補を勝手に作らない=既定1本。複数出すなら提案し承認を得てから。submit済みクラウドジョブはkillしても課金は戻らない→prediction id再ポーリングで回収(_poll_prediction→_first_output→_download)
+- [Claude Code非Claudeモデルゲートウェイ(akitaken)](claude-code-nonclaude-gateway-akitaken.md) — claude-gw で /model 切替（ローカル/AtlasCloud/サブスクブリッジ）。正本は ~/.config/litellm/README.md
