@@ -511,13 +511,14 @@ NSFW 人物のフォトリアル/絵画生成は**ローカル一択**（Codex/G
 - **ネガティブが効かないモデル（FLUX.1/.2-dev は negative_prompt を無視）/ Grok / Codex**: **ポジティブ側に明示**する。日本語なら「**入れ墨・タトゥーなし、肌に文字や模様なし、きれいな素肌**」、英語なら `no tattoos, clean bare skin, no ink or lettering on the body`。Grok は日本語のまま渡す（翻訳禁止＝言語ポリシー参照）。
 - **i2v 動画（gen_ltx23_lora.py 等）**: 入力画像に入れ墨が無ければ動画にもまず出ないが、negative-prompt に `tattoo` を足しておくと安全。入力画像側に既にタトゥーがある場合は、画像段階で消す（再生成 or 編集）。
 
-### 人物生成の固定ルール：余計なホクロ・イボ・スキンタグを入れない（必読・全モデル・ユーザー確定 2026-07-26）
+### 人物生成の固定ルール：ホクロ・シミ・イボの扱いはモデルで分ける（必読・ユーザー確定 2026-07-26）
 
-裸・肌の露出があるシーンで、**頼んでいないのに胸・体・顔に隆起したホクロ／イボ／スキンタグ／吹き出物が描かれることがある**（実機 2026-07-26: 中島遥の裸生成で胸骨に赤い隆起ホクロが出て「気持ち悪い」とユーザー指摘）。**ペルソナ定義にあるホクロ（例: 中島遥＝口元・右の平らな美人ホクロ）だけを許容し、それ以外の肌の隆起物は常に入れない。** 入れ墨ルールと同じく両面で抑える:
-- **ネガティブが効くモデル（z-image-turbo / sdxl / qwen-image / Qwen-Image-Edit）**: `--negative-prompt` に **`raised mole, mole on chest, mole on body, skin tag, wart, skin bump, cyst, extra moles, blemish, acne`** を必ず含める（入れ墨ネガと併記）。
-- **ネガティブが効かない/追従系（FLUX 系 / Grok / Codex / Higgsfield 等）**: ポジティブに明示する。英語なら `clean smooth skin with no moles, warts, skin tags or raised bumps anywhere except the persona's single defined beauty mark; unblemished skin`。日本語なら「肌はきれいで、ペルソナ既定のホクロ以外にホクロ・イボ・スキンタグ・吹き出物を出さない」。
-- **ペルソナのホクロは positive に1個だけ明示**（位置も。例: `only one small flat beauty mole beside the right corner of her mouth, no other moles`）。「no other moles」を必ず添えて増殖を防ぐ。
-- 出てしまったら採用しない（再生成 or 該当領域を編集で除去）。裸バストアップ等の量産では、この隆起物が最頻の破綻なので毎回ネガに入れる。
+裸・肌の露出があるシーンで、**頼んでいないのに胸・体・顔に隆起したホクロ／イボ／スキンタグ／吹き出物が描かれることがある**。実機 2026-07-26: 中島遥の裸生成で ①胸骨に赤い隆起ホクロが出て「気持ち悪い」、②口元のホクロも大きく汚く出た、とユーザー指摘。**Qwen-Image-Edit はホクロ・シミを大きく汚い斑点として描く**ため、リアル化目的の肌マークはモデルで扱いを分ける:
+
+- **★ローカル Qwen-Image-Edit（および同様に斑点が汚く出るローカル diffusion）＝ホクロ・シミ・そばかすを一切入れない。** リアル化のための beauty mole / age spot / freckle を positive に書かない。ペルソナ定義のホクロ（例: 中島遥＝口元右）も**Qwen では省く**（大きく出て逆効果）。negative に **`mole, moles, beauty mark, mole on face, mole on chest, mole on body, freckles, age spots, dark spots, skin tag, wart, skin bump, cyst, blemish, acne`** を必ず入れ、素肌をきれいに保つ。肌のリアル感は「毛穴・質感・自然光」だけで出す（斑点で出さない）。
+- **★Higgsfield / AtlasCloud の最新モデル（Seedream 5 Pro・Nano Banana Pro・GPT Image 等）＝細かいホクロ・シミ・そばかすを入れてよい（むしろリアル化に有効）。** これらは斑点を細かく自然に描くので、`natural skin with subtle faint freckles and a few small moles, realistic skin tone variation` や、ペルソナ定義のホクロ（`a small flat beauty mole beside the right corner of her mouth`）を positive に入れてリアル感を上げる。ただし「隆起した大きいイボ／スキンタグ／吹き出物」は不可なので negative に `raised wart, skin tag, large mole, cyst, acne` は残す。
+- 判定の原則: **斑点系のリアル化マークは「細かく自然に描けるモデルでだけ入れる」。** 汚く出るモデル（Qwen-edit 等）では入れずに素肌クリーン。出てしまったら採用しない（再生成 or 編集除去）。
+- 関連: 入れ墨は全モデルで常に入れない（上の入れ墨ルール）。年齢リアル化（[[realism-naturalization-default-on]]）の皺は残してよいが、**シミ・ホクロの追加は上のモデル分けに従う**。
 
 ### 衣装（ワードローブ）リファレンス（女性ペルソナの着せ替え用・導入 2026-07-25）
 
