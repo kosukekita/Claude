@@ -30,6 +30,24 @@ def test_unresolved_is_critical(tmp_path):
     assert run(report, research)["critical"][0]["severity"] == "critical"
 
 
+def test_existing_note_without_claims_is_counted_as_unverified_not_critical(tmp_path):
+    research = tmp_path / "research"
+    (research / "sources").mkdir(parents=True)
+    (research / "sources" / "src-1.md").write_text(
+        '---\nurl: "https://example.org/src-1"\n---\nSource body.\n',
+        encoding="utf-8",
+    )
+    report = tmp_path / "report.md"
+    report.write_text(
+        "This supported statement cites an existing source note [[source:src-1]].",
+        encoding="utf-8",
+    )
+    result = run(report, research)
+    assert not result["critical"]
+    assert result["unverified_count"] == result["counts"]["unverified"] == 1
+    assert result["pairs"][0]["severity"] == "warning"
+
+
 def test_sample_is_deterministic_and_order_independent():
     items = [{"pair_id": str(i), "sentence": f"sentence {i}", "citation": f"[^{i}]",
               "status": "llm_review"} for i in range(12)]

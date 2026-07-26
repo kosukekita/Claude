@@ -61,19 +61,48 @@ def load_claim_index(research: str | Path) -> dict[str, list[dict[str, Any]]]:
     return index
 
 
+def load_source_index(research: str | Path) -> set[str]:
+    """Return note ids and citation aliases for every source note in the vault."""
+    from vault import read_note
+
+    aliases: set[str] = set()
+    for path in sorted((Path(research) / "sources").glob("*.md")):
+        meta, _ = read_note(path)
+        aliases.add(path.stem.casefold())
+        for alias in (meta.get("url"), meta.get("doi")):
+            if alias:
+                aliases.add(str(alias).casefold())
+    return aliases
+
+
 def _candidate_claims(pair: dict[str, Any], claims: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
     haystack = (pair["reference"] + " " + pair["resolved_reference"]).casefold()
     matched = [items for key, items in claims.items() if key in haystack]
     return [claim for items in matched for claim in items]
 
 
-def triage_pairs(pairs: list[dict[str, Any]], claims: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
+def _resolves_to_source(pair: dict[str, Any], sources: set[str]) -> bool:
+    haystack = (pair["reference"] + " " + pair["resolved_reference"]).casefold()
+    return any(alias in haystack for alias in sources)
+
+
+def triage_pairs(
+    pairs: list[dict[str, Any]],
+    claims: dict[str, list[dict[str, Any]]],
+    sources: set[str] | None = None,
+) -> list[dict[str, Any]]:
     results = []
+    sources = sources or set()
     for pair in pairs:
         candidates = _candidate_claims(pair, claims)
         status, reason, severity = "llm_review", "semantic support requires review", "medium"
         if not candidates:
-            status, reason, severity = "unresolved", "citation resolves to no vault claim", "critical"
+            if _resolves_to_source(pair, sources):
+                status = "unverified"
+                reason = "citation resolves to a vault note with no accepted claims"
+                severity = "warning"
+            else:
+                status, reason, severity = "unresolved", "citation resolves to no vault note", "critical"
         else:
             sentence_numbers = set(NUMBER.findall(pair["sentence"]))
             for claim in candidates:
@@ -102,15 +131,22 @@ def deterministic_sample(items: list[dict[str, Any]], size: int) -> list[dict[st
 
 def run(report_path: str | Path, research: str | Path, sample_size: int = 10) -> dict[str, Any]:
     report = Path(report_path).read_text(encoding="utf-8")
-    results = triage_pairs(extract_pairs(report), load_claim_index(research))
+    results = triage_pairs(
+        extract_pairs(report),
+        load_claim_index(research),
+        load_source_index(research),
+    )
     critical = [item for item in results if item["severity"] == "critical"]
+    unverified = [item for item in results if item["status"] == "unverified"]
     return {
         "pairs": results,
         "sample": deterministic_sample(results, sample_size),
         "critical": critical,
         "critical_count": len(critical),
+        "unverified": unverified,
+        "unverified_count": len(unverified),
         "counts": {status: sum(item["status"] == status for item in results)
-                   for status in ("auto_pass", "llm_review", "unresolved")},
+                   for status in ("auto_pass", "llm_review", "unverified", "unresolved")},
     }
 
 
@@ -129,6 +165,7 @@ def _main() -> int:
             "output": Path(args.output).as_posix(),
             "counts": result["counts"],
             "critical_count": len(result["critical"]),
+            "unverified_count": result["unverified_count"],
             "sample": [{"pair_id": item["pair_id"]} for item in result["sample"]],
         }
         print(json.dumps(summary, ensure_ascii=False))

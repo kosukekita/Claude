@@ -67,6 +67,23 @@ def test_heading_order_and_unresolved_citation_fail(tmp_path):
     assert {"required_headings", "citecheck_unresolved"} <= checks
 
 
+def test_note_without_claims_passes_and_is_reported_as_unverified(tmp_path):
+    meta = {
+        "url": "https://example.org/unverified", "retrieved_at": "2026-07-27T00:00:00Z",
+        "title": "Unverified source", "type": "primary", "utility_score": .7,
+    }
+    write_note(tmp_path, "src-1", meta, "A source body with no extracted claims.")
+    report = tmp_path / "report.md"
+    report.write_text(
+        "# Summary\nThis statement cites an existing source note [[source:src-1]].\n"
+        "# Evidence\nThis second statement cites the same existing note [[source:src-1]].",
+        encoding="utf-8",
+    )
+    result = inspect(report, tmp_path / "research", {**config(), "min_words": 1})
+    assert result["passed"], result
+    assert result["metrics"]["unverified_citations"] == 2
+
+
 def test_citation_density_sentence_split_does_not_break_decimal_or_marker():
     first = "The measured change was 12.4% in the treatment arm.[^s1]"
     second = "This uncited sentence is long enough to be included."

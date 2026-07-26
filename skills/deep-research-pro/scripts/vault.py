@@ -144,14 +144,55 @@ def _main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("search"); p.add_argument("query"); p.add_argument("--project", default=".")
     p.add_argument("--case-sensitive", action="store_true")
     p = sub.add_parser("read"); p.add_argument("path")
+    p = sub.add_parser("write-note")
+    p.add_argument("note_id")
+    p.add_argument("--project", default=".")
+    p.add_argument("--body", required=True, metavar="FILE",
+                   help="UTF-8 body file, or - to read the body from standard input")
+    p.add_argument("--url", required=True)
+    p.add_argument("--retrieved-at", required=True)
+    p.add_argument("--title", required=True)
+    p.add_argument("--type", required=True)
+    p.add_argument("--utility-score", required=True, type=float)
+    p.add_argument("--overwrite", action="store_true")
+    p = sub.add_parser("write-claims")
+    p.add_argument("note_id")
+    p.add_argument("claims_file", metavar="JSON_FILE",
+                   help="UTF-8 JSON file containing a claim array (or an object with a claims key)")
+    p.add_argument("--project", default=".")
     args = parser.parse_args(argv)
     if args.command == "init":
         print(init_vault(args.project).as_posix())
     elif args.command == "search":
         print(json.dumps(search(args.project, args.query, case_sensitive=args.case_sensitive), ensure_ascii=False))
-    else:
+    elif args.command == "read":
         meta, body = read_note(args.path)
         print(json.dumps({"metadata": meta, "body": body}, ensure_ascii=False))
+    elif args.command == "write-note":
+        body = sys.stdin.read() if args.body == "-" else Path(args.body).read_text(encoding="utf-8")
+        metadata = {
+            "url": args.url,
+            "retrieved_at": args.retrieved_at,
+            "title": args.title,
+            "type": args.type,
+            "utility_score": args.utility_score,
+        }
+        path = write_note(
+            args.project, args.note_id, metadata, body, overwrite=args.overwrite,
+        )
+        print(json.dumps({"path": path.as_posix()}, ensure_ascii=False))
+    else:
+        payload = json.loads(Path(args.claims_file).read_text(encoding="utf-8"))
+        claims = payload.get("claims") if isinstance(payload, dict) else payload
+        if not isinstance(claims, list):
+            raise ValueError("claims JSON must be an array or an object with a claims array")
+        path, rejected = write_claims(args.project, args.note_id, claims)
+        saved = json.loads(path.read_text(encoding="utf-8"))
+        print(json.dumps({
+            "path": path.as_posix(),
+            "accepted": len(saved["accepted"]),
+            "rejected_without_verbatim_quote": rejected,
+        }, ensure_ascii=False))
     return 0
 
 

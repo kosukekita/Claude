@@ -99,6 +99,7 @@ def inspect(report_path: str | Path, research: str | Path, config: dict[str, Any
             "word_count": word_count, "citation_density": round(density, 4),
             "quoted_spans": len(list(QUOTED.finditer(report))), "notes": len(notes),
             "citation_pairs": len(cite_result["pairs"]),
+            "unverified_citations": cite_result["unverified_count"],
         },
     }
 
