@@ -100,6 +100,16 @@
             "command": "if command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/warn-bash-overwrite.ps1\"; fi"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/guard-destructive-and-resolution.py",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "SessionStart": [
