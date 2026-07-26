@@ -546,6 +546,7 @@ NSFW 人物のフォトリアル/絵画生成は**ローカル一択**（Codex/G
   - `outfit-purple-satin-corset-tulle-tutu-fishnet-thighboots.png` — 紫サテンのストラップレスコルセットビスチェ＋紫オンブレのチュールチュチュ＋網タイツ＋紫サテンのサイハイヒールブーツ
   - `outfit-white-plunge-vneck-draped-jersey-mini-dress.png` — 白のディーププランジVネック・ドレープジャージーのミニワンピース（肩ギャザー・ラッシュドウエスト・フレアスカート）
   - `outfit-camo-cap-navy-denim-bib-overalls-black-bralette.png` — カモ柄ベースボールキャップ＋ダークネイビーのデニム・ビブオーバーオール（サロペット・胸ポケット/バックル肩紐/サイドボタン/ワイドレッグ）＋下に黒のブラレット
+  - `outfit-sheer-blush-pink-ruffle-off-shoulder-maxi-robe.png` — 半透明ブラッシュピンク（シフォン）のオフショルダー・ロングローブ／ドレープドレス。フリル襟＋袖フリル＋肩の細い結び紐、透け感のある流れる素材
 
 ### 男性人物の体型・構図リファレンス（必読・固定）
 
