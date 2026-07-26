@@ -511,6 +511,14 @@ NSFW 人物のフォトリアル/絵画生成は**ローカル一択**（Codex/G
 - **ネガティブが効かないモデル（FLUX.1/.2-dev は negative_prompt を無視）/ Grok / Codex**: **ポジティブ側に明示**する。日本語なら「**入れ墨・タトゥーなし、肌に文字や模様なし、きれいな素肌**」、英語なら `no tattoos, clean bare skin, no ink or lettering on the body`。Grok は日本語のまま渡す（翻訳禁止＝言語ポリシー参照）。
 - **i2v 動画（gen_ltx23_lora.py 等）**: 入力画像に入れ墨が無ければ動画にもまず出ないが、negative-prompt に `tattoo` を足しておくと安全。入力画像側に既にタトゥーがある場合は、画像段階で消す（再生成 or 編集）。
 
+### 人物生成の固定ルール：余計なホクロ・イボ・スキンタグを入れない（必読・全モデル・ユーザー確定 2026-07-26）
+
+裸・肌の露出があるシーンで、**頼んでいないのに胸・体・顔に隆起したホクロ／イボ／スキンタグ／吹き出物が描かれることがある**（実機 2026-07-26: 中島遥の裸生成で胸骨に赤い隆起ホクロが出て「気持ち悪い」とユーザー指摘）。**ペルソナ定義にあるホクロ（例: 中島遥＝口元・右の平らな美人ホクロ）だけを許容し、それ以外の肌の隆起物は常に入れない。** 入れ墨ルールと同じく両面で抑える:
+- **ネガティブが効くモデル（z-image-turbo / sdxl / qwen-image / Qwen-Image-Edit）**: `--negative-prompt` に **`raised mole, mole on chest, mole on body, skin tag, wart, skin bump, cyst, extra moles, blemish, acne`** を必ず含める（入れ墨ネガと併記）。
+- **ネガティブが効かない/追従系（FLUX 系 / Grok / Codex / Higgsfield 等）**: ポジティブに明示する。英語なら `clean smooth skin with no moles, warts, skin tags or raised bumps anywhere except the persona's single defined beauty mark; unblemished skin`。日本語なら「肌はきれいで、ペルソナ既定のホクロ以外にホクロ・イボ・スキンタグ・吹き出物を出さない」。
+- **ペルソナのホクロは positive に1個だけ明示**（位置も。例: `only one small flat beauty mole beside the right corner of her mouth, no other moles`）。「no other moles」を必ず添えて増殖を防ぐ。
+- 出てしまったら採用しない（再生成 or 該当領域を編集で除去）。裸バストアップ等の量産では、この隆起物が最頻の破綻なので毎回ネガに入れる。
+
 ### 衣装（ワードローブ）リファレンス（女性ペルソナの着せ替え用・導入 2026-07-25）
 
 **`reference/assets/wardrobe/` は「人物に依存しない衣装だけの参照画像」置き場**（ゴーストマネキン風・人物/顔/肌なし・白系スタジオ背景）。任意の人物参照と組み合わせ、**役割分離プロンプト**で着せ替える: 「顔・体型 = 人物 ref のとおり／**衣装 = この wardrobe 画像のとおり（元画像の人物要素は無い。衣装だけを転写）**」。参照対応バックエンド（Higgsfield `--image-references` / Seedream edit / Nano Banana / Codex `-i`）で人物 ref と wardrobe ref を同時に渡す。
