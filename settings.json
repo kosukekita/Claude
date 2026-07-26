@@ -47,7 +47,7 @@
     ],
     "defaultMode": "auto"
   },
-  "model": "claude-gpt-5.6-sol",
+  "model": "claude-fable-5[1m]",
   "fallbackModel": [
     "opus[1m]"
   ],
