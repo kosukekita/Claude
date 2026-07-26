@@ -15,6 +15,11 @@ openrouter.key
 # Hook Logs
 command-log.txt
 
+# Python build artifacts (deep-research-pro scripts/tests)
+__pycache__/
+*.pyc
+.pytest_cache/
+
 # Local State (machine-specific, not for sharing)
 .playwright-cli/
 backups/

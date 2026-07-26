@@ -5,6 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: 4fb3f955-1e55-4f42-836a-465b6f37acda
+  modified: 2026-07-26T13:44:27.866Z
 ---
 
 `codex:rescue`（codex-consult 経由）で Codex 委譲が「コマンドが途中で切れる/ハング/no output」になる真因は**ランナー（codex-companion.mjs）の呼び出し方**で、Codex が生成するシェルコマンドではない。3大原因:
@@ -15,9 +16,26 @@ metadata:
 
 **Why:** 2026-06-15、skills レビューを Codex に2回委譲して両方つまずいた（1回目=途中切れ、2回目=no output だが本文はセッションに残存）。ユーザーが貼った全角クォート入りコマンドが疑われたが、Codex セッションログの実コマンドは全て ASCII クォート（sq=0）で、全角版はログに無し＝**表示/転記段階での ASCII→全角変換**と判明。command-log には日本語が cp932 で激しく化けた行もあった。Windows では Codex は `shell:true`（Node→cmd.exe→codex の3段ツリー、app-server.mjs:244）で起動され、ツール実行は PowerShell/cmd 系（`Select-Object`/`Measure-Object`/`cmd /c` が動作）。`rg | Select-Object` 混成は PowerShell で動くので無害。
 
+## 続報（2026-07-26）— プロンプトの中身がシェルに食われる
+
+`codex exec "…長いプロンプト…"` を **Bash ツールから**送るとき、プロンプト本文に
+正規表現やシェルの特殊文字が入っていると、**bash が解釈して壊れたものが Codex に届く**。
+実測: 差し戻し指示に正規表現を貼ったところ
+`/usr/bin/bash: line 63: ?:s+: command not found` が出て、Codex には指示の一部しか渡らず、
+指摘した3件のうち1件だけ直って戻ってきた（残り2件は「無視された」ように見えるが、届いていない）。
+
+二重引用符の中でも `$( )` `` ` `` `\s` `!` などは生き残らない。
+バックスラッシュは黙って消えるので**失敗が静かで気づきにくい**（Codex は届いた分だけ実行して正常終了する）。
+
+**対策: 長い指示・正規表現・コード片を含む指示は、ファイルに書いて読ませる。**
+`.agent-rework.md` 等に書き、`codex exec "Read ./.agent-rework.md and do exactly what it asks."` と渡す。
+副次的な利点として、指示がディスクに残るので差し戻しの履歴が追える。
+
 **How to apply:**
 - 重い/`--effort high`/レビュー・実装委譲は **background**。短い一次見解だけ foreground。
 - プロンプトは**常に引数で全文**渡す（空委譲＋stdin 待ち禁止）。
+- **ただし特殊文字を含む長文はファイル経由**（上記・2026-07-26 実測）。
+- 差し戻し後は「直った件数」を必ず数える。**指摘 N 件に対して修正が N 件未満なら、まず届いたかを疑う。**
 - 全角クォート `“ ”` はクォート未閉ハングの元 → コマンドは ASCII `"`/`'` に正規化。→ [[feedback_u8792_path_unicode_escape]]
 - no output でも本文回収可: rollout-*.jsonl から最長 assistant メッセージを UTF-8 ファイル経由で。→ [[feedback_codex_review_output_via_session_jsonl]]
 - 恒久対策は codex-consult/SKILL.md の Step 3 と Troubleshooting に記載済み（2026-06-15）。Codex の config.toml に shell 指定は無い（既定挙動依存）。

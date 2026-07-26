@@ -8,6 +8,9 @@ description: >
   GitHub code from papers. Also triggers for literature review, systematic review,
   先行研究調査, 文献調査 when combined with arXiv/ML/CS topics.
   Do NOT trigger for PubMed/医学論文 searches (use research-toolkit instead).
+  Do NOT trigger when the deliverable is a verified deep research report that weighs
+  contested evidence and commits to a position (use deep-research-pro; this skill is a
+  retrieval layer it calls).
 metadata:
   mcp-server: alphaxiv
   version: 1.0.0
