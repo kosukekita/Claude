@@ -14,7 +14,7 @@
 - [feedback_uv_pip_cache_clean_safe.md](feedback_uv_pip_cache_clean_safe.md) — uv/pipのcache削除は既存環境を壊さない(cacheと環境は別物)。`uv cache clean`/`pip cache purge`公式コマンド使用。ディスク逼迫の第一手。akitakenで71G→124G回復
 
 - [project_tooluniverse_mcp_wsl_fix.md](project_tooluniverse_mcp_wsl_fix.md) — tooluniverse-osteo MCP起動失敗。081a23bはメッセージと実体が食い違い未修正→Nodeランチャーがvenvバイナリを直接spawn(bash/.sh完全排除)で恒久修正。commit 53e5674
-- [project_remote_control_default.md](project_remote_control_default.md) — Remote Control起動時デフォルト有効化。公式永続キー無し→PowerShell profileで `function claude {claude.cmd --remote-control @args}`。脱出口claude-plain
+- [project_remote_control_default.md](project_remote_control_default.md) — RC起動時デフォルト有効化の正解=settings.jsonの`remoteControlAtStartup:true`(v2.1.220実機確認・旧「公式キー無し」は廃止)。/configパネルはグローバル設定しか見ず"default"表示の罠。現セッション復旧は/remote-control。PSラッパー2本は併用維持
 - [project_grok_media_skill.md](project_grok_media_skill.md) — grok-mediaスキル作成。公式Grok Build CLIにX Premium+ OAuthで委譲し画像/動画生成（サブスク枠・APIキー不要）。実機事実: ツール名image_gen/image_to_video、t2v専用無し、出力は~/.grok/sessions配下、loginは実ターミナルで
 - [feedback_powershell_hook_utf8_stdout.md](feedback_powershell_hook_utf8_stdout.md) — WindowsのPowerShellフックが日本語をstdoutに返すと文字化けする。原因はACP=932でWrite-OutputがShift_JIS出力。UTF-8バイト直書き(OpenStandardOutput)で解決。memory-inject.ps1のみ該当、commit a044da7でpush済
 - [feedback_ps1_needs_utf8_bom_on_windows.md](feedback_ps1_needs_utf8_bom_on_windows.md) — 日本語入り.ps1はBOMなしUTF-8だとPowerShell 5.1がcp932読みでパースエラー実行失敗。BOM付きUTF-8で保存。検証はParseFile（BOM無しで実行時失敗を再現）。sh/py/JSONにBOM付けない
