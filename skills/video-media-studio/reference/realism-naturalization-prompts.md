@@ -72,6 +72,17 @@
 - `visible steam, condensation, moisture, natural reflections`（湯気・水滴・自然な反射＝食品/飲料で効く）
 - `subtle motion blur on moving hands, natural handheld feel`（手の自然なブレ・手持ち感）
 
+## ⑧ ファウンドフッテージ／民生機の粗で「本物の素人撮影」に見せる（動画向け・⑦とは逆レバー・別枠）
+①〜⑦の「きれいなフォトリアル／高級シネマ」とは**逆方向**のリアル化。動画AIが"バレる"最大要因は **画が綺麗すぎ・安定しすぎ・露出が完璧すぎ**。これをわざと壊し、特定の民生機（カムコーダ/VHS/古スマホ）の粗を再現すると、vlog・POV・"隠し撮り風"・素人自撮り動画は一気に本物に見える。**⑦（premium/clean/cinematic/studio）と同時に入れない**（狙いが真逆で打ち消す）。用途: gym vlog・日常自撮り動画・found-footage・POVハンド・"ガチ投稿"風。
+
+- **(a) 撮影デバイスを1つ固定してアンカーにする**（全体の質感を決める）: `DV / MiniDV handheld camcorder footage` / `Hi8 or VHS camcorder tape look` / `early-2000s point-and-shoot video` / `filmed on an old phone, vertical phone video`。1つ選び STYLE に固定。
+- **(b) 素人オペレータの粗**（動画でしか出せない＝"完璧な三脚"を捨てる）: `natural handheld shake, unstabilized` / `soft focus, delayed (late) focus pulls, hunting autofocus`（甘い＆遅れて合うピント） / `clumsy zoom, sudden reframing, imperfect framing`（下手ズーム・雑な構図） / `auto-exposure flicker and hunting as light changes`（自動露出のふらつき）。
+- **(c) アナログ/テープの粗**: `tape noise, video grain, slight blur, muted washed-out contrast` / `bloomed highlights around lights`（光源のにじみ＝ブルーム） / `slightly crushed blacks, low dynamic range`。※`timecode / date stamp` は「画面内文字を入れない」既定の**例外＝明示要望時のみ**。
+- **(d) ダイエジェティックな撮影者＋カメラを映さない**（found-footage の肝）: `POV, the character holds or props the camera on a surface; the camcorder is never visible in frame`（人物がカメラを持つ/置く・カメラは絶対に映さない）。
+- **(e) 物理状態の時間連続**（"生っぽさ"・シーンをまたいで進行させる）: `glowing skin with increasing sweat over the clip, breathless, flushed`。開始→中盤→終盤で状態（汗・息切れ・化粧崩れ等）を段階指定する。
+
+渡し方: Codex/Grok は自然文で STYLE と各ショットに。ローカル diffusion は下の変換表 ⑧ 行のキーワードで（⑦の premium/studio 系キューは併用しない）。
+
 ## 症状 → 提案するカテゴリの対応
 
 | ユーザーの症状・要望 | 提案 |
@@ -82,6 +93,7 @@
 | 背景が浮く / 合成っぽい | ④背景（⑯〜⑳、特に⑰生活感） |
 | SNS アイコン・投稿用 | ⑥⑨＋⑤SNS（㉑㉒） |
 | 仕上げ・最終チェック | ⑥仕上げ（㉖〜㉚） |
+| 「素人っぽく」「vlog / POV / 隠し撮り風」「本物のスマホ/ビデオっぽく」（動画） | ⑧ファウンドフッテージ（★⑦とは混ぜない） |
 
 ## バックエンド別の渡し方（重要）
 
@@ -102,6 +114,7 @@
 | ⑩ 視線 | `looking away from camera, natural gaze` | `looking at viewer`（構図次第） |
 | ⑰ 生活感 | `lived-in interior, everyday clutter in background` | `empty sterile background` |
 | ㉖ 破綻防止 | —（既定ネガで対応済み） | 既定の `deformed hands, extra fingers, watermark, text` を維持 |
+| ⑧ 素人ビデオ・vlog・found-footage（動画） | `handheld camcorder footage, natural handheld shake, soft focus, hunting autofocus, tape noise, video grain, bloomed highlights, muted contrast, auto-exposure flicker` | `stabilized, tripod, clean sharp footage, cinematic color grade, studio lighting`（⑦系と併用しない） |
 
 - ネガティブが効くのは z-image-turbo / sdxl系 / chroma / qwen-image。FLUX.1/2-dev・Klein は negative 非対応なのでポジティブ側に `no ...` で明示（入れ墨ルールと同じ流儀）。
 - 既定のタトゥー禁止ネガ（`tattoo, tattoos, body ink, lettering on skin`）とは併存させる（置き換えない）。
