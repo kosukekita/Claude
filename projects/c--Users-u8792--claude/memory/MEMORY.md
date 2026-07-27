@@ -32,3 +32,4 @@
 - [project_deep_research_pro_skill.md](project_deep_research_pro_skill.md) — deep-research-pro(2026-07-26作成→07-27縮小)。通し実行で失敗し収集パイプラインは凍結、検証層(逐語引用・撤回・独立性・cite-check)だけ残した。最大の教訓: エージェントに「〜に保存せよ」と文章で頼むと保存先も形式も守られない(相対パス誤解決で~/.claudeに605ファイル散乱)。ゲートを固めても届ける経路が自由記述なら無意味
 - [feedback_workflow_registry_and_args.md](feedback_workflow_registry_and_args.md) — Workflowツールは組み込み(deep-research/code-review)しか名前解決せず~/.claude/workflows/は無視。カスタムはscriptPath経由・argsは文字列で届く・realmにURL/Date.now無し。組み込みdeep-researchの中身はバイナリから抽出可
 - [feedback_agent_toollock_and_registration.md](feedback_agent_toollock_and_registration.md) — サブエージェントのtoolsロックはBash(とToolSearch)も外さないと無効=シェルで書ける。新規エージェントはセッション再起動まで登録されずその場で実地検証できない
+- [project_reddit_intent_mining_skill.md](project_reddit_intent_mining_skill.md) — reddit-intent-miningスキル作成(2026-07-27)。買い手挙手投稿の検知技法。business-validateへは追記せず新規+一方向依存契約。RED実測=ベースラインはコンプラ堅くフレーズ定型/4時間鮮度/引用2行/手動先行が全滅→そこだけ教える。モードA/Bで鮮度が逆
