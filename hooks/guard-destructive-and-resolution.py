@@ -17,6 +17,30 @@ IMAGE_MARKERS = {
     "text-to-image",
     "image-to-image",
 }
+# Refresh this list from the TYPE=image rows of: higgsfield model list --image
+IMAGE_JOB_TYPES = {
+    "nano_banana_pro",
+    "nano_banana_flash",
+    "nano_banana_2_lite",
+    "seedream_v5_pro",
+    "seedream_v5_lite",
+    "seedream_v4_5",
+    "gpt_image_2",
+    "flux_2",
+    "flux_kontext",
+    "z_image",
+    "grok_image",
+    "recraft_v4_1",
+    "text2image_soul_v2",
+    "soul_location",
+    "soul_cinematic",
+    "soul_cast",
+    "kling_omni_image",
+    "openai_hazel",
+    "image_auto",
+    "outpaint",
+    "topaz_image",
+}
 
 
 def shell_tokens(command):
@@ -140,6 +164,18 @@ def option_value(values, name):
     return None
 
 
+def higgsfield_create_job_type(values):
+    """Return the job_type from `higgsfield generate create JOB_TYPE`, if present."""
+    lowered = [value.lower() for value in values]
+    for index, value in enumerate(values):
+        if os.path.basename(value).lower() != "higgsfield":
+            continue
+        tail = lowered[index + 1 :]
+        if len(tail) >= 3 and tail[0:2] == ["generate", "create"]:
+            return tail[2]
+    return None
+
+
 def higgsfield_reason(segment):
     values = [value for value, _ in segment]
     lowered = [value.lower() for value in values]
@@ -147,6 +183,8 @@ def higgsfield_reason(segment):
         return None
     # Explicit static-image commands are outside this guard's scope.
     if any(value in IMAGE_MARKERS for value in lowered):
+        return None
+    if higgsfield_create_job_type(values) in IMAGE_JOB_TYPES:
         return None
 
     resolution = option_value(values, "--resolution")

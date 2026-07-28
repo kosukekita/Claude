@@ -51,6 +51,74 @@ run_case allow "5e explicit static-image generation is allowed" \
   'higgsfield image generate --resolution 4k --quality ultra'
 run_case deny "5f rm -rf directory is denied" 'rm -rf /tmp/x'
 
+image_job_types=(
+  nano_banana_pro nano_banana_flash nano_banana_2_lite
+  seedream_v5_pro seedream_v5_lite seedream_v4_5
+  gpt_image_2 flux_2 flux_kontext z_image grok_image recraft_v4_1
+  text2image_soul_v2 soul_location soul_cinematic soul_cast
+  kling_omni_image openai_hazel image_auto outpaint topaz_image
+)
+for job_type in "${image_job_types[@]}"; do
+  for resolution in 1k 2k 4k; do
+    run_case allow "image ${job_type} allows ${resolution}" \
+      "higgsfield generate create ${job_type} --resolution ${resolution} --prompt demo"
+  done
+done
+
+for job_type in seedance_2_0 veo3_1 kling3_0; do
+  run_case deny "video ${job_type} denies --resolution 4k" \
+    "higgsfield generate create ${job_type} --resolution 4k --prompt demo"
+  run_case deny "video ${job_type} denies --mode 4k" \
+    "higgsfield generate create ${job_type} --mode 4k --prompt demo"
+  run_case deny "video ${job_type} denies --quality ultra" \
+    "higgsfield generate create ${job_type} --quality ultra --prompt demo"
+  run_case allow "video ${job_type} allows --quality high" \
+    "higgsfield generate create ${job_type} --quality high --prompt demo"
+  run_case allow "video ${job_type} allows --resolution 1080p" \
+    "higgsfield generate create ${job_type} --resolution 1080p --prompt demo"
+  run_case allow "video ${job_type} allows --resolution 480p" \
+    "higgsfield generate create ${job_type} --resolution 480p --prompt demo"
+done
+
+run_case deny "unknown job_type fails closed for --resolution 4k" \
+  'higgsfield generate create future_unknown_model --resolution 4k --prompt demo'
+
+# Use an empty PATH for the hook process to prove it does not invoke higgsfield or
+# wait on the network. Python drives the hook directly and enforces the 1s limit.
+if HOOK_PATH="$HOOK" python3 - <<'PY'
+import json
+import os
+import subprocess
+import sys
+
+payload = json.dumps({
+    "tool_input": {
+        "command": "higgsfield generate create future_unknown_model --resolution 4k"
+    }
+}).encode()
+try:
+    result = subprocess.run(
+        [sys.executable, os.environ["HOOK_PATH"]],
+        input=payload,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env={"PATH": ""},
+        timeout=1,
+        check=False,
+    )
+except subprocess.TimeoutExpired:
+    raise SystemExit(1)
+decision = json.loads(result.stdout)["hookSpecificOutput"]["permissionDecision"]
+raise SystemExit(0 if result.returncode == 0 and decision == "deny" else 1)
+PY
+then
+  printf 'PASS: offline/missing-CLI decision returns within 1 second\n'
+  passed=$((passed + 1))
+else
+  printf 'FAIL: offline/missing-CLI decision did not return within 1 second\n'
+  failed=$((failed + 1))
+fi
+
 if jq -e '
   .hooks.PreToolUse
   | any(

@@ -552,6 +552,14 @@ NSFW 人物のフォトリアル/絵画生成は**ローカル一択**（Codex/G
   - `outfit-white-plunge-vneck-draped-jersey-mini-dress.png` — 白のディーププランジVネック・ドレープジャージーのミニワンピース（肩ギャザー・ラッシュドウエスト・フレアスカート）
   - `outfit-camo-cap-navy-denim-bib-overalls-black-bralette.png` — カモ柄ベースボールキャップ＋ダークネイビーのデニム・ビブオーバーオール（サロペット・胸ポケット/バックル肩紐/サイドボタン/ワイドレッグ）＋下に黒のブラレット
   - `outfit-sheer-blush-pink-ruffle-off-shoulder-maxi-robe.png` — 半透明ブラッシュピンク（シフォン）のオフショルダー・ロングローブ／ドレープドレス。フリル襟＋袖フリル＋肩の細い結び紐、透け感のある流れる素材
+  - `outfit-sheer-{black,ivory,navy,wine-red}-ruffle-off-shoulder-maxi-robe.png` — 上と同型の色替え4種（マスター1枚を `nano_banana_pro` の参照リカラーで起こしたもの）
+  - `outfit-silver-metallic-chainmail-plunge-halter-bodysuit.png` — シルバーのメタリック・チェーンメイル調プランジ・ホルターボディスーツ
+  - **部屋着（下は下着のみ）3種**（`nano_banana_pro` 4k・3:4・ゴーストマネキン。2026-07-28 追加）:
+    - `outfit-cream-loose-rib-knit-deep-scoop-ivory-briefs.png` — オートミール／クリームのゆるリブニット（オーバーサイズ・ドロップショルダー・長袖）＋アイボリーのシームレス・ハイレグショーツ。**襟は深いUスクープ**
+    - `outfit-heather-grey-oversized-sweatshirt-deep-scoop-black-briefs.png` — 杢グレーの薄手スウェット（裏毛・カットオフの生地端・袖は肘までたまり・片肩が落ちる）＋黒のショーツ。**襟は深いUスクープ**
+    - `outfit-charcoal-open-front-long-cardigan-black-briefs.png` — チャコールの薄手ロングカーディガン（前開き・ボタン留めなし・膝上丈・ベルトは結ばず垂らす）＋黒のショーツ
+- ★**「胸元がざっくり空いた」は `cut very low and very wide` では出ない**（実測 2026-07-28: モデルは"横広"だけ反映して"縦の深さ"を落とし、浅いボートネックになる）。**幾何で書くと出る**: `the front neckline drops well below the collarbone to mid-chest depth — roughly a hand's width below where a normal crew neck would sit` ／ さらに強めるなら `measured from the shoulder seam the drop is very large, so the bottom of the opening sits at roughly underarm level` ＋ `NOT a shallow crew neck, NOT a modest scoop`。
+- ★**ゴーストマネキンで「下は下着のみ」を1枚に収める**なら、BOTTOM を独立段落にして `floating directly below the top in the same ghost-mannequin arrangement, holding their natural worn shape` と書く（トップスと下着が別オブジェクトとして並ぶ）。
 
 ### 男性人物の体型・構図リファレンス（必読・固定）
 
