@@ -9,14 +9,6 @@ import sys
 SHELL_OPERATORS = {";", "&&", "||", "|", "&", "\n"}
 APPROVED_RESOLUTIONS = {"480p", "1080p"}
 APPROVED_QUALITIES = {"fast", "high"}
-IMAGE_MARKERS = {
-    "image",
-    "images",
-    "image-generate",
-    "generate-image",
-    "text-to-image",
-    "image-to-image",
-}
 # Refresh this list from the TYPE=image rows of: higgsfield model list --image
 IMAGE_JOB_TYPES = {
     "nano_banana_pro",
@@ -164,27 +156,39 @@ def option_value(values, name):
     return None
 
 
-def higgsfield_create_job_type(values):
-    """Return the job_type from `higgsfield generate create JOB_TYPE`, if present."""
-    lowered = [value.lower() for value in values]
+def higgsfield_command(values):
+    """Return argv following the Higgsfield executable, or None."""
     for index, value in enumerate(values):
-        if os.path.basename(value).lower() != "higgsfield":
-            continue
-        tail = lowered[index + 1 :]
-        if len(tail) >= 3 and tail[0:2] == ["generate", "create"]:
-            return tail[2]
+        if os.path.basename(value).lower() == "higgsfield":
+            return [item.lower() for item in values[index + 1 :]]
     return None
+
+
+def higgsfield_job_type(command):
+    """Return the job_type from `generate create/cost JOB_TYPE`, if present."""
+    if (
+        command is not None
+        and len(command) >= 3
+        and command[0] == "generate"
+        and command[1] in {"create", "cost"}
+    ):
+        return command[2]
+    return None
+
+
+def is_static_image_command(command):
+    """Recognize `higgsfield image ...` by its subcommand position."""
+    return command is not None and len(command) >= 1 and command[0] == "image"
 
 
 def higgsfield_reason(segment):
     values = [value for value, _ in segment]
-    lowered = [value.lower() for value in values]
-    if not any(os.path.basename(value).lower() == "higgsfield" for value in values):
+    command = higgsfield_command(values)
+    if command is None:
         return None
-    # Explicit static-image commands are outside this guard's scope.
-    if any(value in IMAGE_MARKERS for value in lowered):
+    if is_static_image_command(command):
         return None
-    if higgsfield_create_job_type(values) in IMAGE_JOB_TYPES:
+    if higgsfield_job_type(command) in IMAGE_JOB_TYPES:
         return None
 
     resolution = option_value(values, "--resolution")

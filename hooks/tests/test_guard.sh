@@ -14,7 +14,7 @@ run_case() {
   output="$(python3 -c 'import json,sys; print(json.dumps({"tool_input":{"command":sys.argv[1]}}))' "$command" | "$HOOK")"
   status=$?
   decision="$(printf '%s' "$output" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null)"
-  if { [[ "$expectation" == deny ]] && { [[ $status -ne 0 ]] || [[ "$decision" == deny ]]; }; } ||
+  if { [[ "$expectation" == deny ]] && [[ $status -eq 0 ]] && [[ "$decision" == deny ]]; } ||
      { [[ "$expectation" == allow ]] && [[ $status -eq 0 ]] && [[ "$decision" != deny ]]; }; then
     printf 'PASS: %s\n' "$label"
     passed=$((passed + 1))
@@ -82,6 +82,35 @@ done
 
 run_case deny "unknown job_type fails closed for --resolution 4k" \
   'higgsfield generate create future_unknown_model --resolution 4k --prompt demo'
+
+for job_type in nano_banana_pro seedream_v5_pro soul_location; do
+  for resolution in 1k 2k 4k; do
+    run_case allow "image cost ${job_type} allows ${resolution}" \
+      "higgsfield generate cost ${job_type} --resolution ${resolution}"
+  done
+done
+
+for job_type in seedance_2_0 veo3_1; do
+  run_case deny "video cost ${job_type} denies --resolution 4k" \
+    "higgsfield generate cost ${job_type} --resolution 4k"
+  run_case deny "video cost ${job_type} denies --mode 4k" \
+    "higgsfield generate cost ${job_type} --mode 4k"
+  run_case deny "video cost ${job_type} denies --quality ultra" \
+    "higgsfield generate cost ${job_type} --quality ultra"
+  run_case allow "video cost ${job_type} allows --quality high" \
+    "higgsfield generate cost ${job_type} --quality high"
+  run_case allow "video cost ${job_type} allows --resolution 1080p" \
+    "higgsfield generate cost ${job_type} --resolution 1080p"
+done
+
+run_case deny "image option value cannot bypass video resolution guard" \
+  'higgsfield generate create seedance_2_0 --prompt x --image image --resolution 4k'
+run_case deny "images option value cannot bypass video resolution guard" \
+  'higgsfield generate create seedance_2_0 --prompt x --image images --resolution 4k'
+run_case deny "text-to-image option value cannot bypass video quality guard" \
+  'higgsfield generate create seedance_2_0 --prompt x --start-image text-to-image --quality ultra'
+run_case deny "bare image token cannot bypass unresolved-command guard" \
+  'higgsfield workflow reframe demo --source image --resolution 4k'
 
 # Use an empty PATH for the hook process to prove it does not invoke higgsfield or
 # wait on the network. Python drives the hook directly and enforces the 1s limit.
