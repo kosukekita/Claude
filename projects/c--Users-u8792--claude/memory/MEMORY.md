@@ -1,6 +1,10 @@
 # Memory Index
 
+<<<<<<< Updated upstream
 - [project_agents_sync_repo_windows.md](project_agents_sync_repo_windows.md) — スキル正本github.com/kosukekita/agentsの3OS対応完了(2026-07-30)。Win修復済み・タスク無音化(wscript経由/LogonType=Interactive)・skills/追跡除外済み。Mac到着時launchd実機検証TODO。編集は%LOCALAPPDATA%\agents-sync-repoで
+=======
+- [project_fea_single-factor-reanalysis.md](project_fea_single-factor-reanalysis.md) — FEA再解析では原因が特定できた場合、その原因だけを修正し、メッシュ等の他条件を固定する
+>>>>>>> Stashed changes
 - [project_creative_prompt_default_flows.md](project_creative_prompt_default_flows.md) — ユーザーのAIディレクター系プロンプトをスキル既定フロー化する定型（2026-07-21・スライド/サイト/LP完了）。TDD手順・{{}}ゲート・定番抜け穴カウンター一覧。「次は〇〇です」が来たら同パターン
 - [project_revert_guard_snapshot_hook_flaky.md](project_revert_guard_snapshot_hook_flaky.md) — Windowsでrecord-file-snapshot.ps1が間欠不発火→revertガードが自分の直前Editを誤ブロック(2026-07-21実測・未修正)。対処はRead再読込→同Edit再実行。snapshot手動書き換えは迂回なので不可
 - [feedback_character_sheet_no_text_no_crop.md](feedback_character_sheet_no_text_no_crop.md) — リファレンスシート固定ルール2点(文字/ラベル一切なし・元画像からアップ切り取り禁止で全パネル生成)。ユーザー確定2026-07-07。正本はcharacter-sheet-template.md冒頭★固定ルール節
