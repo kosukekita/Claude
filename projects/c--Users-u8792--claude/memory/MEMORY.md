@@ -1,5 +1,6 @@
 # Memory Index
 
+- [project_mcp_servers_setup.md](project_mcp_servers_setup.md) — MCP導入状況(2026-07-30)。context7/playwright/githubは実データ取得まで検証済み、sentry/cloudflare/stripeはOAuth待ち。GitHubはDCR非対応→ghトークンをsettings.local.json経由で渡すのが解。~/.claude.jsonはPC間非同期
 - [project_publishing_security_skill.md](project_publishing_security_skill.md) — publishing-security-reviewスキル作成(2026-07-30)。RED実測=検出は元々できる、真の失敗は「既に露出中だから」で公開強行。codex-securityは$23.40/25分・Windows不可・git履歴を見ないので手動7観点と併用必須
 - [feedback_codex_global_rules_wiring.md](feedback_codex_global_rules_wiring.md) — Codexにグローバル規律を届ける配線(2026-07-30修正)。~/.codex/AGENTS.mdはCLAUDE.md全文+記憶の自動生成物。検証はcodex exec read-onlyで本人に質問。権限拡大の前に本当に必要か検証する
 - [project_agents_sync_repo_windows.md](project_agents_sync_repo_windows.md) — スキル正本github.com/kosukekita/agentsの3OS対応完了(2026-07-30)。Win修復済み・タスク無音化(wscript経由/LogonType=Interactive)・skills/追跡除外済み。Mac到着時launchd実機検証TODO。編集は%LOCALAPPDATA%\agents-sync-repoで
