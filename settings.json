@@ -133,7 +133,7 @@
           },
           {
             "type": "command",
-            "command": "command -v powershell >/dev/null 2>&1 && powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/memory-sync-codex.ps1\" || true",
+            "command": "if command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/memory-sync-codex.ps1\"; else bash \"$HOME/.claude/hooks/memory-sync-codex.sh\"; fi || true",
             "timeout": 10
           }
         ]
@@ -145,7 +145,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "command -v powershell >/dev/null 2>&1 && powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/memory-sync-codex.ps1\" || true",
+            "command": "if command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/memory-sync-codex.ps1\"; else bash \"$HOME/.claude/hooks/memory-sync-codex.sh\"; fi || true",
             "timeout": 10
           },
           {
