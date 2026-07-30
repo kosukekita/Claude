@@ -1,5 +1,7 @@
 # Memory Index
 
+- [project_publishing_security_skill.md](project_publishing_security_skill.md) — publishing-security-reviewスキル作成(2026-07-30)。RED実測=検出は元々できる、真の失敗は「既に露出中だから」で公開強行。codex-securityは$23.40/25分・Windows不可・git履歴を見ないので手動7観点と併用必須
+- [feedback_codex_global_rules_wiring.md](feedback_codex_global_rules_wiring.md) — Codexにグローバル規律を届ける配線(2026-07-30修正)。~/.codex/AGENTS.mdはCLAUDE.md全文+記憶の自動生成物。検証はcodex exec read-onlyで本人に質問。権限拡大の前に本当に必要か検証する
 - [project_agents_sync_repo_windows.md](project_agents_sync_repo_windows.md) — スキル正本github.com/kosukekita/agentsの3OS対応完了(2026-07-30)。Win修復済み・タスク無音化(wscript経由/LogonType=Interactive)・skills/追跡除外済み。Mac到着時launchd実機検証TODO。編集は%LOCALAPPDATA%\agents-sync-repoで
 - [project_fea_single-factor-reanalysis.md](project_fea_single-factor-reanalysis.md) — FEA再解析では原因が特定できた場合、その原因だけを修正し、メッシュ等の他条件を固定する
 - [project_creative_prompt_default_flows.md](project_creative_prompt_default_flows.md) — ユーザーのAIディレクター系プロンプトをスキル既定フロー化する定型（2026-07-21・スライド/サイト/LP完了）。TDD手順・{{}}ゲート・定番抜け穴カウンター一覧。「次は〇〇です」が来たら同パターン
