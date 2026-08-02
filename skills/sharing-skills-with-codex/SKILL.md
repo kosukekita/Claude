@@ -9,16 +9,18 @@ description: Claude Code のスキル・設定を Codex CLI など他エージ�
 
 **コピーではなくシンボリックリンクで共有する。** Codex は `~/.agents/skills/` を読む。ここへ `~/.claude/skills/*` をリンクすれば、`~/.claude` を git pull するだけで Codex 側も自動で最新になる（コピー方式は必ず乖離する）。ただし **Codex 専用に実体インストールされたスキル（agmsg 等）を上書きしてはならない**。
 
-## 手順（各PCで1回＋スキル追加/削除時）
+## 手順
+
+**通常は何もしなくてよい（全自動）。** settings.json の SessionStart フックが、`~/.codex` のあるPCでセッション開始のたびに `bin/sync-skills-to-codex.sh` を自動実行する（auto-pull フック→本フックの順なので、pull された新スキルもそのままリンクされる）。手動実行はセッションを跨がず即時反映したい時だけ:
 
 ```bash
-bash ~/.claude/bin/sync-skills-to-codex.sh --dry-run   # まず確認
-bash ~/.claude/bin/sync-skills-to-codex.sh             # 同期実行
+bash ~/.claude/bin/sync-skills-to-codex.sh --dry-run   # 確認
+bash ~/.claude/bin/sync-skills-to-codex.sh             # 実行
 ```
 
 - スクリプトが正本（仕様・保護規則はスクリプト内コメント参照）。挙動: 全スキルをリンク／実体ディレクトリは保護スキップ／ソース削除済みのぶら下がりリンクは自動掃除／冪等
-- リンク方式なので**内容の更新は pull だけで反映**される。再実行が必要なのは**スキルを追加・削除した時だけ**
-- 新しいPCのセットアップ順: `~/.claude` を clone → `setup-codex-latest-model.sh`（Codex 本体と agmsg）→ 本スクリプト
+- **Windows 機は現状フック対象外**（powershell 検出でスキップ。MSYS の ln -s がコピーになる問題があるため。対応する場合は ps1 版を Codex に発注して移植する）
+- 新しいPCのセットアップ順: `~/.claude` を clone → `setup-codex-latest-model.sh`（Codex 本体と agmsg）→ 以後はフックが自動同期
 
 ## 設定（CLAUDE.md）の共有
 

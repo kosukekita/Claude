@@ -135,6 +135,11 @@
             "type": "command",
             "command": "command -v powershell >/dev/null 2>&1 && powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/memory-sync-codex.ps1\" || true",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "command -v powershell >/dev/null 2>&1 || { [ -d \"$HOME/.codex\" ] && bash \"$HOME/.claude/bin/sync-skills-to-codex.sh\" >/dev/null 2>&1; }; true",
+            "timeout": 15
           }
         ]
       }
