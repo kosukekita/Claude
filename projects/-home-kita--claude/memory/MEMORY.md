@@ -1,3 +1,5 @@
+- [QM完全ローカル構築(akitaken)](qm-local-deployment-akitaken.md) — 会社まるごと管理基盤QMを2026-08-03稼働開始。ソース直起動+署名付きcore必須(無署名だとGoogle連携全滅)+web-uiテストシームcookie認証、Claudeサブスク OAuth(未文書だが実証)、Tailscale Serve限定(Funnel厳禁)、keiri-ledger+月次cron。踏んだ罠と復旧手順つき
+- [Codexトークン即時無効化の真因](codex-token-invalidation-stale-daemons.md) — token_invalidated/別アカウント警告は残留codex常駐の旧トークンrefreshが原因。再ログイン前に全codexプロセス停止→ヘッドレスloginはcurl配送+/success取得→TUI新規起動が必須
 - [外部AI相談フォールバック手順](external-ai-consult-fallback.md) — CLAUDE.mdから退避: Codex/Grokが使えない時のor-consult.mjs(OpenRouter)→AtlasCloudの具体コマンド・モデルID・max-tokens注意・AtlasCloud落とし穴(404=認証失敗疑い/残高切れステータス未確定)。Claude系は自セッションで答える(二重課金回避)
 - [ファイル手動編集revert防止の機構](file-revert-prevention-playbook.md) — CLAUDE.mdから退避: guard-file-revert/record-file-snapshot/warn-bash-overwriteフック(fail-open)・Bash書込は止められない・absorb-before-regenerate/3-wayベース照合の実装型(出力==ベース/出力≠ベース&ソース==ベースは吸収/両方≠は競合停止)・build_abroad_figure.py参照
 - [OKF Markdownフロントマター形式](okf-markdown-frontmatter.md) — CLAUDE.mdから退避: 新規ナレッジ系.mdに付けるOKF frontmatter(必須typeのみ・任意title/description/tags/timestamp/owner)・対象/対象外・出典Zenn
