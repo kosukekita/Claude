@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: c11c2fb1-5cac-4e75-80f8-a532b6a5aa80
-  modified: 2026-08-03T06:49:29.266Z
+  modified: 2026-08-03T07:13:59.554Z
 ---
 
 # QM 完全ローカル構築（akitaken・2026-08-03 稼働開始）
@@ -27,7 +27,9 @@ metadata:
 - systemd --user: `qm-core` / `qm-web` / `qm-pgdump.timer`（毎日04:30 pg_dump→`/data/kita/qm/backups`・30日保持）
 - 秘密は `/data/kita/qm/.secrets/`（mode600）と `.env` 2ファイル。**pg_dump に含まれないので別途バックアップ必須**。CONNECTOR_SECRET_KEY を失うと keychain 全滅
 - 経理: `keiri-ledger` スキル（`/data/kita/qm/skills/`、`PLUGIN_SKILLS_DIRS` で読込。SKILLS_SEED_DIR 上書きは標準18スキルを消すので禁止）＋ 月次 cron `0 9 1 * *` Asia/Tokyo。**会計SaaS連携は存在しない**ので Sheets台帳＋Gmail＋publish内製ダッシュボードで組む
-- Google consent screen が Testing のままなので **refresh token は7日で失効** → 週次で再接続（承認URLは `POST /api/connectors/google/start` の authorizeUrl を発行して開くのが早い）
+- **Google OAuth は publishing status = In production 済み（2026-08-03）→ 7日失効は解消**。7日失効は Testing 限定の仕様で、審査(verification)の有無とは無関係。「Publish app」ボタンだけで解除でき、Personal Use 例外（100ユーザー未満）で審査不要（[公式](https://support.google.com/cloud/answer/13464323)）。**審査申請は不可能かつ不要** — ts.net は Public Suffix List 収載で top private domain が `tail7c9257.ts.net`＝Tailscale 所有、Search Console の DNS ドメイン所有権を証明できない。加えて Gmail は restricted scope で CASA（年次・第三者評価）が必要になり個人利用には過剰
+- 残る失効要因: **Googleアカウントのパスワード変更**（Gmailスコープ含むため）／6か月未使用／同一クライアントで refresh token 100本超過。再接続は `POST /api/connectors/google/start` の authorizeUrl を発行して開く（Testing 時代に発行したトークンは古い期限が残るので、公開ステータス変更後は必ず取り直す）
+- publishing status の変更・審査申請は **Console UI 専用**（API/gcloud に該当サーフェスが存在しない。IAP oauth-brands は 2026-03-19 に停止済み）
 - git pull 前に pg_dump。pull 後は npm ci → typecheck → sandbox:local:build → web-ui build
 
 ## 踏んだ罠
