@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 9e37da7c-a675-4ad0-b8b0-4c6c537a53a2
-  modified: 2026-08-04T08:30:58.863Z
+  modified: 2026-08-04T08:37:25.838Z
 ---
 
 リモートGPU機 **akitaken**（Ubuntu 24.04, user=`kita`, Tailscale `100.65.90.52`）への、このPC（ragdoll, Windows）からの接続状況。akitakenの環境詳細（GPU/ディスク/rclone）は別スラグの記憶 `projects/c--Users-u8792--claude/memory/project_akitaken_remote_gpu_access.md` にある（desktop機視点）。
@@ -17,15 +17,13 @@ metadata:
 - 以後 akitaken と kosuke-20241029 は key expiry 無効（サーバー用途の定石）。iphone172 は期限切れのまま放置（端末上で再認証すればよい）。
 - 接続は DERP(tok) リレー経由（direct connection 未確立だが実用上問題なし）。
 
-## SSH認証（★未解決 → 登録後にこの節を更新）
+## SSH認証（✅解決 2026-08-04）
 
-- ragdoll の鍵 `~/.ssh/id_ed25519.pub`（`kitak@ragdoll`）は akitaken の `authorized_keys` に**未登録**。BatchMode では Permission denied になる。
-- 登録済みなのは kosuke-20241029 の鍵（`u8792@kosuke_20241029`）のみ。
-- パスワード認証での登録は**失敗**（2026-08-04、IMEオフ確認済みで3回×2セット拒否 → ユーザーの入力パスワードが `kita` のものと不一致。パスワード認証自体はsshd側で有効）。
-- 残る登録経路:
-  1. **kosuke-20241029（鍵登録済みのWindows機）から追記**（パスワード不要・推奨）: `ssh kita@100.65.90.52 "echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJtQ7+RktzkLGohhtX63o7jH8ggdmJGODo1/byr5iI3t kitak@ragdoll' >> ~/.ssh/authorized_keys"`
-  2. akitaken 本体で `sudo tailscale set --ssh`（Tailscale SSH有効化・恒久策。以後どのPCも鍵管理不要）。
-- 豆知識: VS Codeターミナルの日本語IMEはWin32 API（imm32 `WM_IME_CONTROL`/`IMC_SETOPENSTATUS`）でPowerShellから強制OFFにできる（実証済み）。
+- ragdoll の鍵（`kitak@ragdoll`）を akitaken の `authorized_keys` に登録済み → **`ssh akitaken` がパスワード無しで通る（BatchMode検証済み）**。
+- 登録経路: `kita` のパスワードが不明で直接登録は失敗（IMEオフ確認済みで拒否 → パスワード不一致）。**鍵登録済みの kosuke-20241029 からユーザーが1行実行**して解決: `ssh kita@100.65.90.52 "echo '<ragdollの公開鍵>' >> ~/.ssh/authorized_keys"`。
+- 今後別PCの鍵を足すときも同じ手（kosuke-20241029 か ragdoll から追記）。恒久策候補: akitaken 本体で `sudo tailscale set --ssh`（Tailscale SSH有効化、未実施）。
+- 罠: kosuke-20241029 は**起動直後は Tailscale 接続前で ssh がタイムアウトする**。`tailscale status` で相手がオンラインになってから実行。
+- 豆知識: VS Codeターミナルの日本語IMEはWin32 API（imm32 `WM_IME_CONTROL`/`IMC_SETOPENSTATUS`）でPowerShellから強制OFF/ONできる（実証済み）。
 
 ## 経路の知見（他経路が全滅だった記録）
 
