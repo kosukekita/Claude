@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 9e37da7c-a675-4ad0-b8b0-4c6c537a53a2
-  modified: 2026-08-04T08:37:25.838Z
+  modified: 2026-08-04T08:41:14.761Z
 ---
 
 リモートGPU機 **akitaken**（Ubuntu 24.04, user=`kita`, Tailscale `100.65.90.52`）への、このPC（ragdoll, Windows）からの接続状況。akitakenの環境詳細（GPU/ディスク/rclone）は別スラグの記憶 `projects/c--Users-u8792--claude/memory/project_akitaken_remote_gpu_access.md` にある（desktop機視点）。
@@ -14,7 +14,7 @@ metadata:
 
 - 症状: `ssh akitaken` がタイムアウト → `tailscale ping` で「**peer's node key has expired**」。
 - 解決: Tailscale管理コンソール（https://login.tailscale.com/admin/machines）で該当機の ･･･ メニュー → **Disable key expiry**。機体がオンライン（Connected）のままなら**再認証不要で即復旧する**（実測: akitaken・kosuke-20241029 の2台で確認、ユーザー承認済み）。
-- 以後 akitaken と kosuke-20241029 は key expiry 無効（サーバー用途の定石）。iphone172 は期限切れのまま放置（端末上で再認証すればよい）。
+- 以後 **全PC5台（akitaken・kosuke-20241029・desktop-5c4jvob・ragdoll・spine）が key expiry 無効**（2026-08-04 ユーザー承認の上で全台実施 → キー期限切れ起因の切断はPC間では再発しない）。iPhone2台のみ期限あり（iphone172 は期限切れのまま。端末のTailscaleアプリで再ログインすれば復帰）。
 - 接続は DERP(tok) リレー経由（direct connection 未確立だが実用上問題なし）。
 
 ## SSH認証（✅解決 2026-08-04）
