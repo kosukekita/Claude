@@ -1,6 +1,7 @@
 - [複式簿記への移行トリガー(年間売上10万円)](keiri-bookkeeping-threshold.md) — ★ユーザー決定2026-08-03: 75Gravity MedAIの当年売上が10万円到達で複式簿記へ移行(65万控除狙い)。リマインドはkeiri-ledgerスキルの通知条件として実装済み＝記憶や人間の意識に依存させない。移行時はSheets台帳を一次記録のまま会計ソフトへ取込む二層構成。e-Tax申告も65万の要件
 - [MiniMax-H3ローカル導入(Heretic TE)](minimax-h3-local-comfyui-setup.md) — 動画+音声同時生成をComfyUI-mmh3(0.30.0)+無検閲TEで実機稼働(2026-08-04)。専用チェックアウト/17k+5フレーム/CFGなし/罠3件つき
 - [MiniMax-H3のNSFW耐性とint8 vs bf16](minimax-h3-nsfw-and-int8-vs-bf16.md) — ★明示的性行為+喘ぎ声まで完全無検閲(音声付きNSFWをローカル生成できる初の手段)。bf16はint8より画質同等で7分速い=A6000ではbf16既定。POVキーフレームのプロンプト罠つき
+- [MiniMax-H3 Ref2VAの使い方](minimax-h3-ref2va-usage.md) — ★参照人物→動画の実機成功(2026-08-04遥ダンス・21分)。同一性だけ欲しい画像は<Picture N>独立エントリ禁止=<Subject 1>定義内に出典引用+服破棄明示で衣装/背景の焼き付きゼロ。APIはref_images.ref_image_0のドット付きキー必須。ref2va_submit.mjs正本
 - [QM完全ローカル構築(akitaken)](qm-local-deployment-akitaken.md) — 会社まるごと管理基盤QMを2026-08-03稼働開始。ソース直起動+署名付きcore必須(無署名だとGoogle連携全滅)+web-uiテストシームcookie認証、Claudeサブスク OAuth(未文書だが実証)、Tailscale Serve限定(Funnel厳禁)、keiri-ledger+月次cron。踏んだ罠と復旧手順つき
 - [Codexトークン即時無効化の真因](codex-token-invalidation-stale-daemons.md) — token_invalidated/別アカウント警告は残留codex常駐の旧トークンrefreshが原因。再ログイン前に全codexプロセス停止→ヘッドレスloginはcurl配送+/success取得→TUI新規起動が必須
 - [外部AI相談フォールバック手順](external-ai-consult-fallback.md) — CLAUDE.mdから退避: Codex/Grokが使えない時のor-consult.mjs(OpenRouter)→AtlasCloudの具体コマンド・モデルID・max-tokens注意・AtlasCloud落とし穴(404=認証失敗疑い/残高切れステータス未確定)。Claude系は自セッションで答える(二重課金回避)

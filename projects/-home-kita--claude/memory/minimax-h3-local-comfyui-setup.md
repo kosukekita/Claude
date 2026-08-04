@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 30e2b450-b35d-4c1d-88b8-ccd7c0b9b44c
-  modified: 2026-08-03T22:23:08.518Z
+  modified: 2026-08-04T09:15:46.875Z
 ---
 
 MiniMax-H3（動画+ステレオ音声の同時生成・Hailuo 3 のオープンウェイト・**LLMではない**）を akitaken でローカル稼働させた（2026-08-04 実機スモーク成功）。
@@ -28,4 +28,4 @@ MiniMax-H3（動画+ステレオ音声の同時生成・Hailuo 3 のオープン
 - `ln -sfn "$(readlink -f <HFキャッシュのファイル>)" <dir>/` は**blobハッシュ名のリンク**を作る → snapshot パスを**宛先ファイル名明示**でリンクする
 - 生成後サーバが GPU に約47GB 保持し続ける → `POST /free {"unload_models":true,"free_memory":true}` で解放（サーバは維持・次回は RAM キャッシュから再ロード）
 
-**残タスク候補**: Ref2VA DiT の追加DL／video-media-studio への正式ラッパー（gen_minimax_h3.py・Codex 委譲）／NSFW 耐性の実測。関連: [[optimal-gen-models-table-and-new-model-eval]] [[nsfw-auto-pipeline-explicit-video]]
+**残タスク候補**: video-media-studio への正式ラッパー（gen_minimax_h3.py・Codex 委譲）。Ref2VA bf16 は導入済み→[[minimax-h3-ref2va-usage]]、NSFW 耐性実測済み→[[minimax-h3-nsfw-and-int8-vs-bf16]]。関連: [[optimal-gen-models-table-and-new-model-eval]] [[nsfw-auto-pipeline-explicit-video]]
