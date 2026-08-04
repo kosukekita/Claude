@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 9e37da7c-a675-4ad0-b8b0-4c6c537a53a2
-  modified: 2026-08-04T08:27:21.032Z
+  modified: 2026-08-04T08:30:58.863Z
 ---
 
 リモートGPU機 **akitaken**（Ubuntu 24.04, user=`kita`, Tailscale `100.65.90.52`）への、このPC（ragdoll, Windows）からの接続状況。akitakenの環境詳細（GPU/ディスク/rclone）は別スラグの記憶 `projects/c--Users-u8792--claude/memory/project_akitaken_remote_gpu_access.md` にある（desktop機視点）。
@@ -21,9 +21,11 @@ metadata:
 
 - ragdoll の鍵 `~/.ssh/id_ed25519.pub`（`kitak@ragdoll`）は akitaken の `authorized_keys` に**未登録**。BatchMode では Permission denied になる。
 - 登録済みなのは kosuke-20241029 の鍵（`u8792@kosuke_20241029`）のみ。
-- 登録にはパスワード入力が1回必要（ユーザー本人が実行）:
-  `bash -c "cat ~/.ssh/id_ed25519.pub | ssh kita@akitaken 'mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys'"`
-- 恒久策の選択肢: akitaken 側で `sudo tailscale set --ssh`（Tailscale SSH有効化）にすれば鍵管理自体が不要になる（akitakenでの実行が必要）。
+- パスワード認証での登録は**失敗**（2026-08-04、IMEオフ確認済みで3回×2セット拒否 → ユーザーの入力パスワードが `kita` のものと不一致。パスワード認証自体はsshd側で有効）。
+- 残る登録経路:
+  1. **kosuke-20241029（鍵登録済みのWindows機）から追記**（パスワード不要・推奨）: `ssh kita@100.65.90.52 "echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJtQ7+RktzkLGohhtX63o7jH8ggdmJGODo1/byr5iI3t kitak@ragdoll' >> ~/.ssh/authorized_keys"`
+  2. akitaken 本体で `sudo tailscale set --ssh`（Tailscale SSH有効化・恒久策。以後どのPCも鍵管理不要）。
+- 豆知識: VS Codeターミナルの日本語IMEはWin32 API（imm32 `WM_IME_CONTROL`/`IMC_SETOPENSTATUS`）でPowerShellから強制OFFにできる（実証済み）。
 
 ## 経路の知見（他経路が全滅だった記録）
 
