@@ -11,11 +11,27 @@ metadata:
 
 ## 接続（このWindows desktop-5c4jvob から）
 - **Tailscale経由**でSSH到達。akitaken = `100.65.90.52`（tailnet名 `akitaken.tail7c9257.ts.net`）。
+- SSH config（`~/.ssh/config`）: `Host akitaken` / `HostName akitaken`（MagicDNS依存）/ `User kita` / `IdentityFile ~/.ssh/xs575794.key`。**HostNameが素のホスト名なのでTailscaleのMagicDNSが死ぬと名前解決から落ちる**。
 - **鍵認証確立済み**: Windowsの `~/.ssh/id_ed25519.pub`（`ssh-ed25519 AAAA...LjVt u8792@kosuke_20241029`）を akitaken の `~/.ssh/authorized_keys` に登録済み。`ssh -o BatchMode=yes akitaken '...'` でパスワード無しで通る。
 - **sudoはパスワード必須**（BatchModeでは打てない）→ 管理者権限が要る操作は避け、ユーザーローカル（`~/.local/bin` 等）で完結させる。
 
+## 「akitakenに繋がらない」時の第一容疑者＝Windows側Tailscaleの `NoState`（2026-08-06 実発生・解決）
+
+**症状**: `Resolve-DnsName akitaken` が "DNS name does not exist"、`tailscale status` が `unexpected state: NoState` ＋ "Tailscale is starting. Please wait."。akitaken側は無実（sshd/tailscaled ともactive）。
+
+**原因**: Windowsの `tailscaled` サービスは Running でも、**バックエンドはGUIフロントエンド（`tailscale-ipn.exe`）がプロファイルをStartするまで NoState のまま**。GUIが落ちている/起動していないと、prefs（`WantRunning:true`, `LoggedOut:false`, ノード鍵あり）が正常でも永久に繋がらない。共通スタートアップに `Tailscale.lnk` があっても、GUIが一度落ちればその場で切れる。
+
+**診断コマンド**（`$ts = "C:\Program Files\Tailscale\tailscale.exe"`）:
+- `& $ts status --json | ConvertFrom-Json` の `.BackendState` を見る（`NoState` なら確定、正常は `Running`）
+- `& $ts debug prefs`（`WantRunning`/`LoggedOut`/`ForceDaemon` を確認。ログイン切れとの切り分け）
+- `Get-Process tailscale-ipn`（GUIの生死）／`Get-Service Tailscale`（サービスは大抵Runningで無罪）
+
+**即時復旧**: `Start-Process "C:\Program Files\Tailscale\tailscale-ipn.exe"` → 数秒で `Running`。
+
+**恒久対策（実施済み・実測検証済み）**: `& $ts set --unattended=true`（prefs に `ForceDaemon: true`）。GUIを `Stop-Process` しても `BackendState: Running` のまま SSH が通ることを実測確認。解除は `--unattended=false`。※GUIを閉じてもtailnetに載り続ける（ログアウト後も接続維持）点だけ承知しておく。
+
 ## 環境
-- GPU: **RTX A6000 ×2**（各48GB, 49140 MiB）。
+- GPU: **RTX A6000 ×2**（各48GB, 49140 MiB）。**48コア**（load average 30〜38程度で常用＝混雑気味だが正常範囲）。
 - ディスク:
   - `/`（sda4）876G, **逼迫しやすい**（ホーム `/home/kita` が443G占有）。CドライブにDLしない。
   - **`/data`（sdb1）19T, 空き8.8T** ← 大容量データはここ。ただし `/data` 直下はroot所有で書けない。**書けるのは `/data/kita/`**（kita所有、既存プロジェクト多数）。
