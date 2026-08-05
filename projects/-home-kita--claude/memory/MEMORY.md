@@ -2,6 +2,7 @@
 - [MiniMax-H3ローカル導入(Heretic TE)](minimax-h3-local-comfyui-setup.md) — 動画+音声同時生成をComfyUI-mmh3(0.30.0)+無検閲TEで実機稼働(2026-08-04)。専用チェックアウト/17k+5フレーム/CFGなし/罠3件つき
 - [MiniMax-H3のNSFW耐性とint8 vs bf16](minimax-h3-nsfw-and-int8-vs-bf16.md) — ★明示的性行為+喘ぎ声まで完全無検閲(音声付きNSFWをローカル生成できる初の手段)。bf16はint8より画質同等で7分速い=A6000ではbf16既定。POVキーフレームのプロンプト罠つき
 - [MiniMax-H3 Ref2VAの使い方](minimax-h3-ref2va-usage.md) — ★参照人物→動画の実機成功(2026-08-04遥ダンス・21分)。同一性だけ欲しい画像は<Picture N>独立エントリ禁止=<Subject 1>定義内に出典引用+服破棄明示で衣装/背景の焼き付きゼロ。APIはref_images.ref_image_0のドット付きキー必須。★正式入口=gen_minimax_h3.py(t2v/i2v/r2v)・NSFW動画既定もMiniMax-H3に変更(ユーザー決定2026-08-04)
+- [Goose試験導入(ローカル無料構成)](goose-agent-local-setup.md) — OSSエージェントGoose v1.45をOllama gpt-oss:120b接続で無料稼働(2026-08-05)。goose session/goose run -t・サブスク流用不可のためローカル一択・env -u前置。agyとの比較試作用
 - [code-review-graph導入構成](code-review-graph-setup.md) — コード知識グラフMCP(トークン中央値65倍削減)をuv tool+Claude Codeユーザースコープ+Codexグローバルで導入(2026-08-05)。各リポジトリで初回buildが必要。公式installはcwdにファイル9種を撒く&codex configにcwd焼き込みの罠
 - [Codex委譲サンドボックスの罠](codex-sandbox-delegation-traps.md) — apply_patchはwritable_roots無視でcwd内のみ(スキル実装はsync-repo実体をcwdに)・localhost/GPU/systemd-run遮断はホスト側検証で分担・agmsg ANSWERは別プロセスに消費されうる→TUI直接注入・tmux長文/goalはsleep 3後にEnter別送・理解度クイズゲートでGoal blockedはプラン作者が回答
 - [QM完全ローカル構築(akitaken)](qm-local-deployment-akitaken.md) — 会社まるごと管理基盤QMを2026-08-03稼働開始。ソース直起動+署名付きcore必須(無署名だとGoogle連携全滅)+web-uiテストシームcookie認証、Claudeサブスク OAuth(未文書だが実証)、Tailscale Serve限定(Funnel厳禁)、keiri-ledger+月次cron。踏んだ罠と復旧手順つき
