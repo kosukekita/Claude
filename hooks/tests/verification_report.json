@@ -1,0 +1,150 @@
+{
+  "A": {
+    "pass": true,
+    "count": 15,
+    "logs": [
+      {
+        "cmd": "node \"$HOME/.claude/hooks/dispatch.js\" block-dangerous",
+        "status": 0,
+        "parseError": false,
+        "output": ""
+      },
+      {
+        "cmd": "node \"$HOME/.claude/hooks/dispatch.js\" log-commands",
+        "status": 0,
+        "parseError": false,
+        "output": ""
+      },
+      {
+        "cmd": "node \"$HOME/.claude/hooks/dispatch.js\" warn-tu-encoding",
+        "status": 0,
+        "parseError": false,
+        "output": ""
+      },
+      {
+        "cmd": "node \"$HOME/.claude/hooks/dispatch.js\" protect-files",
+        "status": 0,
+        "parseError": false,
+        "output": ""
+      },
+      {
+        "cmd": "node \"$HOME/.claude/hooks/dispatch.js\" guard-file-revert",
+        "status": 0,
+        "parseError": false,
+        "output": ""
+      },
+      {
+        "cmd": "node \"$HOME/.claude/hooks/dispatch.js\" warn-bash-overwrite",
+        "status": 0,
+        "parseError": false,
+        "output": ""
+      },
+      {
+        "cmd": "node \"$HOME/.claude/hooks/dispatch.js\" guard-destructive-and-resolution",
+        "status": 0,
+        "parseError": false,
+        "output": ""
+      },
+      {
+        "cmd": "node \"$HOME/.claude/hooks/dispatch.js\" auto-pull",
+        "status": 0,
+        "parseError": false,
+        "output": "Saved working directory and index state On main: auto-pull-stash\nCurrent branch main is up to date.\n"
+      },
+      {
+        "cmd": "node \"$HOME/.claude/hooks/dispatch.js\" memory-inject",
+        "status": 0,
+        "parseError": false,
+        "output": "{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"## 記憶（前回までのセッションから）\\n\\n# "
+      },
+      {
+        "cmd": "node \"$HOME/.claude/hooks/dispatch.js\" memory-inject-project",
+        "status": 0,
+        "parseError": false,
+        "output": ""
+      },
+      {
+        "cmd": "node \"$HOME/.claude/hooks/dispatch.js\" memory-sync-codex",
+        "status": 0,
+        "parseError": false,
+        "output": ""
+      },
+      {
+        "cmd": "node \"$HOME/.claude/hooks/dispatch.js\" memory-sync-codex",
+        "status": 0,
+        "parseError": false,
+        "output": ""
+      },
+      {
+        "cmd": "node \"$HOME/.claude/hooks/dispatch.js\" auto-push",
+        "status": 0,
+        "parseError": false,
+        "output": "[main 0062302] Auto-update: hooks/dispatch.js and 2 more file(s)\n 3 files changed, 373 insertions(+)"
+      },
+      {
+        "cmd": "node \"$HOME/.claude/hooks/dispatch.js\" detect-leaked-toolcall",
+        "status": 0,
+        "parseError": false,
+        "output": ""
+      },
+      {
+        "cmd": "node \"$HOME/.claude/hooks/dispatch.js\" record-file-snapshot",
+        "status": 0,
+        "parseError": false,
+        "output": ""
+      }
+    ]
+  },
+  "B": {
+    "pass": true,
+    "observedStatus": 2
+  },
+  "C": {
+    "pass": false,
+    "inputHex": "7b2274657374223a2268656c6c6f5fe381a7e381995f313233227d",
+    "outputHex": ""
+  },
+  "D": {
+    "pass": true,
+    "rawOutputSnippet": "{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"## 記憶（前回までのセッションから）\\n\\n# Memory Index\\r\\n\\r\\n- [akitaken接続(ragdoll発)](akita"
+  },
+  "E": {
+    "pass": true,
+    "blockDangerousStatus": 2,
+    "blockDangerousMsg": "Blocked: Command 'rm -rf /tmp/dangerous_test' matches dangerous pattern 'rm\\s+-rf'. Propose a safer alternative.",
+    "autoPushStatus": 0
+  },
+  "F": {
+    "pass": true,
+    "sampleText": ":\"## 記憶（前回までのセッションから）\\n\\n# Mem"
+  },
+  "G": {
+    "pass": true,
+    "logs": [
+      {
+        "hook": "auto-push",
+        "status": 0,
+        "output": "exit_code: 0"
+      },
+      {
+        "hook": "memory-sync-codex",
+        "status": 0,
+        "output": "exit_code: 0"
+      },
+      {
+        "hook": "detect-leaked-toolcall",
+        "status": 0,
+        "output": "exit_code: 0"
+      }
+    ]
+  },
+  "H": {
+    "pass": false,
+    "currCount": 29
+  },
+  "I": {
+    "pass": true,
+    "isAscii": true,
+    "isLf": true
+  }
+}

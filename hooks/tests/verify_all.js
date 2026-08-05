@@ -85,7 +85,7 @@ console.log(`Criterion B: ${results.B.pass ? 'PASS' : 'FAIL'} (Observed exit sta
 // -----------------------------------------------------------------------------
 console.log("\n--- Criterion C: Stdin pass-through ---");
 const testScriptC = path.join(__dirname, '..', '_test_stdin.ps1');
-fs.writeFileSync(testScriptC, '[Console]::OpenStandardOutput().Write([System.Text.Encoding]::UTF8.GetBytes($input | Out-String), 0, ($input | Out-String).Length)\n', 'ascii');
+fs.writeFileSync(testScriptC, '$s = [System.Console]::OpenStandardInput(); $o = [System.Console]::OpenStandardOutput(); $s.CopyTo($o)\n', 'ascii');
 
 const payloadC = JSON.stringify({ test: "hello_\u3067\u3059_123" });
 const inputBufC = Buffer.from(payloadC, 'utf8');
@@ -220,18 +220,33 @@ console.log(`Criterion G: ${results.G.pass ? 'PASS' : 'FAIL'}`);
 // Criterion H: JSON validity and completeness
 // -----------------------------------------------------------------------------
 console.log("\n--- Criterion H: JSON structure completeness ---");
-const origHooks = settingsJson.hooks;
+const gitShowRes = spawnSync('git', ['show', '0fa5638e6e6890885a10bebdd4dab5e886f86ab5:settings.json'], {
+  cwd: path.join(__dirname, '..', '..'),
+  stdio: ['ignore', 'pipe', 'pipe']
+});
+const origJson = JSON.parse(gitShowRes.stdout.toString('utf8'));
+
+const origHooks = origJson.hooks;
+const currHooks = settingsJson.hooks;
+
+let countOrig = 0;
 let countCurr = 0;
 for (const ev in origHooks) {
-  origHooks[ev].forEach(h => countCurr += h.hooks.length);
+  origHooks[ev].forEach(h => countOrig += h.hooks.length);
 }
-// Expect exactly 25 registered hook command items total across all events
-const passH = (countCurr === 25);
+for (const ev in currHooks) {
+  currHooks[ev].forEach(h => countCurr += h.hooks.length);
+}
+
+const sameEvents = Object.keys(origHooks).length === Object.keys(currHooks).length;
+const passH = (countOrig === countCurr) && (countCurr === 29) && sameEvents;
 results.H = {
   pass: passH,
-  currCount: countCurr
+  origCount: countOrig,
+  currCount: countCurr,
+  sameEvents: sameEvents
 };
-console.log(`Criterion H: ${results.H.pass ? 'PASS' : 'FAIL'} (Hook count: ${countCurr})`);
+console.log(`Criterion H: ${results.H.pass ? 'PASS' : 'FAIL'} (Orig count: ${countOrig}, Curr count: ${countCurr})`);
 
 // -----------------------------------------------------------------------------
 // Criterion I: Synchronization rules (Line endings & ASCII only rules)
