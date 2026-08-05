@@ -58,17 +58,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/block-dangerous.ps1\"; fi",
+            "command": "node \"$HOME/.claude/hooks/dispatch.js\" block-dangerous",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "if command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/log-commands.ps1\"; fi",
+            "command": "node \"$HOME/.claude/hooks/dispatch.js\" log-commands",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "if command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/warn-tu-encoding.ps1\"; fi",
+            "command": "node \"$HOME/.claude/hooks/dispatch.js\" warn-tu-encoding",
             "timeout": 10
           }
         ]
@@ -78,7 +78,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/protect-files.ps1\"; fi",
+            "command": "node \"$HOME/.claude/hooks/dispatch.js\" protect-files",
             "timeout": 10
           }
         ]
@@ -88,7 +88,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/guard-file-revert.ps1\"; fi"
+            "command": "node \"$HOME/.claude/hooks/dispatch.js\" guard-file-revert"
           }
         ]
       },
@@ -97,7 +97,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/warn-bash-overwrite.ps1\"; fi"
+            "command": "node \"$HOME/.claude/hooks/dispatch.js\" warn-bash-overwrite"
           }
         ]
       },
@@ -106,7 +106,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/.claude/hooks/guard-destructive-and-resolution.py",
+            "command": "node \"$HOME/.claude/hooks/dispatch.js\" guard-destructive-and-resolution",
             "timeout": 10
           }
         ]
@@ -128,22 +128,22 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/auto-pull.ps1\"; else bash \"$HOME/.claude/hooks/auto-pull.sh\"; fi",
+            "command": "node \"$HOME/.claude/hooks/dispatch.js\" auto-pull",
             "timeout": 30
           },
           {
             "type": "command",
-            "command": "command -v powershell >/dev/null 2>&1 && powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/memory-inject.ps1\" || true",
+            "command": "node \"$HOME/.claude/hooks/dispatch.js\" memory-inject",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "command -v bash >/dev/null 2>&1 && bash \"$HOME/.claude/hooks/memory-inject-project.sh\" || true",
+            "command": "node \"$HOME/.claude/hooks/dispatch.js\" memory-inject-project",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "if command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/memory-sync-codex.ps1\"; else bash \"$HOME/.claude/hooks/memory-sync-codex.sh\"; fi || true",
+            "command": "node \"$HOME/.claude/hooks/dispatch.js\" memory-sync-codex",
             "timeout": 10
           }
         ]
@@ -165,17 +165,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/memory-sync-codex.ps1\"; else bash \"$HOME/.claude/hooks/memory-sync-codex.sh\"; fi || true",
+            "command": "node \"$HOME/.claude/hooks/dispatch.js\" memory-sync-codex",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "if command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/auto-push.ps1\"; else bash \"$HOME/.claude/hooks/auto-push.sh\"; fi",
+            "command": "node \"$HOME/.claude/hooks/dispatch.js\" auto-push",
             "timeout": 30
           },
           {
             "type": "command",
-            "command": "if command -v node >/dev/null 2>&1; then node \"$HOME/.claude/hooks/detect-leaked-toolcall.mjs\"; elif command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/detect-leaked-toolcall.ps1\"; else bash \"$HOME/.claude/hooks/detect-leaked-toolcall.sh\"; fi",
+            "command": "node \"$HOME/.claude/hooks/dispatch.js\" detect-leaked-toolcall",
             "timeout": 10
           }
         ]
@@ -197,7 +197,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if command -v powershell >/dev/null 2>&1; then powershell -ExecutionPolicy Bypass -File \"$HOME/.claude/hooks/record-file-snapshot.ps1\"; fi"
+            "command": "node \"$HOME/.claude/hooks/dispatch.js\" record-file-snapshot"
           }
         ]
       },
