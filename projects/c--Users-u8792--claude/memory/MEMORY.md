@@ -16,6 +16,7 @@
 - [project_totalsegmentator_license.md](project_totalsegmentator_license.md) — TotalSegmentatorアカデミックライセンス取得済＋全15ライセンスタスクのモデルDL。ローカルはGPU無しで中断（5/15完了）、リモートGPU PCで再開予定。番号はconfig.jsonに平文・メモリ非保存
 - [project_akitaken_remote_gpu_access.md](project_akitaken_remote_gpu_access.md) — リモートGPU機akitaken(Ubuntu24.04,user=kita)への接続と環境。Tailscale+SSH鍵認証確立済、RTX A6000×2、/dataに8.6T空き(書けるのは/data/kita)、rcloneは~/.local/bin。sudoはパス必須。**「akitakenに繋がらない」時の第一容疑者はWindows側TailscaleのBackendState=NoState**(GUI未起動でプロファイル未Start／2026-08-06に`--unattended=true`で恒久対策済)。Cドライブ逼迫時の定石=uv/pip cache削除＋大物データを/dataへmv+symlink移動(コード/データ分担、rm-rf不可・ヒアドキュメント日本語化けはscpで回避)。2026-07-06に92%→69%へ
 - [project_pcloud_rclone_ct_uzumasa.md](project_pcloud_rclone_ct_uzumasa.md) — pCloud認証(ヘッドレスはWindowsでrclone authorize→トークンをLinux rclone.confへstdin受け渡し、US=api.pcloud.com)とUzumasa頸部CT配置。pcloud:Data/NAIST/Uzumasa/CT/{CT_mhd2:110例,CT_mhd:85例}=195例81GB。DL先/data/kita/Uzumasa_CT
+- [feedback_hooks_crossshell_dispatch.md](feedback_hooks_crossshell_dispatch.md) — settings.jsonのフック起動をBash構文で書くとPowerShellセッションで全滅(1行も実行されず、文字化けエラーだけが見える)。`node "$HOME/.claude/hooks/dispatch.js" <name>`の単一形式に統一済。未解決: matcher"Bash"はPowerShellツールで発火しない
 - [feedback_uv_pip_cache_clean_safe.md](feedback_uv_pip_cache_clean_safe.md) — uv/pipのcache削除は既存環境を壊さない(cacheと環境は別物)。`uv cache clean`/`pip cache purge`公式コマンド使用。ディスク逼迫の第一手。akitakenで71G→124G回復
 
 - [project_tooluniverse_mcp_wsl_fix.md](project_tooluniverse_mcp_wsl_fix.md) — tooluniverse-osteo MCP起動失敗。081a23bはメッセージと実体が食い違い未修正→Nodeランチャーがvenvバイナリを直接spawn(bash/.sh完全排除)で恒久修正。commit 53e5674
