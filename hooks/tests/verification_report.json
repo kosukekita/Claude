@@ -79,7 +79,7 @@
         "cmd": "node \"$HOME/.claude/hooks/dispatch.js\" auto-push",
         "status": 0,
         "parseError": false,
-        "output": "[main 0062302] Auto-update: hooks/dispatch.js and 2 more file(s)\n 3 files changed, 373 insertions(+)"
+        "output": "[main 5eef26a] Auto-update: hooks/tests/verification_report.json and 1 more file(s)\n 2 files changed"
       },
       {
         "cmd": "node \"$HOME/.claude/hooks/dispatch.js\" detect-leaked-toolcall",
@@ -100,9 +100,9 @@
     "observedStatus": 2
   },
   "C": {
-    "pass": false,
+    "pass": true,
     "inputHex": "7b2274657374223a2268656c6c6f5fe381a7e381995f313233227d",
-    "outputHex": ""
+    "outputHex": "7b2274657374223a2268656c6c6f5fe381a7e381995f313233227d"
   },
   "D": {
     "pass": true,
@@ -139,8 +139,10 @@
     ]
   },
   "H": {
-    "pass": false,
-    "currCount": 29
+    "pass": true,
+    "origCount": 29,
+    "currCount": 29,
+    "sameEvents": true
   },
   "I": {
     "pass": true,
