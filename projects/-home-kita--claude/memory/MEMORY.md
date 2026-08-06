@@ -1,6 +1,7 @@
 - [複式簿記への移行トリガー(年間売上10万円)](keiri-bookkeeping-threshold.md) — ★ユーザー決定2026-08-03: 75Gravity MedAIの当年売上が10万円到達で複式簿記へ移行(65万控除狙い)。リマインドはkeiri-ledgerスキルの通知条件として実装済み＝記憶や人間の意識に依存させない。移行時はSheets台帳を一次記録のまま会計ソフトへ取込む二層構成。e-Tax申告も65万の要件
 - [MiniMax-H3ローカル導入(Heretic TE)](minimax-h3-local-comfyui-setup.md) — 動画+音声同時生成をComfyUI-mmh3(0.30.0)+無検閲TEで実機稼働(2026-08-04)。専用チェックアウト/17k+5フレーム/CFGなし/罠3件つき
 - [MiniMax-H3のNSFW耐性とint8 vs bf16](minimax-h3-nsfw-and-int8-vs-bf16.md) — ★明示的性行為+喘ぎ声まで完全無検閲(音声付きNSFWをローカル生成できる初の手段)。bf16はint8より画質同等で7分速い=A6000ではbf16既定。POVキーフレームのプロンプト罠つき
+- [★Qwenに構図を作らせない](qwen-edit-no-composition-building.md) — ★恒久ルール(2026-08-07): Qwen-Image-Editは参照の構図に引き戻されるので構図づくり不可(同日4連敗)。構図はクロップかz-image t2iで先に確定→Qwenは差分編集(顔移植等)だけ。微小な局所変更も苦手
 - [MiniMax-H3 Ref2VAの使い方](minimax-h3-ref2va-usage.md) — ★参照人物→動画の実機成功(2026-08-04遥ダンス・21分)。同一性だけ欲しい画像は<Picture N>独立エントリ禁止=<Subject 1>定義内に出典引用+服破棄明示で衣装/背景の焼き付きゼロ。APIはref_images.ref_image_0のドット付きキー必須。★正式入口=gen_minimax_h3.py(t2v/i2v/r2v)・NSFW動画既定もMiniMax-H3に変更(ユーザー決定2026-08-04)
 - [Goose試験導入(ローカル無料構成)](goose-agent-local-setup.md) — OSSエージェントGoose v1.45をOllama gpt-oss:120b接続で無料稼働(2026-08-05)。goose session/goose run -t・サブスク流用不可のためローカル一択・env -u前置。agyとの比較試作用
 - [code-review-graph導入構成](code-review-graph-setup.md) — コード知識グラフMCP(トークン中央値65倍削減)をuv tool+Claude Codeユーザースコープ+Codexグローバルで導入(2026-08-05)。各リポジトリで初回buildが必要。公式installはcwdにファイル9種を撒く&codex configにcwd焼き込みの罠
