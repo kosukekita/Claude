@@ -1,3 +1,4 @@
+- [MF会計API×QM経理統合(調査・設計合意/契約は保留)](mf-cloud-api-qm-integration.md) — 2026-08-09: ★QMはリモートMCP不可(claude-harness.ts strictMcpConfig+in-process固定)→MF会計API直叩き+新スキルkeiri-mf-journalで合意(keiri-ledgerには混ぜない=冪等キー二重化)。MCPエンドポイント/プラン別制約(無料50件・ミニは帳簿CSV出力×)・「外部サービス×」はMAP3でAPI無関係、の罠つき
 - [複式簿記への移行トリガー(年間売上10万円)](keiri-bookkeeping-threshold.md) — ★ユーザー決定2026-08-03: 75Gravity MedAIの当年売上が10万円到達で複式簿記へ移行(65万控除狙い)。リマインドはkeiri-ledgerスキルの通知条件として実装済み＝記憶や人間の意識に依存させない。移行時はSheets台帳を一次記録のまま会計ソフトへ取込む二層構成。e-Tax申告も65万の要件
 - [MiniMax-H3ローカル導入(Heretic TE)](minimax-h3-local-comfyui-setup.md) — 動画+音声同時生成をComfyUI-mmh3(0.30.0)+無検閲TEで実機稼働(2026-08-04)。専用チェックアウト/17k+5フレーム/CFGなし/罠3件つき
 - [MiniMax-H3のNSFW耐性とint8 vs bf16](minimax-h3-nsfw-and-int8-vs-bf16.md) — ★明示的性行為+喘ぎ声まで完全無検閲(音声付きNSFWをローカル生成できる初の手段)。bf16はint8より画質同等で7分速い=A6000ではbf16既定。POVキーフレームのプロンプト罠つき
