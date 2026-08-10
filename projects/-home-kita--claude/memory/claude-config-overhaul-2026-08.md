@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 0ed7d245-95b1-436b-8b15-d958d57a966b
-  modified: 2026-08-10T04:03:58.112Z
+  modified: 2026-08-10T04:30:01.996Z
 ---
 
 2026-08-10、Boris tips 記事（訂正OS）に基づきユーザー指示でグローバル設定を刷新した。
@@ -27,5 +27,8 @@ browser-automation=settings.json許可リスト掲載／research-toolkit・ai-pr
 medical-image-landmark-detection=医療研究クラスタ／infographic・make-poster=slide-makingからのルーティング先。
 ★計測はLinux機の履歴のみで **Windows機の使用実績は不可視**。誤退避なら即復元してよい。
 
-**未処理**: `~/.codex/AGENTS.md`（84KB・別構造）は今回触っていない。CLAUDE.md と自動同期される
-仕組みかは未確認。Codex側の規律が旧版のままの可能性があるので、次に Codex を使うとき確認する。
+**Codex側の同期（確認済み・手作業不要）**: `~/.codex/AGENTS.md` は
+`~/.claude/hooks/memory-sync-codex.sh` が CLAUDE.md＋記憶を束ねて**自動生成**するファイル
+（ヘッダに Do not edit by hand 明記・手編集は次回同期で消える）。刷新は13:04に自動反映済み
+（84KB→62KB）。スキル側は `agent-skills-sync.timer`（約2分間隔）が sync-repo 起点で
+Claude/Codex 両方の symlink を同期する。**AGENTS.md を直したくなったら CLAUDE.md か記憶を直す**。
