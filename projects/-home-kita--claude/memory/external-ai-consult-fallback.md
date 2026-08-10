@@ -5,6 +5,7 @@ metadata:
   node_type: memory
   type: reference
   originSessionId: 7f792248-9bef-40fb-8283-33d15119eae9
+  modified: 2026-08-10T04:00:28.340Z
 ---
 
 CLAUDE.md「外部AI相談のフォールバック」の実装詳細（本文はCLAUDE.mdに要点＋このポインタ）。大前提=Claude系の知見で足りる相談は自セッションが答える／OpenRouter・AtlasCloudで `anthropic/claude-*` を呼ばない(二重課金)／外部AIはCodex/Grok障害時かつClaude以外の独立視点が要る時だけ／キーの中身は表示しない／PIIは送らない。
@@ -30,5 +31,15 @@ node ~/.claude/bin/or-consult.mjs --list
 - id例: `deepseek-ai/DeepSeek-V3.1`, `openai/gpt-5.5`, `openai/o3-pro`, `xai/grok-4.5`, `google/gemini-3.1-pro-preview`。★OpenRouterの`x-ai`はAtlasCloudでは`xai`(ハイフン無)。
 - ⚠️ 落とし穴: エラー封筒は `{"code":N,"msg":"..."}`。**不正キーは401でなくHTTP404**(不正modelは400)→404を「エンドポイント無し」と即断せず認証失敗も疑う。
 - ⚠️ **残高切れのHTTPステータスは未文書＝未確定。402と決め打ちしない。** 非2xxは `{code,msg}` をそのまま人間に見せて落とす。
+
+## 全体ルーティング台帳（CLAUDE.md 2026-08-10 刷新時にここへ退避・ユーザー確定 2026-07-25）
+
+Claudeが拒否したら止めず、この台帳で外部LLMに発注して統合するのが標準動作。
+指名トリガー（「Codexで」「Grokで」「ローカルLLMで」）はフォールバックを待たず直行。
+
+- **A. 通常（SFW・文章/分析/コード）**: Claude（無料・最優先）→ Codex `codex exec --skip-git-repo-check "…"` → Grok `grok -p "…"` → ローカル `ask-local "…"` → OpenRouter or-consult.mjs／AtlasCloud llm（従量・最後）
+- **B. NSFW・際どい創作**: Grok（サブスク・寛容）→ `ask-local-unc "…"`（huihui_ai/qwen3-abliterated:30b）→ OpenRouterの無検閲系。**GPT系はBでは使わない**（拒否傾向）
+- **C. 医療・研究の過剰拒否**: Codex（GPT-5.6・医療推論強）→ `ask-local "…" gpt-oss:120b`（高品質・初回ロード重）/ `qwen3:30b`（軽速）→ それでも断られる内容のみ `ask-local-unc`
+- **ユーザー直接入口（このLinux機のみ・他PCは再設置要）**: `ask-gpt` / `ask-grok` / `ask-local "…" [model]` / `ask-local-unc`（~/.local/bin）。セッション内なら `!ask-grok "…"`。セッション丸ごと別モデル= `claude-gw`（[[claude-code-nonclaude-gateway-akitaken]]・※fallbackModelバグ未修正で現在起動不能 [[claude-subagent-cheap-model-routing]]）、または `codex` / `grok` を直接起動（フルエージェントTUI）
 
 関連: [[atlascloud-nsfw-image-and-pipeline]] [[optimal-gen-models-table-and-new-model-eval]]
