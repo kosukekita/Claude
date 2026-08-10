@@ -116,7 +116,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
+            "command": "node \"$HOME/.claude/hooks/pixel-agents-shim.js\"",
             "timeout": 5
           }
         ]
@@ -153,7 +153,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
+            "command": "node \"$HOME/.claude/hooks/pixel-agents-shim.js\"",
             "timeout": 5
           }
         ]
@@ -185,7 +185,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
+            "command": "node \"$HOME/.claude/hooks/pixel-agents-shim.js\"",
             "timeout": 5
           }
         ]
@@ -206,7 +206,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
+            "command": "node \"$HOME/.claude/hooks/pixel-agents-shim.js\"",
             "timeout": 5
           }
         ]
@@ -218,7 +218,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
+            "command": "node \"$HOME/.claude/hooks/pixel-agents-shim.js\"",
             "timeout": 5
           }
         ]
@@ -230,7 +230,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
+            "command": "node \"$HOME/.claude/hooks/pixel-agents-shim.js\"",
             "timeout": 5
           }
         ]
@@ -242,7 +242,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
+            "command": "node \"$HOME/.claude/hooks/pixel-agents-shim.js\"",
             "timeout": 5
           }
         ]
@@ -254,7 +254,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
+            "command": "node \"$HOME/.claude/hooks/pixel-agents-shim.js\"",
             "timeout": 5
           }
         ]
@@ -266,7 +266,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
+            "command": "node \"$HOME/.claude/hooks/pixel-agents-shim.js\"",
             "timeout": 5
           }
         ]
@@ -278,7 +278,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
+            "command": "node \"$HOME/.claude/hooks/pixel-agents-shim.js\"",
             "timeout": 5
           }
         ]
@@ -290,7 +290,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
+            "command": "node \"$HOME/.claude/hooks/pixel-agents-shim.js\"",
             "timeout": 5
           }
         ]
@@ -302,7 +302,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
+            "command": "node \"$HOME/.claude/hooks/pixel-agents-shim.js\"",
             "timeout": 5
           }
         ]
@@ -314,7 +314,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
+            "command": "node \"$HOME/.claude/hooks/pixel-agents-shim.js\"",
             "timeout": 5
           }
         ]
@@ -326,7 +326,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
+            "command": "node \"$HOME/.claude/hooks/pixel-agents-shim.js\"",
             "timeout": 5
           }
         ]
