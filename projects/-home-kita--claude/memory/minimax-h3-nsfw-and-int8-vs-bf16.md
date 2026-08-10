@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 30e2b450-b35d-4c1d-88b8-ccd7c0b9b44c
-  modified: 2026-08-04T00:00:47.274Z
+  modified: 2026-08-10T06:43:50.570Z
 ---
 
 MiniMax-H3（[[minimax-h3-local-comfyui-setup]]）の A/B と NSFW 耐性を同時実測（2026-08-04・Haruka ペルソナ・POV騎乗位・768×1344/124f/20steps・同一seed 58222004・同一キーフレーム）。
@@ -30,3 +30,10 @@ MiniMax-H3（[[minimax-h3-local-comfyui-setup]]）の A/B と NSFW 耐性を同�
 **モザイク後処理**: `/data/kita/mmh3-setup/apply_mosaic.sh`（x300,y770,200×310 の固定ボックスで縦バウンス全域をカバー・22分割ピクセレート）。動画は縦運動するので**フレーム単位検出でなく運動範囲を包む固定ボックス**が確実。
 
 関連: [[nsfw-auto-pipeline-explicit-video]]（従来の explicit 動画は「男を描かない/臍より上」で破綻回避していたが、H3 は結合部を描いても破綻しない）、[[optimal-gen-models-table-and-new-model-eval]]
+
+**追記 2026-08-10（Turbo LoRA 統合）**: `gen_minimax_h3.py --turbo` で少ステップ高速化を統合
+（既定オフ＝従来20step・turbo時steps既定8・t2v/i2v/r2v全モード可・`--turbo-lora`で差替可）。
+実測124f温間: 20step 12.5分 → 8step 5.5分(2.3×) / 4step 3.0分(4.1×)。**NSFW無検閲は維持**
+（無検閲性はTE側・LoRAはDiTのみ）。プロンプト反映は盲検で20stepと同等、微細部（手指）のみ
+4stepでやや劣る→6〜8step推奨。★尺の上限は**362f=15.08秒**（124は既定値であって上限ではない。
+訓練域〜362f、実測完走80.5分）。正本は video-media-studio SKILL.md。
