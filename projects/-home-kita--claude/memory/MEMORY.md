@@ -1,3 +1,4 @@
+- [状態別ツール封鎖のアイデア](state-scoped-tool-enforcement.md) — statewright不採用(FSL+クラウド依存)から抽出。フェーズファイル+PreToolUseフックでIron Lawを機械的強制する設計案。実装トリガー=次にIron Law違反が実際に起きたとき（先回りしない）
 - [バックグラウンド監視の設計](background-waiter-design.md) — ★1日3回の実事故(2026-08-10): pgrep/pkill -f のコマンド行マッチは自分と兄弟スクリプトに一致し自爆/デッドロックする(自己免疫[a]gy形式も兄弟には無効)。待つ=完了マーカーファイルgrep、殺す=PID特定後
 - [グローバル設定刷新2026-08-10](claude-config-overhaul-2026-08.md) — CLAUDE.md 29.5KB→8.7KB(★確定ルールは全保持・詳細は記憶ポインタ化)・スキル10本をskills-archive/へ退避(54→44)。★Windows使用実績は不可視なので誤退避は即復元可。AGENTS.mdはmemory-sync-codex.shの自動生成(手編集禁止・CLAUDE.mdか記憶を直す)＝反映確認済み
 - [Workflowのモデル層別け規約](workflow-model-tiering.md) — ★ユーザー指示2026-08-09: finder/sweepは`{model:'sonnet',effort:'low'}`を明示・verify/judge/synthesizeは★`model`を書かない(セッションモデル継承。'opus'等のハードコードはFable5等の最新モデルに切替えても腐るので禁止)。判断軸は読み取りか否かでなく「間違いが検出可能か」。★罠=CLAUDE_CODE_SUBAGENT_MODELはスクリプトのopts.modelごと上書きするので常設しない
