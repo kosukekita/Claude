@@ -745,7 +745,7 @@ def render_report(delta: AuditDelta) -> str:
 
     if any(
         item.finding.kind == "skill-unused" for item in delta.new_or_changed
-    ):
+    ) or any(finding.kind == "skill-unused" for finding in delta.resolved):
         lines.extend(
             [
                 "",
@@ -859,6 +859,12 @@ def run_audit(
 
     if size_change_threshold < 1:
         raise ValueError("size_change_threshold must be at least 1")
+    resolved_claude_dir = claude_dir.resolve()
+    resolved_output_dir = output_dir.resolve()
+    if resolved_output_dir == resolved_claude_dir or resolved_output_dir.is_relative_to(
+        resolved_claude_dir
+    ):
+        raise ValueError("output_dir must be outside claude_dir")
     required = [
         claude_dir / "CLAUDE.md",
         claude_dir / "settings.json",
@@ -910,12 +916,12 @@ def run_audit(
     timestamp = datetime.now(tz=timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
     report_path = output_dir / f"report-{timestamp}.txt"
     report_path.write_text(report, encoding="utf-8")
-    write_state(state_path, delta.next_state)
 
     email_sent = False
     if delta.should_notify and not dry_run:
         mailer(report_path)
         email_sent = True
+    write_state(state_path, delta.next_state)
     return AuditRun(
         report=report,
         report_path=report_path,

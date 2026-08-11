@@ -509,6 +509,23 @@ class StateAndReportTest(unittest.TestCase):
         self.assertIn("/config/rare-skill:1", report)
         self.assertIn("fixture evidence", report)
 
+    def test_resolved_skill_unused_report_keeps_all_caveats(self) -> None:
+        unused = self.finding("skill-unused", "retired-skill", value=0)
+        previous = config_audit.compare_with_state(
+            [unused], {"version": 1, "findings": {}}, size_change_threshold=50
+        ).next_state
+        delta = config_audit.compare_with_state(
+            [], previous, size_change_threshold=50
+        )
+
+        report = config_audit.render_report(delta)
+
+        self.assertIn("[RESOLVED] skill-unused", report)
+        self.assertIn("明示的な Skill ツール呼び出ししか数えていません", report)
+        self.assertIn("Windows機の使用実績は不可視", report)
+        self.assertIn("他スキルからの依存・ルーティング先", report)
+        self.assertNotIn("削除候補", report)
+
     def test_state_round_trip(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             state_path = Path(tmp) / "state.json"
@@ -619,6 +636,37 @@ class RunAuditTest(unittest.TestCase):
 
         self.assertEqual(mailer.call_count, 1)
 
+    def test_mail_failure_does_not_advance_state_so_next_run_can_retry(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            root = self.make_root(base)
+            output = base / "media-out" / "config-audit"
+            failing_mailer = Mock(side_effect=RuntimeError("SMTP unavailable"))
+
+            with self.assertRaisesRegex(RuntimeError, "SMTP unavailable"):
+                config_audit.run_audit(
+                    claude_dir=root,
+                    output_dir=output,
+                    size_change_threshold=50,
+                    dry_run=False,
+                    journal_entries=[],
+                    mailer=failing_mailer,
+                )
+
+            self.assertFalse((output / "state.json").exists())
+            retry_mailer = Mock()
+            retry = config_audit.run_audit(
+                claude_dir=root,
+                output_dir=output,
+                size_change_threshold=50,
+                dry_run=False,
+                journal_entries=[],
+                mailer=retry_mailer,
+            )
+
+        self.assertTrue(retry.delta.should_notify)
+        self.assertEqual(retry_mailer.call_count, 1)
+
     def test_missing_config_root_returns_nonzero(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             missing = Path(tmp) / "missing"
@@ -652,6 +700,23 @@ class RunAuditTest(unittest.TestCase):
             }
 
         self.assertEqual(after, before)
+
+    def test_output_directory_inside_config_repo_is_rejected_before_write(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            root = self.make_root(base)
+            forbidden_output = root / "skills" / "audit-output"
+
+            with self.assertRaisesRegex(ValueError, "outside claude_dir"):
+                config_audit.run_audit(
+                    claude_dir=root,
+                    output_dir=forbidden_output,
+                    size_change_threshold=50,
+                    dry_run=True,
+                    journal_entries=[],
+                )
+
+            self.assertFalse(forbidden_output.exists())
 
 
 class PackagingTest(unittest.TestCase):
