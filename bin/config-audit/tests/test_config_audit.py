@@ -519,6 +519,18 @@ class StateAndReportTest(unittest.TestCase):
 
         self.assertEqual(loaded, state)
 
+    def test_missing_required_evidence_is_rejected(self) -> None:
+        incomplete = config_audit.Finding(
+            kind="dead-ref",
+            target="missing",
+            location="/config/CLAUDE.md:1",
+            summary="missing",
+            evidence={},
+        )
+
+        with self.assertRaisesRegex(ValueError, "evidence"):
+            config_audit.validate_finding_evidence(incomplete)
+
 
 class RunAuditTest(unittest.TestCase):
     def make_root(self, base: Path) -> Path:

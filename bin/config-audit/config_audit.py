@@ -592,6 +592,58 @@ def _finding_from_record(record: dict[str, Any]) -> Finding:
     )
 
 
+def validate_finding_evidence(finding: Finding) -> None:
+    """Reject any finding that cannot be verified from its rendered evidence."""
+
+    required_by_kind = {
+        "dead-memlink": {"line_text", "resolved_target", "exists", "check"},
+        "hook-noop": {
+            "candidates",
+            "available_files",
+            "missing_commands",
+            "platform",
+            "check",
+        },
+        "mem-index": {"check"},
+        "size": {
+            "absolute_path",
+            "measured_value",
+            "previous_value",
+            "delta",
+            "measurement_method",
+        },
+        "skill-unused": {
+            "skill_name",
+            "log_files_scanned",
+            "explicit_call_count",
+            "glob",
+        },
+        "hook-fail": {"unit", "failure_time", "journal_message"},
+        "incident-unreflected": {
+            "incident_date",
+            "claude_mtime",
+            "hooks_latest_mtime",
+        },
+    }
+    if not finding.location:
+        raise ValueError(f"finding has no evidence location: {finding.finding_id}")
+    if finding.kind == "dead-ref":
+        common = {"line_text", "exists", "check"}
+        missing = common - finding.evidence.keys()
+        if not ({"resolved_target", "resolved_name"} & finding.evidence.keys()):
+            missing.add("resolved_target|resolved_name")
+    else:
+        required = required_by_kind.get(finding.kind)
+        if required is None:
+            raise ValueError(f"unknown finding kind: {finding.kind}")
+        missing = required - finding.evidence.keys()
+    if missing:
+        raise ValueError(
+            f"finding evidence incomplete ({finding.finding_id}): "
+            + ", ".join(sorted(missing))
+        )
+
+
 def compare_with_state(
     current_findings: Iterable[Finding],
     previous_state: dict[str, Any],
@@ -846,6 +898,8 @@ def run_audit(
     if journal_entries is None:
         journal_entries = read_journal_entries()
     findings.extend(find_systemd_user_unit_failures(journal_entries))
+    for finding in findings:
+        validate_finding_evidence(finding)
 
     delta = compare_with_state(
         findings,
