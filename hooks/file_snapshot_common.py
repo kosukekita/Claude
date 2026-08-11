@@ -252,22 +252,12 @@ def record_bash(payload: dict, environ: Mapping[str, str]) -> dict:
     return marker
 
 
-def clear_bash_marker(payload: dict, environ: Mapping[str, str]) -> None:
-    try:
-        session_marker_path(session_id(payload), environ).unlink()
-    except FileNotFoundError:
-        return
-    except OSError:
-        return
-
-
 def record_event(payload: dict, environ: Mapping[str, str] | None = None) -> dict:
     active_environ = environ or os.environ
     tool_name = payload.get("tool_name")
     if tool_name == "Bash":
         return record_bash(payload, active_environ)
 
-    clear_bash_marker(payload, active_environ)
     file_value = payload_file(payload)
     if not isinstance(tool_name, str) or not file_value:
         return {"recorded": False}
@@ -309,7 +299,16 @@ def guard_event(payload: dict, environ: Mapping[str, str] | None = None) -> dict
         classification = "agent-write"
     elif current_hash != state.get("last_seen_hash"):
         marker = read_json(session_marker_path(session_id(payload), active_environ))
-        classification = "ambiguous" if marker else "user-edit"
+        marker_time = marker.get("timestamp")
+        last_seen_time = state.get("last_seen_at")
+        bash_could_postdate_snapshot = (
+            isinstance(marker_time, str)
+            and (
+                not isinstance(last_seen_time, str)
+                or marker_time >= last_seen_time
+            )
+        )
+        classification = "ambiguous" if bash_could_postdate_snapshot else "user-edit"
 
     mode = configured_mode(active_environ)
     decision = "deny" if classification == "user-edit" and mode == "block" else "allow"

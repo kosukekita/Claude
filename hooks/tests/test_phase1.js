@@ -100,6 +100,21 @@ run('platform mismatch is a silent successful skip', () => {
   assert(!fs.existsSync(path.join(temp, 'claude-hooks', 'dispatch-events.jsonl')));
 });
 
+run('PowerShell-only applicable hook is visible on Linux', () => {
+  if (process.platform === 'win32') return;
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'hooks-phase1-'));
+  const result = dispatcher.dispatchTarget('protect-files', [], {
+    env: {
+      ...process.env,
+      CLAUDE_HOOK_MANIFEST: path.join(__dirname, 'manifest-protect-any.json'),
+      XDG_STATE_HOME: temp
+    }
+  });
+  assert.strictEqual(result.status, 0);
+  assert.match(result.stderr, /HOOK DISPATCH WARNING/);
+  assert.match(result.stderr, /no runnable implementation/);
+});
+
 run('spawn errors are visible and remain fail-open', () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'hooks-phase1-'));
   const result = dispatcher.dispatchTarget('guard-destructive-and-resolution', [], {

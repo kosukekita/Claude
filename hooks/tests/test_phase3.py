@@ -103,6 +103,40 @@ class SnapshotPairTests(unittest.TestCase):
         self.assertEqual("allow", result["decision"])
         self.assertEqual("ambiguous", result["classification"])
 
+    def test_unrelated_read_does_not_turn_bash_ambiguity_into_user_edit(self):
+        target = self.root / "bash-ambiguous-after-other-read.txt"
+        unrelated = self.root / "unrelated.txt"
+        target.write_text("original", encoding="utf-8")
+        unrelated.write_text("unrelated", encoding="utf-8")
+        snapshots.record_event(self.payload("Read", target), self.environ)
+        target.write_text("changed by opaque bash", encoding="utf-8")
+        snapshots.record_event(
+            self.payload("Bash", command="python -c 'opaque file mutation'"),
+            self.environ,
+        )
+        snapshots.record_event(self.payload("Read", unrelated), self.environ)
+
+        result = snapshots.guard_event(self.payload("Edit", target), self.environ)
+
+        self.assertEqual("allow", result["decision"])
+        self.assertEqual("ambiguous", result["classification"])
+
+    def test_rereading_same_file_resolves_old_bash_ambiguity(self):
+        target = self.root / "bash-ambiguity-resolved-by-read.txt"
+        target.write_text("original", encoding="utf-8")
+        snapshots.record_event(self.payload("Read", target), self.environ)
+        snapshots.record_event(
+            self.payload("Bash", command="python -c 'opaque file mutation'"),
+            self.environ,
+        )
+        snapshots.record_event(self.payload("Read", target), self.environ)
+        target.write_text("later external edit", encoding="utf-8")
+
+        result = snapshots.guard_event(self.payload("Edit", target), self.environ)
+
+        self.assertEqual("deny", result["decision"])
+        self.assertEqual("user-edit", result["classification"])
+
     def test_case_distinct_paths_have_distinct_state_keys_on_linux(self):
         upper = self.root / "Case.txt"
         lower = self.root / "case.txt"

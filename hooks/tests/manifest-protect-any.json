@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "targets": {
+    "protect-files": {
+      "platform": "any",
+      "criticality": "required",
+      "description": "Fixture that makes the PowerShell-only hook applicable on Linux."
+    }
+  }
+}
