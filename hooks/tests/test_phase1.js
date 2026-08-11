@@ -48,8 +48,22 @@ run('manifest and settings targets match exactly', () => {
   for (const [target, metadata] of Object.entries(manifest.targets)) {
     assert(['any', 'windows', 'linux'].includes(metadata.platform), target);
     assert(['required', 'advisory'].includes(metadata.criticality), target);
+    assert(
+      metadata.implementation_status === undefined ||
+        ['active', 'pending'].includes(metadata.implementation_status),
+      target
+    );
     assert.strictEqual(typeof metadata.description, 'string', target);
     assert(metadata.description.trim().length > 0, target);
+  }
+  for (const target of ['protect-files', 'warn-bash-overwrite', 'memory-inject']) {
+    assert.strictEqual(manifest.targets[target].platform, 'any', target);
+    assert.strictEqual(manifest.targets[target].implementation_status, 'pending', target);
+    assert(!/on Windows|Windows memory/i.test(manifest.targets[target].description), target);
+  }
+  for (const target of ['warn-tu-encoding', 'pixel-agents-shim']) {
+    assert.strictEqual(manifest.targets[target].platform, 'windows', target);
+    assert.notStrictEqual(manifest.targets[target].implementation_status, 'pending', target);
   }
 });
 
@@ -106,7 +120,6 @@ run('PowerShell-only applicable hook is visible on Linux', () => {
   const result = dispatcher.dispatchTarget('protect-files', [], {
     env: {
       ...process.env,
-      CLAUDE_HOOK_MANIFEST: path.join(__dirname, 'manifest-protect-any.json'),
       XDG_STATE_HOME: temp
     }
   });

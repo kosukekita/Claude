@@ -20,21 +20,26 @@ if [[ "$configured" != 'node "$HOME/.claude/hooks/hook-health-check.mjs"' ]]; th
   exit 1
 fi
 
-healthy_output="$(node "$hooks_dir/hook-health-check.mjs" 2>&1)"
-healthy_status=$?
+pending_output="$(node "$hooks_dir/hook-health-check.mjs" 2>&1)"
+pending_status=$?
 broken_output="$(
   CLAUDE_HOOK_MANIFEST="$hooks_dir/tests/manifest-empty.json" \
     node "$hooks_dir/hook-health-check.mjs" 2>&1
 )"
 broken_status=$?
 
-if [[ $healthy_status -eq 0 && -z "$healthy_output" && \
+if [[ $pending_status -eq 0 && "$pending_output" == *"protect-files:pending"* && \
+      "$pending_output" == *"warn-bash-overwrite:pending"* && \
+      "$pending_output" == *"memory-inject:pending"* && \
+      "$pending_output" != *"warn-tu-encoding"* && \
+      "$pending_output" != *"pixel-agents-shim"* && \
+      "$(printf '%s\n' "$pending_output" | wc -l)" -eq 1 && \
       $broken_status -eq 0 && "$broken_output" == *"[HOOK HEALTH]"* && \
       "$broken_output" == *"missing-manifest"* ]]; then
-  printf 'PASS: SessionStart is quiet when healthy and visible when broken\n'
+  printf 'PASS: SessionStart distinguishes pending cross-platform hooks from Windows-only skips\n'
   exit 0
 fi
 
-printf 'FAIL: healthy=(%s/%s) broken=(%s/%s)\n' \
-  "$healthy_status" "$healthy_output" "$broken_status" "$broken_output"
+printf 'FAIL: pending=(%s/%s) broken=(%s/%s)\n' \
+  "$pending_status" "$pending_output" "$broken_status" "$broken_output"
 exit 1
