@@ -63,11 +63,6 @@
           },
           {
             "type": "command",
-            "command": "node \"$HOME/.claude/hooks/dispatch.js\" log-commands",
-            "timeout": 10
-          },
-          {
-            "type": "command",
             "command": "node \"$HOME/.claude/hooks/dispatch.js\" warn-tu-encoding",
             "timeout": 10
           }
@@ -126,6 +121,11 @@
       {
         "matcher": "",
         "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$HOME/.claude/hooks/dispatch.js\" hook-health-check",
+            "timeout": 10
+          },
           {
             "type": "command",
             "command": "node \"$HOME/.claude/hooks/dispatch.js\" auto-pull",

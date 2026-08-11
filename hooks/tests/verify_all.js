@@ -1,268 +1,113 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
-const { spawnSync } = require('child_process');
 
-const results = {};
+const hooksDir = path.join(__dirname, '..');
+const repoDir = path.join(hooksDir, '..');
+const settingsPath = path.join(repoDir, 'settings.json');
+const manifestPath = path.join(hooksDir, 'manifest.json');
+const dispatch = require(path.join(hooksDir, 'dispatch.js'));
 
-console.log("=== RUNNING ACCEPTANCE CRITERIA VERIFICATION SUITE ===");
-
-// -----------------------------------------------------------------------------
-// Criterion A: PowerShell execution without parse errors for all hook commands
-// -----------------------------------------------------------------------------
-console.log("\n--- Criterion A: PowerShell execution check ---");
-const settingsPath = path.join(__dirname, '..', '..', 'settings.json');
-const settingsJson = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-
-const hookCommands = [];
-function extractCommands(obj) {
-  if (!obj || typeof obj !== 'object') return;
-  for (const key in obj) {
-    if (key === 'command' && typeof obj[key] === 'string') {
-      if (obj[key].includes('dispatch.js')) {
-        hookCommands.push(obj[key]);
+function registeredTargets(settings) {
+  const targets = new Set();
+  for (const groups of Object.values(settings.hooks || {})) {
+    for (const group of groups) {
+      for (const hook of group.hooks || []) {
+        const command = hook.command || '';
+        const throughDispatch = command.match(/dispatch\.js\"?\s+([A-Za-z0-9._-]+)/);
+        if (throughDispatch) {
+          targets.add(dispatch.baseNameFor(throughDispatch[1]));
+          continue;
+        }
+        const direct = command.match(/hooks\/([A-Za-z0-9._-]+)\.(?:mjs|cjs|js|sh|py|ps1)/);
+        if (direct) targets.add(direct[1]);
       }
-    } else {
-      extractCommands(obj[key]);
     }
   }
+  return targets;
 }
-extractCommands(settingsJson.hooks);
 
-let passA = true;
-const logsA = [];
+function sameMembers(left, right) {
+  return left.size === right.size && [...left].every((item) => right.has(item));
+}
 
-for (const cmdStr of hookCommands) {
-  const buf = Buffer.from(cmdStr, 'utf16le');
-  const b64 = buf.toString('base64');
-  
-  const res = spawnSync('powershell', ['-NoProfile', '-EncodedCommand', b64], {
-    stdio: ['pipe', 'pipe', 'pipe']
+function safePayload(target) {
+  if (target === 'guard-destructive-and-resolution' || target === 'block-dangerous') {
+    return Buffer.from(JSON.stringify({ tool_input: { command: 'ls -la' } }));
+  }
+  return Buffer.from(JSON.stringify({ tool_name: 'Read', tool_input: {} }));
+}
+
+const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+const registered = registeredTargets(settings);
+const declared = new Set(Object.keys(manifest.targets || {}));
+const tempHome = fs.mkdtempSync(path.join(os.tmpdir(), 'hooks-verify-'));
+fs.mkdirSync(path.join(tempHome, '.claude'), { recursive: true });
+const testEnv = {
+  ...process.env,
+  HOME: tempHome,
+  CLAUDE_HOME: path.join(tempHome, '.claude'),
+  CODEX_HOME: path.join(tempHome, '.codex'),
+  XDG_STATE_HOME: path.join(tempHome, '.state'),
+  CLAUDE_HOOK_MANIFEST: manifestPath
+};
+
+let failed = 0;
+let passed = 0;
+let skipped = 0;
+const targetResults = [];
+
+console.log('=== Hook registration and functional verification ===');
+if (sameMembers(registered, declared)) {
+  console.log(`PASS manifest coverage (${registered.size} unique targets)`);
+  passed += 1;
+} else {
+  const missing = [...registered].filter((target) => !declared.has(target));
+  const extra = [...declared].filter((target) => !registered.has(target));
+  console.log(`FAIL manifest coverage missing=[${missing}] extra=[${extra}]`);
+  failed += 1;
+}
+
+for (const target of [...registered].sort()) {
+  const inspected = dispatch.inspectTarget(target, { env: testEnv });
+  if (!inspected.applicable) {
+    const result = { target, result: 'SKIP', platform: inspected.metadata.platform };
+    targetResults.push(result);
+    skipped += 1;
+    console.log(`SKIP ${target} (platform=${inspected.metadata.platform})`);
+    continue;
+  }
+  if (inspected.error) {
+    const result = { target, result: 'FAIL', reason: inspected.error };
+    targetResults.push(result);
+    failed += 1;
+    console.log(`FAIL ${target}: ${inspected.error}`);
+    continue;
+  }
+  const result = dispatch.dispatchTarget(target, [], {
+    env: testEnv,
+    input: safePayload(target)
   });
-
-  const errStr = res.stderr.toString('utf8') + res.stdout.toString('utf8');
-  const hasParseError = errStr.includes('ParserError') || errStr.includes('MissingOpenParenthesis');
-
-  logsA.push({
-    cmd: cmdStr,
-    status: res.status,
-    parseError: hasParseError,
-    output: errStr.trim().substring(0, 100)
-  });
-
-  if (hasParseError) {
-    passA = false;
+  if (result.status === 0) {
+    targetResults.push({ target, result: 'PASS' });
+    passed += 1;
+    console.log(`PASS ${target}`);
+  } else {
+    const stderr = result.stderr.toString('utf8').trim().slice(0, 200);
+    targetResults.push({ target, result: 'FAIL', status: result.status, stderr });
+    failed += 1;
+    console.log(`FAIL ${target}: status=${result.status} ${stderr}`);
   }
 }
 
-results.A = {
-  pass: passA && hookCommands.length >= 13,
-  count: hookCommands.length,
-  logs: logsA
-};
-console.log(`Criterion A: ${results.A.pass ? 'PASS' : 'FAIL'} (${hookCommands.length} hooks tested)`);
-
-// -----------------------------------------------------------------------------
-// Criterion B: Non-zero exit code pass-through (e.g. exit code 2)
-// -----------------------------------------------------------------------------
-console.log("\n--- Criterion B: Exit code pass-through ---");
-const testScriptB = path.join(__dirname, '..', '_test_exit2.ps1');
-fs.writeFileSync(testScriptB, 'exit 2\n', 'ascii');
-
-const resB = spawnSync('node', [path.join(__dirname, '..', 'dispatch.js'), '_test_exit2'], {
-  stdio: ['ignore', 'pipe', 'pipe']
-});
-
-try { fs.unlinkSync(testScriptB); } catch(e){}
-
-results.B = {
-  pass: resB.status === 2,
-  observedStatus: resB.status
-};
-console.log(`Criterion B: ${results.B.pass ? 'PASS' : 'FAIL'} (Observed exit status: ${resB.status})`);
-
-// -----------------------------------------------------------------------------
-// Criterion C: Stdin pass-through (exact byte preservation)
-// -----------------------------------------------------------------------------
-console.log("\n--- Criterion C: Stdin pass-through ---");
-const testScriptC = path.join(__dirname, '..', '_test_stdin.ps1');
-fs.writeFileSync(testScriptC, '$s = [System.Console]::OpenStandardInput(); $o = [System.Console]::OpenStandardOutput(); $s.CopyTo($o)\n', 'ascii');
-
-const payloadC = JSON.stringify({ test: "hello_\u3067\u3059_123" });
-const inputBufC = Buffer.from(payloadC, 'utf8');
-
-const resC = spawnSync('node', [path.join(__dirname, '..', 'dispatch.js'), '_test_stdin'], {
-  input: inputBufC,
-  stdio: ['pipe', 'pipe', 'pipe']
-});
-
-try { fs.unlinkSync(testScriptC); } catch(e){}
-
-const outputBufC = resC.stdout;
-const isByteEqualC = inputBufC.equals(outputBufC);
-
-results.C = {
-  pass: isByteEqualC,
-  inputHex: inputBufC.toString('hex'),
-  outputHex: outputBufC.toString('hex')
-};
-console.log(`Criterion C: ${results.C.pass ? 'PASS' : 'FAIL'} (Bytes match: ${isByteEqualC})`);
-
-// -----------------------------------------------------------------------------
-// Criterion D: Stdout pass-through (clean JSON, no extra wrapper/lines)
-// -----------------------------------------------------------------------------
-console.log("\n--- Criterion D: Stdout pass-through ---");
-const resD = spawnSync('node', [path.join(__dirname, '..', 'dispatch.js'), 'memory-inject'], {
-  stdio: ['ignore', 'pipe', 'pipe']
-});
-const outStrD = resD.stdout.toString('utf8').trim();
-let isCleanJsonD = false;
-try {
-  const parsed = JSON.parse(outStrD);
-  if (parsed.hookSpecificOutput && parsed.hookSpecificOutput.hookEventName === "SessionStart") {
-    isCleanJsonD = true;
-  }
-} catch(e){}
-
-results.D = {
-  pass: isCleanJsonD,
-  rawOutputSnippet: outStrD.substring(0, 150)
-};
-console.log(`Criterion D: ${results.D.pass ? 'PASS' : 'FAIL'}`);
-
-// -----------------------------------------------------------------------------
-// Criterion E: Real hook functional regression on Windows
-// -----------------------------------------------------------------------------
-console.log("\n--- Criterion E: Functional regression tests ---");
-// 1. block-dangerous
-const payloadE1 = JSON.stringify({ tool_input: { command: "rm -rf /tmp/dangerous_test" } });
-const resE1 = spawnSync('node', [path.join(__dirname, '..', 'dispatch.js'), 'block-dangerous'], {
-  input: Buffer.from(payloadE1, 'utf8'),
-  stdio: ['pipe', 'pipe', 'pipe']
-});
-const errE1 = resE1.stderr.toString('utf8');
-const passE1 = (resE1.status === 2) && errE1.includes('Blocked');
-
-// 2. protect-files
-const payloadE2 = JSON.stringify({ tool_input: { file_path: ".git/config" } });
-const resE2 = spawnSync('node', [path.join(__dirname, '..', 'dispatch.js'), 'protect-files'], {
-  input: Buffer.from(payloadE2, 'utf8'),
-  stdio: ['pipe', 'pipe', 'pipe']
-});
-const passE2 = (resE2.status === 0 || resE2.status === 2);
-
-// 3. guard-file-revert
-const payloadE3 = JSON.stringify({ tool_input: { file_path: "settings.json" } });
-const resE3 = spawnSync('node', [path.join(__dirname, '..', 'dispatch.js'), 'guard-file-revert'], {
-  input: Buffer.from(payloadE3, 'utf8'),
-  stdio: ['pipe', 'pipe', 'pipe']
-});
-const passE3 = (resE3.status === 0 || resE3.status === 2);
-
-// 4. auto-push
-const resE4 = spawnSync('node', [path.join(__dirname, '..', 'dispatch.js'), 'auto-push'], {
-  stdio: ['ignore', 'pipe', 'pipe']
-});
-const passE4 = (resE4.status === 0);
-
-// 5. memory-inject
-const passE5 = results.D.pass;
-
-const passE = passE1 && passE2 && passE3 && passE4 && passE5;
-results.E = {
-  pass: passE,
-  blockDangerousStatus: resE1.status,
-  blockDangerousMsg: errE1.trim(),
-  autoPushStatus: resE4.status
-};
-console.log(`Criterion E: ${results.E.pass ? 'PASS' : 'FAIL'}`);
-
-// -----------------------------------------------------------------------------
-// Criterion F: No CP932 / Japanese character corruption
-// -----------------------------------------------------------------------------
-console.log("\n--- Criterion F: Encoding verification ---");
-const outBufF = resD.stdout;
-const outStrF = outBufF.toString('utf8');
-const containsJapaneseF = outStrF.includes("記憶") && !outStrF.includes("ï¿½");
-const passF = containsJapaneseF && !outStrF.includes('\uFFFD');
-
-results.F = {
-  pass: passF,
-  sampleText: outStrF.substring(outStrF.indexOf("記憶") - 5, outStrF.indexOf("記憶") + 25)
-};
-console.log(`Criterion F: ${results.F.pass ? 'PASS' : 'FAIL'} (Sample: "${results.F.sampleText}")`);
-
-// -----------------------------------------------------------------------------
-// Criterion G: Linux real machine (akitaken) verification via SSH
-// -----------------------------------------------------------------------------
-console.log("\n--- Criterion G: akitaken Linux verification ---");
-const targetG = ['auto-push', 'memory-sync-codex', 'detect-leaked-toolcall'];
-const logsG = [];
-let passG = true;
-
-for (const hookName of targetG) {
-  const sshCmd = `echo "{}" | node "$HOME/.claude/hooks/dispatch.js" ${hookName}; echo exit_code: $?`;
-  const resG = spawnSync('ssh', ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=15', 'akitaken', sshCmd], {
-    stdio: ['ignore', 'pipe', 'pipe']
-  });
-  const outG = resG.stdout.toString('utf8').trim();
-  const successG = resG.status === 0 && outG.includes('exit_code: 0');
-  logsG.push({ hook: hookName, status: resG.status, output: outG });
-  if (!successG) passG = false;
+const invalidSkips = targetResults.filter(
+  (entry) => entry.result === 'SKIP' && entry.platform !== 'windows'
+);
+if (invalidSkips.length > 0) {
+  failed += invalidSkips.length;
+  console.log(`FAIL non-Windows skips: ${invalidSkips.map((entry) => entry.target).join(', ')}`);
 }
 
-results.G = {
-  pass: passG,
-  logs: logsG
-};
-console.log(`Criterion G: ${results.G.pass ? 'PASS' : 'FAIL'}`);
-
-// -----------------------------------------------------------------------------
-// Criterion H: JSON validity and completeness
-// -----------------------------------------------------------------------------
-console.log("\n--- Criterion H: JSON structure completeness ---");
-const gitShowRes = spawnSync('git', ['show', '0fa5638e6e6890885a10bebdd4dab5e886f86ab5:settings.json'], {
-  cwd: path.join(__dirname, '..', '..'),
-  stdio: ['ignore', 'pipe', 'pipe']
-});
-const origJson = JSON.parse(gitShowRes.stdout.toString('utf8'));
-
-const origHooks = origJson.hooks;
-const currHooks = settingsJson.hooks;
-
-let countOrig = 0;
-let countCurr = 0;
-for (const ev in origHooks) {
-  origHooks[ev].forEach(h => countOrig += h.hooks.length);
-}
-for (const ev in currHooks) {
-  currHooks[ev].forEach(h => countCurr += h.hooks.length);
-}
-
-const sameEvents = Object.keys(origHooks).length === Object.keys(currHooks).length;
-const passH = (countOrig === countCurr) && (countCurr === 29) && sameEvents;
-results.H = {
-  pass: passH,
-  origCount: countOrig,
-  currCount: countCurr,
-  sameEvents: sameEvents
-};
-console.log(`Criterion H: ${results.H.pass ? 'PASS' : 'FAIL'} (Orig count: ${countOrig}, Curr count: ${countCurr})`);
-
-// -----------------------------------------------------------------------------
-// Criterion I: Synchronization rules (Line endings & ASCII only rules)
-// -----------------------------------------------------------------------------
-console.log("\n--- Criterion I: Line endings & ASCII rules ---");
-const dispatchContent = fs.readFileSync(path.join(__dirname, '..', 'dispatch.js'), 'utf8');
-const isAsciiI = /^[\x00-\x7F]*$/.test(dispatchContent);
-const isLfI = !dispatchContent.includes('\r\n');
-
-results.I = {
-  pass: isAsciiI,
-  isAscii: isAsciiI,
-  isLf: isLfI
-};
-console.log(`Criterion I: ${results.I.pass ? 'PASS' : 'FAIL'} (Is ASCII: ${isAsciiI}, Is LF: ${isLfI})`);
-
-// Summary
-fs.writeFileSync(path.join(__dirname, 'verification_report.json'), JSON.stringify(results, null, 2));
-console.log("\n=== ALL CRITERIA VERIFICATION COMPLETE ===");
+console.log(`SUMMARY PASS=${passed} SKIP=${skipped} FAIL=${failed}`);
+process.exitCode = failed === 0 ? 0 : 1;

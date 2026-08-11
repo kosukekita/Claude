@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "targets": {
+    "auto-pull": {
+      "platform": "any",
+      "criticality": "advisory",
+      "description": "Synchronize the configuration repository at session start."
+    },
+    "auto-push": {
+      "platform": "any",
+      "criticality": "advisory",
+      "description": "Synchronize local configuration changes when a session stops."
+    },
+    "block-dangerous": {
+      "platform": "any",
+      "criticality": "required",
+      "description": "Block destructive shell and database commands until the unified guard replaces it."
+    },
+    "detect-leaked-toolcall": {
+      "platform": "any",
+      "criticality": "required",
+      "description": "Detect leaked raw tool-call markup before a response completes."
+    },
+    "guard-destructive-and-resolution": {
+      "platform": "any",
+      "criticality": "required",
+      "description": "Block destructive deletion and unapproved media-generation settings."
+    },
+    "guard-file-revert": {
+      "platform": "any",
+      "criticality": "required",
+      "description": "Detect edits based on stale file contents before a write."
+    },
+    "hook-health-check": {
+      "platform": "any",
+      "criticality": "required",
+      "description": "Report unresolved or inconsistent hook registrations at session start."
+    },
+    "memory-inject": {
+      "platform": "windows",
+      "criticality": "advisory",
+      "description": "Inject the legacy Windows memory context at session start."
+    },
+    "memory-inject-project": {
+      "platform": "any",
+      "criticality": "advisory",
+      "description": "Inject project-scoped memory at session start."
+    },
+    "memory-sync-codex": {
+      "platform": "any",
+      "criticality": "advisory",
+      "description": "Regenerate Codex cross-agent instructions from shared memory."
+    },
+    "pixel-agents-shim": {
+      "platform": "windows",
+      "criticality": "advisory",
+      "description": "Forward hook events to the Windows-only Pixel Agents integration."
+    },
+    "protect-files": {
+      "platform": "windows",
+      "criticality": "required",
+      "description": "Protect sensitive configuration paths on Windows."
+    },
+    "record-file-snapshot": {
+      "platform": "any",
+      "criticality": "required",
+      "description": "Record the content last seen or written by the agent."
+    },
+    "warn-bash-overwrite": {
+      "platform": "windows",
+      "criticality": "advisory",
+      "description": "Warn about shell redirection that may overwrite a file on Windows."
+    },
+    "warn-tu-encoding": {
+      "platform": "windows",
+      "criticality": "advisory",
+      "description": "Warn about ToolUniverse encoding hazards on Windows."
+    }
+  }
+}

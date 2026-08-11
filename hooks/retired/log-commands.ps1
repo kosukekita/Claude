@@ -1,10 +1,10 @@
 # log-commands.ps1
-# Claude Code PreToolUse hook: log Bash commands with a timestamp.
+# Retired: this hook recorded raw commands indefinitely and could retain secrets.
+# Kept for audit history only; it is not registered in settings.json.
 # RULE: keep this file ASCII-only (encoding issues have killed hooks before).
 
 $ErrorActionPreference = "SilentlyContinue"
 
-# Read JSON from stdin and extract the command
 $json = $input | Out-String
 $cmd = ""
 try {
