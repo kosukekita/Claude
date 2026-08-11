@@ -49,7 +49,12 @@ function main() {
   }
   for (const target of registered) {
     const inspected = dispatch.inspectTarget(target);
-    if (inspected.applicable && inspected.error) issues.push(`${target}:unresolved`);
+    if (!inspected.applicable) continue;
+    if (inspected.metadata?.implementation_status === 'pending') {
+      issues.push(`${target}:pending`);
+    } else if (inspected.error) {
+      issues.push(`${target}:unresolved`);
+    }
   }
 
   if (issues.length > 0) {

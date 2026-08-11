@@ -8,6 +8,7 @@ temp_home="$(mktemp -d)"
 mkdir -p "$temp_home/.claude" "$temp_home/.codex" "$temp_home/.state"
 
 passed=0
+pending=0
 skipped=0
 failed=0
 
@@ -34,15 +35,14 @@ for (const groups of Object.values(settings.hooks || {})) {
 }
 for (const target of [...targets].sort()) {
   const metadata = manifest.targets[target];
-  console.log(`${target}\t${metadata ? metadata.platform : 'missing'}`);
+  console.log(`${target}\t${metadata ? metadata.platform : 'missing'}\t${metadata?.implementation_status || 'active'}`);
 }
 NODE
 )
 
 printf '%s\n' '=== Linux functional invocation of every registered target ==='
 for row in "${targets[@]}"; do
-  target="${row%%$'\t'*}"
-  platform="${row#*$'\t'}"
+  IFS=$'\t' read -r target platform implementation_status <<<"$row"
   if [[ "$platform" == "windows" ]]; then
     printf 'SKIP %s (platform=windows)\n' "$target"
     skipped=$((skipped + 1))
@@ -64,7 +64,15 @@ for row in "${targets[@]}"; do
     node "$hooks_dir/dispatch.js" "$target" >"$stdout_file" 2>"$stderr_file"
   status=$?
   stderr_text="$(tr '\n' ' ' <"$stderr_file")"
-  if [[ $status -eq 0 && "$stderr_text" != *"HOOK DISPATCH WARNING"* ]]; then
+  if [[ "$implementation_status" == "pending" && $status -eq 0 && \
+        "$stderr_text" == *"HOOK DISPATCH WARNING"* ]]; then
+    printf 'PENDING %s (unresolved implementation is visible)\n' "$target"
+    pending=$((pending + 1))
+  elif [[ "$implementation_status" == "pending" ]]; then
+    printf 'FAIL %s pending state was not reported status=%s stderr=%s\n' \
+      "$target" "$status" "$stderr_text"
+    failed=$((failed + 1))
+  elif [[ $status -eq 0 && "$stderr_text" != *"HOOK DISPATCH WARNING"* ]]; then
     printf 'PASS %s\n' "$target"
     passed=$((passed + 1))
   else
@@ -73,5 +81,6 @@ for row in "${targets[@]}"; do
   fi
 done
 
-printf 'SUMMARY PASS=%s SKIP=%s FAIL=%s\n' "$passed" "$skipped" "$failed"
+printf 'SUMMARY PASS=%s PENDING=%s SKIP=%s FAIL=%s\n' \
+  "$passed" "$pending" "$skipped" "$failed"
 [[ $failed -eq 0 ]]

@@ -49,6 +49,7 @@ const testEnv = {
 let failed = 0;
 let passed = 0;
 let skipped = 0;
+let pending = 0;
 const targetResults = [];
 
 console.log('=== Hook registration and functional verification ===');
@@ -71,6 +72,19 @@ for (const target of [...registered].sort()) {
     console.log(`SKIP ${target} (platform=${inspected.metadata.platform})`);
     continue;
   }
+  if (inspected.metadata.implementation_status === 'pending') {
+    if (!inspected.error) {
+      const result = { target, result: 'FAIL', reason: 'pending declaration has a runnable implementation' };
+      targetResults.push(result);
+      failed += 1;
+      console.log(`FAIL ${target}: ${result.reason}`);
+      continue;
+    }
+    targetResults.push({ target, result: 'PENDING', reason: inspected.error });
+    pending += 1;
+    console.log(`PENDING ${target}: ${inspected.error}`);
+    continue;
+  }
   if (inspected.error) {
     const result = { target, result: 'FAIL', reason: inspected.error };
     targetResults.push(result);
@@ -91,5 +105,5 @@ if (invalidSkips.length > 0) {
   console.log(`FAIL non-Windows skips: ${invalidSkips.map((entry) => entry.target).join(', ')}`);
 }
 
-console.log(`SUMMARY PASS=${passed} SKIP=${skipped} FAIL=${failed}`);
+console.log(`SUMMARY PASS=${passed} PENDING=${pending} SKIP=${skipped} FAIL=${failed}`);
 process.exitCode = failed === 0 ? 0 : 1;

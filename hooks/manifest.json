@@ -32,9 +32,10 @@
       "description": "Report unresolved or inconsistent hook registrations at session start."
     },
     "memory-inject": {
-      "platform": "windows",
+      "platform": "any",
       "criticality": "advisory",
-      "description": "Inject the legacy Windows memory context at session start."
+      "implementation_status": "pending",
+      "description": "Inject the global memory context at session start."
     },
     "memory-inject-project": {
       "platform": "any",
@@ -52,9 +53,10 @@
       "description": "Forward hook events to the Windows-only Pixel Agents integration."
     },
     "protect-files": {
-      "platform": "windows",
+      "platform": "any",
       "criticality": "required",
-      "description": "Protect sensitive configuration paths on Windows."
+      "implementation_status": "pending",
+      "description": "Protect sensitive configuration paths before file writes."
     },
     "record-file-snapshot": {
       "platform": "any",
@@ -62,9 +64,10 @@
       "description": "Record the content last seen or written by the agent."
     },
     "warn-bash-overwrite": {
-      "platform": "windows",
+      "platform": "any",
       "criticality": "advisory",
-      "description": "Warn about shell redirection that may overwrite a file on Windows."
+      "implementation_status": "pending",
+      "description": "Warn about shell redirection that may overwrite a file."
     },
     "warn-tu-encoding": {
       "platform": "windows",
