@@ -128,6 +128,22 @@ run('spawn errors are visible and remain fail-open', () => {
   assert.strictEqual(JSON.parse(events).kind, 'spawn-error');
 });
 
+run('resolved hook exit status and output are propagated unchanged', () => {
+  const result = dispatcher.dispatchTarget('guard-destructive-and-resolution', [], {
+    spawnSync: (command) => {
+      if (command === 'which' || command === 'where') return { status: 0 };
+      return {
+        status: 2,
+        stdout: Buffer.from('fixture-stdout'),
+        stderr: Buffer.from('fixture-stderr')
+      };
+    }
+  });
+  assert.strictEqual(result.status, 2);
+  assert.strictEqual(result.stdout.toString('utf8'), 'fixture-stdout');
+  assert.strictEqual(result.stderr.toString('utf8'), 'fixture-stderr');
+});
+
 run('log-commands is unregistered and archived', () => {
   const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
   assert(!registeredTargets(settings).has('log-commands'));
