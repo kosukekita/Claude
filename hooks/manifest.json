@@ -11,11 +11,6 @@
       "criticality": "advisory",
       "description": "Synchronize local configuration changes when a session stops."
     },
-    "block-dangerous": {
-      "platform": "any",
-      "criticality": "required",
-      "description": "Block destructive shell and database commands until the unified guard replaces it."
-    },
     "detect-leaked-toolcall": {
       "platform": "any",
       "criticality": "required",

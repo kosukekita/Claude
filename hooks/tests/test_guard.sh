@@ -154,7 +154,7 @@ if jq -e '
       .matcher == "Bash"
       and any(.hooks[];
         .type == "command"
-        and .command == "$HOME/.claude/hooks/guard-destructive-and-resolution.py"
+        and .command == "node \"$HOME/.claude/hooks/dispatch.js\" guard-destructive-and-resolution"
       )
     )
 ' "$SETTINGS" >/dev/null &&

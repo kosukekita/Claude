@@ -3,6 +3,7 @@
 
 import json
 import os
+import re
 import sys
 
 
@@ -114,36 +115,196 @@ def is_rm_executable(value):
     return os.path.basename(value).lower() == "rm"
 
 
-def destructive_rm_reason(segment):
-    for index, (value, _) in enumerate(segment):
-        if not is_rm_executable(value):
+def command_tokens(segment):
+    """Strip common shell wrappers while preserving token metadata."""
+    remaining = list(segment)
+    while remaining:
+        value = remaining[0][0]
+        executable = os.path.basename(value).lower()
+        if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*=.*", value):
+            remaining.pop(0)
             continue
-        recursive = False
-        force = False
-        operands = []
-        options_done = False
-        for operand, has_glob in segment[index + 1 :]:
-            if not options_done and operand == "--":
-                options_done = True
-                continue
-            if not options_done and operand.startswith("-") and operand != "-":
-                option = operand.lstrip("-").lower()
-                recursive |= "r" in option or "recursive" in option
-                force |= "f" in option or "force" in option
-                continue
+        if executable == "sudo":
+            remaining.pop(0)
+            while remaining and remaining[0][0].startswith("-"):
+                option = remaining.pop(0)[0]
+                if option in {"-u", "-g", "-h", "-p", "-c", "-t"} and remaining:
+                    remaining.pop(0)
+            continue
+        if executable == "env":
+            remaining.pop(0)
+            while remaining and (
+                remaining[0][0].startswith("-")
+                or re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*=.*", remaining[0][0])
+            ):
+                remaining.pop(0)
+            continue
+        if executable == "command":
+            remaining.pop(0)
+            while remaining and remaining[0][0].startswith("-"):
+                remaining.pop(0)
+            continue
+        break
+    return remaining
+
+
+def destructive_rm_reason(segment):
+    segment = command_tokens(segment)
+    if not segment or not is_rm_executable(segment[0][0]):
+        return None
+    recursive = False
+    force = False
+    operands = []
+    options_done = False
+    for operand, has_glob in segment[1:]:
+        if not options_done and operand == "--":
             options_done = True
-            operands.append((operand, has_glob))
-        if any(has_glob for _, has_glob in operands):
-            return (
-                "rm のグロブ削除をブロックしました。対象を明示列挙するか、"
-                "グロブ削除を意図するなら該当ファイルを確認してから実行してください。"
-            )
-        if recursive and force and operands:
+            continue
+        if not options_done and operand.startswith("--"):
+            option = operand[2:].split("=", 1)[0].lower()
+            recursive |= option == "recursive"
+            force |= option == "force"
+            continue
+        if not options_done and operand.startswith("-") and operand != "-":
+            flags = operand[1:]
+            recursive |= "r" in flags.lower()
+            force |= "f" in flags.lower()
+            continue
+        options_done = True
+        operands.append((operand, has_glob))
+    if any(has_glob for _, has_glob in operands):
+        return (
+            "rm のグロブ削除をブロックしました。対象を明示列挙するか、"
+            "グロブ削除を意図するなら該当ファイルを確認してから実行してください。"
+        )
+    if recursive and operands:
+        if force:
             return (
                 "rm -rf/-fr によるディレクトリ削除をブロックしました。対象を明示確認し、"
                 "必要なら安全な方法で個別に実行してください。"
             )
+        return (
+            "rm の再帰削除をブロックしました。対象を明示確認し、"
+            "必要なら安全な方法で個別に実行してください。"
+        )
     return None
+
+
+def executable_name(segment):
+    unwrapped = command_tokens(segment)
+    if not unwrapped:
+        return ""
+    return os.path.basename(unwrapped[0][0]).lower()
+
+
+def option_has_short_flag(value, flag):
+    return value.startswith("-") and not value.startswith("--") and flag in value[1:]
+
+
+def git_reason(segment):
+    unwrapped = command_tokens(segment)
+    if executable_name(unwrapped) != "git":
+        return None
+    args = [value for value, _ in unwrapped[1:]]
+    lowered = [value.lower() for value in args]
+    if lowered and lowered[0] == "reset" and "--hard" in lowered[1:]:
+        return "git reset --hard をブロックしました。履歴を破壊しない方法を使ってください。"
+    if lowered and lowered[0] == "push":
+        force = any(
+            value == "--force"
+            or value.startswith("--force=")
+            or value == "--force-with-lease"
+            or value.startswith("--force-with-lease=")
+            or option_has_short_flag(value, "f")
+            for value in lowered[1:]
+        )
+        if force:
+            return "git push の force オプションをブロックしました。通常の push を使ってください。"
+    if lowered and lowered[0] == "clean":
+        force = any(
+            value == "--force" or option_has_short_flag(value, "f")
+            for value in lowered[1:]
+        )
+        if force:
+            return "git clean -f をブロックしました。対象を列挙して回収可能な方法を使ってください。"
+    if lowered and lowered[0] == "branch":
+        deletes = any(value in {"-d", "--delete"} for value in lowered[1:])
+        protected = any(value in {"main", "master"} for value in lowered[1:])
+        if deletes and protected:
+            return "main/master ブランチの削除をブロックしました。"
+    return None
+
+
+def sql_reason(tokens):
+    text = " ".join(value for value, _ in tokens)
+    if re.search(r"\bDROP\s+(?:TABLE|DATABASE)\b", text, flags=re.IGNORECASE):
+        return "DROP TABLE/DATABASE をブロックしました。破壊しない移行手順を使ってください。"
+    if re.search(r"\bTRUNCATE\s+TABLE\b", text, flags=re.IGNORECASE):
+        return "TRUNCATE TABLE をブロックしました。データを保持する手順を使ってください。"
+    return None
+
+
+def powershell_expression_reason(tokens):
+    text = " ".join(value for value, _ in tokens)
+    if re.search(r"\biex\s*\(", text, flags=re.IGNORECASE):
+        return "PowerShell iex(...) をブロックしました。取得内容を保存・確認してから実行してください。"
+    if re.search(r"\bInvoke-Expression\b", text, flags=re.IGNORECASE):
+        return "PowerShell Invoke-Expression をブロックしました。明示的なコマンドを使ってください。"
+    return None
+
+
+def pipeline_reason(tokens):
+    segments = []
+    operators = []
+    current = []
+    for token in tokens:
+        if token[0] in SHELL_OPERATORS:
+            if current:
+                segments.append(current)
+                current = []
+            operators.append(token[0])
+        else:
+            current.append(token)
+    if current:
+        segments.append(current)
+    segment_index = 0
+    for operator in operators:
+        if operator == "|" and segment_index + 1 < len(segments):
+            producer = executable_name(segments[segment_index])
+            consumer = executable_name(segments[segment_index + 1])
+            if producer in {"curl", "wget"} and consumer in {
+                "sh",
+                "bash",
+                "powershell",
+                "pwsh",
+            }:
+                return f"{producer} から {consumer} への直接パイプ実行をブロックしました。取得内容を先に確認してください。"
+        segment_index += 1
+    return None
+
+
+def pip_install_segment(segment):
+    unwrapped = command_tokens(segment)
+    if not unwrapped:
+        return False
+    values = [value for value, _ in unwrapped]
+    executable = executable_name(unwrapped)
+    if executable == "uv":
+        return False
+    if re.fullmatch(r"pip(?:\d+(?:\.\d+)*)?", executable):
+        return len(values) > 1 and values[1].lower() == "install"
+    if re.fullmatch(r"python(?:\d+(?:\.\d+)*)?", executable):
+        lowered = [value.lower() for value in values[1:]]
+        return len(lowered) > 2 and lowered[0] == "-m" and re.fullmatch(
+            r"pip(?:\d+(?:\.\d+)*)?", lowered[1]
+        ) is not None and lowered[2] == "install"
+    return False
+
+
+def pip_warning_needed(segments, environ):
+    if environ.get("VIRTUAL_ENV") or environ.get("CONDA_PREFIX"):
+        return False
+    return any(pip_install_segment(segment) for segment in segments)
 
 
 def option_value(values, name):
@@ -239,13 +400,25 @@ def main():
     if not isinstance(command, str):
         return 0
 
-    segments = list(command_segments(shell_tokens(command)))
-    for check in (destructive_rm_reason, higgsfield_reason):
+    tokens = shell_tokens(command)
+    segments = list(command_segments(tokens))
+    for check in (destructive_rm_reason, git_reason, higgsfield_reason):
         for segment in segments:
             reason = check(segment)
             if reason:
                 deny(reason)
                 return 0
+    for check in (sql_reason, powershell_expression_reason, pipeline_reason):
+        reason = check(tokens)
+        if reason:
+            deny(reason)
+            return 0
+    if pip_warning_needed(segments, os.environ):
+        print(
+            "PIP INSTALL WARNING: global pip install can pollute the interpreter. "
+            "Prefer uv add, uv pip install, or an activated virtual environment.",
+            file=sys.stderr,
+        )
     return 0
 
 

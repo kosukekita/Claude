@@ -12,6 +12,7 @@ while IFS= read -r fixture; do
   name="$(jq -r '.name' <<<"$fixture")"
   command="$(jq -r '.command' <<<"$fixture")"
   expected="$(jq -r '.expected' <<<"$fixture")"
+  expected_reason="$(jq -r '.expected_reason // empty' <<<"$fixture")"
   virtual_env="$(jq -r '.virtual_env // empty' <<<"$fixture")"
   stdout_file="$(mktemp)"
   stderr_file="$(mktemp)"
@@ -23,12 +24,14 @@ while IFS= read -r fixture; do
   fi
   status=$?
   decision="$(jq -r '.hookSpecificOutput.permissionDecision // empty' "$stdout_file" 2>/dev/null)"
+  reason="$(jq -r '.hookSpecificOutput.permissionDecisionReason // empty' "$stdout_file" 2>/dev/null)"
   warning="$(tr '\n' ' ' <"$stderr_file")"
 
   ok=0
   case "$expected" in
     deny)
-      [[ $status -eq 0 && "$decision" == "deny" ]] && ok=1
+      [[ $status -eq 0 && "$decision" == "deny" && \
+         ( -z "$expected_reason" || "$reason" == "$expected_reason" ) ]] && ok=1
       ;;
     warn)
       [[ $status -eq 0 && "$decision" != "deny" && "$warning" == *"PIP INSTALL WARNING"* ]] && ok=1

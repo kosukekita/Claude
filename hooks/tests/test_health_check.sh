@@ -24,10 +24,10 @@ output="$(node "$hooks_dir/hook-health-check.mjs" 2>&1)"
 status=$?
 
 if [[ $status -eq 0 && "$output" == *"[HOOK HEALTH]"* && \
-      "$output" == *"block-dangerous:unresolved"* && \
+      "$output" != *"block-dangerous:unresolved"* && \
       "$output" == *"guard-file-revert:unresolved"* && \
       "$output" == *"record-file-snapshot:unresolved"* ]]; then
-  printf 'PASS: SessionStart health check exposes all unresolved phase-1 hooks\n'
+  printf 'PASS: SessionStart health check exposes the remaining unresolved hooks\n'
   exit 0
 fi
 

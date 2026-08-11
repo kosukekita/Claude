@@ -1,11 +1,10 @@
 # block-dangerous.ps1
-# Claude Code PreToolUse hook: block dangerous commands.
-# exit 2 = block (stderr message is shown to Claude), exit 0 = pass.
+# Retired after its non-overlapping rules moved into
+# guard-destructive-and-resolution.py. Kept for audit history only.
 # RULE: keep this file ASCII-only (encoding issues have killed hooks before).
 
 $ErrorActionPreference = "SilentlyContinue"
 
-# Read JSON from stdin and extract the command
 $json = $input | Out-String
 $cmd = ""
 try {
@@ -37,14 +36,11 @@ $dangerousPatterns = @(
 
 foreach ($pattern in $dangerousPatterns) {
     if ($cmd -match $pattern) {
-        # Write-Error would be swallowed by SilentlyContinue; write stderr directly.
         [Console]::Error.WriteLine("Blocked: Command '$cmd' matches dangerous pattern '$pattern'. Propose a safer alternative.")
         exit 2
     }
 }
 
-# Block global pip install (prefer uv).
-# Allow uv-managed installs (uv pip / uv add / uv run --with) and in-venv pip.
 $isUvManaged = $cmd -match "\buv\s+(pip|add|run)\b"
 $isPipInstall = $cmd -match "(^|\s|;|&&|\|)\s*(sudo\s+)?(python[0-9.]*\s+-m\s+)?pip[0-9.]*\s+install\b"
 if ($isPipInstall -and -not $isUvManaged) {

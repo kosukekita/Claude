@@ -58,11 +58,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$HOME/.claude/hooks/dispatch.js\" block-dangerous",
-            "timeout": 10
-          },
-          {
-            "type": "command",
             "command": "node \"$HOME/.claude/hooks/dispatch.js\" warn-tu-encoding",
             "timeout": 10
           }
