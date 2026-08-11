@@ -28,7 +28,7 @@ broken_output="$(
 )"
 broken_status=$?
 
-if [[ $pending_status -eq 0 && "$pending_output" == *"protect-files:pending"* && \
+if [[ $pending_status -eq 0 && "$pending_output" != *"protect-files"* && \
       "$pending_output" == *"warn-bash-overwrite:pending"* && \
       "$pending_output" == *"memory-inject:pending"* && \
       "$pending_output" != *"warn-tu-encoding"* && \

@@ -52,12 +52,6 @@
       "criticality": "advisory",
       "description": "Forward hook events to the Windows-only Pixel Agents integration."
     },
-    "protect-files": {
-      "platform": "any",
-      "criticality": "required",
-      "implementation_status": "pending",
-      "description": "Protect sensitive configuration paths before file writes."
-    },
     "record-file-snapshot": {
       "platform": "any",
       "criticality": "required",

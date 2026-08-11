@@ -56,11 +56,15 @@ run('manifest and settings targets match exactly', () => {
     assert.strictEqual(typeof metadata.description, 'string', target);
     assert(metadata.description.trim().length > 0, target);
   }
-  for (const target of ['protect-files', 'warn-bash-overwrite', 'memory-inject']) {
+  for (const target of ['warn-bash-overwrite', 'memory-inject']) {
     assert.strictEqual(manifest.targets[target].platform, 'any', target);
     assert.strictEqual(manifest.targets[target].implementation_status, 'pending', target);
     assert(!/on Windows|Windows memory/i.test(manifest.targets[target].description), target);
   }
+  assert(!actual.includes('protect-files'));
+  assert(!Object.hasOwn(manifest.targets, 'protect-files'));
+  assert(!fs.existsSync(path.join(hooksDir, 'protect-files.ps1')));
+  assert(fs.existsSync(path.join(hooksDir, 'retired', 'protect-files.ps1')));
   for (const target of ['warn-tu-encoding', 'pixel-agents-shim']) {
     assert.strictEqual(manifest.targets[target].platform, 'windows', target);
     assert.notStrictEqual(manifest.targets[target].implementation_status, 'pending', target);
@@ -114,18 +118,15 @@ run('platform mismatch is a silent successful skip', () => {
   assert(!fs.existsSync(path.join(temp, 'claude-hooks', 'dispatch-events.jsonl')));
 });
 
-run('PowerShell-only applicable hook is visible on Linux', () => {
-  if (process.platform === 'win32') return;
-  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'hooks-phase1-'));
-  const result = dispatcher.dispatchTarget('protect-files', [], {
-    env: {
-      ...process.env,
-      XDG_STATE_HOME: temp
-    }
-  });
-  assert.strictEqual(result.status, 0);
-  assert.match(result.stderr, /HOOK DISPATCH WARNING/);
-  assert.match(result.stderr, /no runnable implementation/);
+run('retired protect-files is unregistered, undeclared, and archived', () => {
+  const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  const inspected = dispatcher.inspectTarget('protect-files');
+  assert(!registeredTargets(settings).has('protect-files'));
+  assert(!Object.hasOwn(manifest.targets, 'protect-files'));
+  assert(!fs.existsSync(path.join(hooksDir, 'protect-files.ps1')));
+  assert(fs.existsSync(path.join(hooksDir, 'retired', 'protect-files.ps1')));
+  assert.match(inspected.error, /not declared in manifest/);
 });
 
 run('spawn errors are visible and remain fail-open', () => {
