@@ -2,7 +2,6 @@ const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { spawnSync } = require('child_process');
 
 const hooksDir = path.join(__dirname, '..');
 const repoDir = path.join(hooksDir, '..');
@@ -112,16 +111,6 @@ run('spawn errors are visible and remain fail-open', () => {
   assert.match(result.stderr, /spawn failure/);
   const events = fs.readFileSync(path.join(temp, 'claude-hooks', 'dispatch-events.jsonl'), 'utf8').trim();
   assert.strictEqual(JSON.parse(events).kind, 'spawn-error');
-});
-
-run('dispatcher test input reaches a runnable hook without changing its decision', () => {
-  const input = Buffer.from(JSON.stringify({
-    tool_input: { command: 'rm -rf /tmp/hooks-revival-fixture' }
-  }));
-  const result = dispatcher.dispatchTarget('guard-destructive-and-resolution', [], { input });
-  assert.strictEqual(result.status, 0);
-  const output = JSON.parse(result.stdout.toString('utf8'));
-  assert.strictEqual(output.hookSpecificOutput.permissionDecision, 'deny');
 });
 
 run('log-commands is unregistered and archived', () => {

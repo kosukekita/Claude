@@ -164,8 +164,7 @@ function dispatchTarget(target, extraArgs = [], options = {}) {
     inspected.resolution.runner,
     [...inspected.resolution.args, ...extraArgs],
     {
-      stdio: options.input === undefined ? [0, 'pipe', 'pipe'] : ['pipe', 'pipe', 'pipe'],
-      input: options.input,
+      stdio: [0, 'pipe', 'pipe'],
       env,
       maxBuffer: 1024 * 1024 * 64,
       windowsHide: true
