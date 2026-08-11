@@ -32,7 +32,7 @@ GIT_GLOBAL_OPTIONS_WITH_VALUE = {
     "--super-prefix",
     "--config-env",
 }
-SQL_CLIENTS = {"psql", "mysql", "mariadb", "sqlite3", "sqlcmd"}
+SQL_CLIENTS = {"psql", "mysql"}
 APPROVED_RESOLUTIONS = {"480p", "1080p"}
 APPROVED_QUALITIES = {"fast", "high"}
 # Refresh this list from the TYPE=image rows of: higgsfield model list --image
@@ -105,10 +105,6 @@ def shell_tokens(command):
                 tokens.append(("\n", False))
         elif char == "&" and text and text[-1] in {">", "<"}:
             text.append(char)
-        elif char == "|" and i + 1 < len(command) and command[i + 1] == "&":
-            emit()
-            tokens.append(("|", False))
-            i += 1
         elif char in ";&|":
             emit()
             if i + 1 < len(command) and command[i + 1] == char and char in "&|":
