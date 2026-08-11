@@ -1,9 +1,5 @@
 # guard-file-revert.ps1
-# Claude Code PreToolUse hook (Write|Edit|MultiEdit|NotebookEdit).
-# 目的: ユーザーの手動編集を上書きする revert 事故を防ぐ。
-# エージェントが最後に「見た/書いた」内容と、ディスク現物の hash が食い違う場合だけ
-# exit 2 でブロックし、再読込＆照合を促す。証拠がある時だけ止める（過剰ブロック回避）。
-# 何かあれば必ず exit 0（fail-open。グローバル運用を絶対に壊さない）。
+# Retired after the cross-platform Python snapshot pair replaced it.
 
 $ErrorActionPreference = "SilentlyContinue"
 
@@ -27,19 +23,19 @@ try {
     $file = $obj.tool_input.file_path
     if (-not $file) { $file = $obj.tool_input.path }
     if (-not $file) { exit 0 }
-    if (-not (Test-Path -LiteralPath $file)) { exit 0 }   # 新規作成は対象外
+    if (-not (Test-Path -LiteralPath $file)) { exit 0 }
 
     $stateDir = Join-Path ([Environment]::GetFolderPath('UserProfile')) '.claude\state\file-snapshots'
     $snap = Join-Path $stateDir ((Get-StateKey $file) + '.json')
-    if (-not (Test-Path -LiteralPath $snap)) { exit 0 }   # 未追跡=初回接触は判定不能
+    if (-not (Test-Path -LiteralPath $snap)) { exit 0 }
 
     $s = Get-Content -LiteralPath $snap -Raw -ErrorAction Stop | ConvertFrom-Json
     $cur = Get-ContentHash $file
     if ($null -eq $cur) { exit 0 }
-    if ($cur -eq $s.last_seen_hash -or $cur -eq $s.last_agent_write_hash) { exit 0 }  # 既知の内容
+    if ($cur -eq $s.last_seen_hash -or $cur -eq $s.last_agent_write_hash) { exit 0 }
 
     $mt = (Get-Item -LiteralPath $file).LastWriteTime.ToString('u')
-    [Console]::Error.WriteLine("REVERT GUARD (blocked): '$file' changed on disk since you last read/wrote it (modified $mt) — most likely a manual edit or deletion by the user. Re-READ the file now and reconcile your change with its CURRENT content. Do NOT overwrite it from old context, a backup, a template, or a generator's output. If you intend to discard the user's change, ask them first.")
+    [Console]::Error.WriteLine("REVERT GUARD (blocked): '$file' changed on disk since you last read/wrote it (modified $mt). Re-read the file and reconcile the current content.")
     exit 2
 } catch {
     exit 0

@@ -1,10 +1,5 @@
 # record-file-snapshot.ps1
-# Claude Code PostToolUse hook (Read|Write|Edit|MultiEdit|NotebookEdit).
-# エージェントがファイルを「見た/書いた」後に、その現物 hash をスナップショット保存する。
-# Read -> last_seen_hash を更新（＝最後に見た内容）。
-# Write/Edit -> last_seen_hash と last_agent_write_hash の両方を更新（＝自分が書いた内容）。
-# guard-file-revert.ps1 がこの記録と現物を比較して外部変更を検知する。
-# 何かあれば必ず exit 0（fail-open）。
+# Retired after the cross-platform Python snapshot pair replaced it.
 
 $ErrorActionPreference = "SilentlyContinue"
 
