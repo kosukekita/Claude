@@ -26,13 +26,15 @@ while IFS= read -r fixture; do
   status=$?
   decision="$(jq -r '.hookSpecificOutput.permissionDecision // empty' "$stdout_file" 2>/dev/null)"
   reason="$(jq -r '.hookSpecificOutput.permissionDecisionReason // empty' "$stdout_file" 2>/dev/null)"
+  base_reason="${reason%%$'\n'OVERRIDE:*}"
   warning="$(tr '\n' ' ' <"$stderr_file")"
 
   ok=0
   case "$expected" in
     deny)
       [[ $status -eq 0 && "$decision" == "deny" && \
-         ( -z "$expected_reason" || "$reason" == "$expected_reason" ) ]] && ok=1
+         "$reason" == *$'\n'OVERRIDE:* && \
+         ( -z "$expected_reason" || "$base_reason" == "$expected_reason" ) ]] && ok=1
       ;;
     warn)
       [[ $status -eq 0 && -z "$decision" && -n "$warning" && \

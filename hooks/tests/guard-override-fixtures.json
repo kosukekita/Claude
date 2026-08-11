@@ -1,0 +1,6 @@
+{
+  "policy_fixture_id": "A1",
+  "rule": "destructive-git",
+  "reason": "fixture-approved one-time operation",
+  "requested_by": "fixture-user"
+}

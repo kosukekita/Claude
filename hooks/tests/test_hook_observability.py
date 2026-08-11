@@ -14,6 +14,7 @@ from unittest import mock
 
 
 HOOKS_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(HOOKS_DIR))
 FIXTURES = json.loads(
     Path(__file__)
     .with_name("hook-observability-fixtures.json")
@@ -30,6 +31,7 @@ def load_guard_module():
 
 
 GUARD = load_guard_module()
+import file_snapshot_common as snapshots  # noqa: E402
 
 
 class HookObservabilityTests(unittest.TestCase):
@@ -141,6 +143,7 @@ class HookObservabilityTests(unittest.TestCase):
         self.assertEqual(0, result.returncode)
         self.assertEqual(b"", result.stdout)
         self.assertEqual(b"", result.stderr)
+        self.assertFalse((blocked / "claude-hooks").exists())
 
     def test_snapshot_and_revert_invalid_input_record_without_changing_fail_open(self):
         for name, target in (
@@ -181,6 +184,36 @@ class HookObservabilityTests(unittest.TestCase):
         self.assertEqual(b"", result.stdout)
         self.assertEqual("record-file-snapshot", event["target"])
         self.assertEqual("state-write-error", event["detail"])
+
+    def test_revert_state_write_failure_is_recorded_and_remains_fail_open(self):
+        target = self.root / "externally-edited.txt"
+        target.write_text("original", encoding="utf-8")
+        payload = {
+            "session_id": "observability-test",
+            "tool_name": "Read",
+            "tool_input": {"file_path": str(target)},
+        }
+        snapshots.record_event(payload, self.environ)
+        target.write_text("external", encoding="utf-8")
+        self.file_revert_state.chmod(0o500)
+        payload["tool_name"] = "Edit"
+        try:
+            result = subprocess.run(
+                [sys.executable, str(HOOKS_DIR / "guard-file-revert.py")],
+                input=json.dumps(payload).encode(),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env=self.environ,
+                check=False,
+            )
+        finally:
+            self.file_revert_state.chmod(0o700)
+        event = self.events()[-1]
+
+        self.assertEqual(0, result.returncode)
+        self.assertEqual(b"", result.stdout)
+        self.assertEqual("guard-file-revert", event["target"])
+        self.assertEqual("state-read-write-error", event["detail"])
 
     def test_snapshot_and_revert_normal_events_do_not_log_fail_open(self):
         for name in ("snapshot_valid", "revert_valid"):

@@ -6,6 +6,9 @@ import os
 import re
 import sys
 
+from hook_observability import json_error_detail, record_fail_open
+from guard_override import consume_override, override_instruction
+
 
 SHELL_OPERATORS = {";", "&&", "||", "|", "&", "\n"}
 PIPELINE_BOUNDARIES = {";", "&&", "||", "&", "\n"}
@@ -482,14 +485,16 @@ def higgsfield_reason(segment):
     return None
 
 
-def deny(reason):
+def deny(reason, command, rule):
     print(
         json.dumps(
             {
                 "hookSpecificOutput": {
                     "hookEventName": "PreToolUse",
                     "permissionDecision": "deny",
-                    "permissionDecisionReason": reason,
+                    "permissionDecisionReason": (
+                        f"{reason}\n{override_instruction(command, rule)}"
+                    ),
                 }
             },
             ensure_ascii=False,
@@ -497,41 +502,79 @@ def deny(reason):
     )
 
 
-def main():
-    try:
-        payload = json.load(sys.stdin)
-    except (json.JSONDecodeError, UnicodeDecodeError):
-        return 0
-    command = payload.get("tool_input", {}).get("command")
-    if not isinstance(command, str):
-        return 0
-
-    tokens = shell_tokens(command)
-    segments = list(command_segments(tokens))
-    for check in (destructive_rm_reason, git_reason, higgsfield_reason):
-        for segment in segments:
-            reason = check(segment)
-            if reason:
-                deny(reason)
-                return 0
-    reason = pipeline_reason(tokens)
-    if reason:
-        deny(reason)
-        return 0
-    for segment in segments:
-        reason = git_warning_reason(segment)
-        if reason:
-            print(reason, file=sys.stderr)
-    for check in (sql_warning_reason, powershell_expression_warning_reason):
-        reason = check(segments)
-        if reason:
-            print(reason, file=sys.stderr)
-    if pip_warning_needed(segments, os.environ):
+def deny_unless_overridden(reason, command, rule):
+    if consume_override(command, rule):
         print(
-            "PIP INSTALL WARNING: global pip install can pollute the interpreter. "
-            "Prefer uv add, uv pip install, or an activated virtual environment.",
+            f"GUARD OVERRIDE USED: rule={rule}; one-time token consumed and audited.",
             file=sys.stderr,
         )
+        return False
+    deny(reason, command, rule)
+    return True
+
+
+def main():
+    try:
+        try:
+            payload = json.load(sys.stdin)
+        except UnicodeDecodeError as error:
+            record_fail_open(
+                "guard-destructive-and-resolution", "invalid-encoding", error
+            )
+            return 0
+        except json.JSONDecodeError as error:
+            record_fail_open(
+                "guard-destructive-and-resolution", json_error_detail(error), error
+            )
+            return 0
+        if not isinstance(payload, dict):
+            record_fail_open(
+                "guard-destructive-and-resolution", "non-object-payload"
+            )
+            return 0
+        tool_input = payload.get("tool_input")
+        command = tool_input.get("command") if isinstance(tool_input, dict) else None
+        if not isinstance(command, str):
+            record_fail_open(
+                "guard-destructive-and-resolution", "non-string-command"
+            )
+            return 0
+
+        tokens = shell_tokens(command)
+        segments = list(command_segments(tokens))
+        for check, rule in (
+            (destructive_rm_reason, "destructive-rm"),
+            (git_reason, "destructive-git"),
+            (higgsfield_reason, "higgsfield-quality"),
+        ):
+            for segment in segments:
+                reason = check(segment)
+                if reason and deny_unless_overridden(reason, command, rule):
+                    return 0
+        reason = pipeline_reason(tokens)
+        if reason and deny_unless_overridden(
+            reason, command, "download-execution-pipeline"
+        ):
+            return 0
+        for segment in segments:
+            reason = git_warning_reason(segment)
+            if reason:
+                print(reason, file=sys.stderr)
+        for check in (sql_warning_reason, powershell_expression_warning_reason):
+            reason = check(segments)
+            if reason:
+                print(reason, file=sys.stderr)
+        if pip_warning_needed(segments, os.environ):
+            print(
+                "PIP INSTALL WARNING: global pip install can pollute the interpreter. "
+                "Prefer uv add, uv pip install, or an activated virtual environment.",
+                file=sys.stderr,
+            )
+    except Exception as error:
+        record_fail_open(
+            "guard-destructive-and-resolution", "unexpected-error", error
+        )
+        return 0
     return 0
 
 
