@@ -1,0 +1,39 @@
+{
+  "guard_invalid_json": {
+    "script": "guard-destructive-and-resolution.py",
+    "stdin_text": "{invalid",
+    "expected_detail": "invalid-json"
+  },
+  "guard_invalid_encoding": {
+    "script": "guard-destructive-and-resolution.py",
+    "stdin_hex": "ff",
+    "expected_detail": "invalid-encoding"
+  },
+  "guard_non_string_command": {
+    "script": "guard-destructive-and-resolution.py",
+    "payload": {"tool_input": {"command": 42}},
+    "expected_detail": "non-string-command"
+  },
+  "guard_allow": {
+    "script": "guard-destructive-and-resolution.py",
+    "payload": {"tool_input": {"command": "git status"}}
+  },
+  "snapshot_invalid_json": {
+    "script": "record-file-snapshot.py",
+    "stdin_text": "{invalid",
+    "expected_detail": "invalid-json"
+  },
+  "snapshot_valid": {
+    "script": "record-file-snapshot.py",
+    "payload": {"tool_name": "Read", "tool_input": {"file_path": "missing.txt"}}
+  },
+  "revert_invalid_json": {
+    "script": "guard-file-revert.py",
+    "stdin_text": "{invalid",
+    "expected_detail": "invalid-json"
+  },
+  "revert_valid": {
+    "script": "guard-file-revert.py",
+    "payload": {"tool_name": "Edit", "tool_input": {"file_path": "missing.txt"}}
+  }
+}
