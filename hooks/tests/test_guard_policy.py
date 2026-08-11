@@ -37,7 +37,10 @@ def run_fixture(fixture):
 
 def matches(fixture, status, decision, stdout, warning):
     expected = fixture["expected"]
-    marker = fixture.get("expected_warning_contains", "")
+    markers = fixture.get("expected_warning_all")
+    if markers is None:
+        marker = fixture.get("expected_warning_contains", "")
+        markers = [marker] if marker else []
     if expected == "deny":
         return status == 0 and decision == "deny"
     if expected == "warn":
@@ -46,7 +49,8 @@ def matches(fixture, status, decision, stdout, warning):
             and decision == ""
             and stdout == ""
             and warning != ""
-            and (not marker or marker in warning)
+            and "\n" not in warning
+            and all(marker in warning for marker in markers)
         )
     if expected == "allow":
         return status == 0 and decision == "" and stdout == "" and warning == ""

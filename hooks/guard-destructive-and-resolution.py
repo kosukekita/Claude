@@ -8,6 +8,31 @@ import sys
 
 
 SHELL_OPERATORS = {";", "&&", "||", "|", "&", "\n"}
+PIPELINE_BOUNDARIES = {";", "&&", "||", "&", "\n"}
+PIPELINE_PRODUCERS = {"curl", "wget"}
+PIPELINE_CONSUMERS = {
+    "sh",
+    "bash",
+    "zsh",
+    "dash",
+    "powershell",
+    "pwsh",
+    "python",
+    "python3",
+    "node",
+    "perl",
+    "ruby",
+}
+GIT_GLOBAL_OPTIONS_WITH_VALUE = {
+    "-c",
+    "-C",
+    "--git-dir",
+    "--work-tree",
+    "--namespace",
+    "--super-prefix",
+    "--config-env",
+}
+SQL_CLIENTS = {"psql", "mysql", "mariadb", "sqlite3", "sqlcmd"}
 APPROVED_RESOLUTIONS = {"480p", "1080p"}
 APPROVED_QUALITIES = {"fast", "high"}
 # Refresh this list from the TYPE=image rows of: higgsfield model list --image
@@ -78,6 +103,12 @@ def shell_tokens(command):
             emit()
             if char == "\n":
                 tokens.append(("\n", False))
+        elif char == "&" and text and text[-1] in {">", "<"}:
+            text.append(char)
+        elif char == "|" and i + 1 < len(command) and command[i + 1] == "&":
+            emit()
+            tokens.append(("|", False))
+            i += 1
         elif char in ";&|":
             emit()
             if i + 1 < len(command) and command[i + 1] == char and char in "&|":
@@ -201,85 +232,164 @@ def option_has_short_flag(value, flag):
     return value.startswith("-") and not value.startswith("--") and flag in value[1:]
 
 
+def git_subcommand_args(unwrapped):
+    """Return a Git subcommand and its argv after global options."""
+    args = [value for value, _ in unwrapped[1:]]
+    index = 0
+    while index < len(args):
+        value = args[index]
+        lowered = value.lower()
+        if value == "--":
+            index += 1
+            break
+        if value in GIT_GLOBAL_OPTIONS_WITH_VALUE:
+            index += 2
+            continue
+        if any(
+            lowered.startswith(option.lower() + "=")
+            for option in GIT_GLOBAL_OPTIONS_WITH_VALUE
+            if option.startswith("--")
+        ):
+            index += 1
+            continue
+        if (value.startswith("-C") and value != "-C") or (
+            value.startswith("-c") and value != "-c"
+        ):
+            index += 1
+            continue
+        if value.startswith("-"):
+            index += 1
+            continue
+        return lowered, args[index + 1 :]
+    if index < len(args):
+        return args[index].lower(), args[index + 1 :]
+    return "", []
+
+
 def git_reason(segment):
     unwrapped = command_tokens(segment)
     if executable_name(unwrapped) != "git":
         return None
-    args = [value for value, _ in unwrapped[1:]]
+    subcommand, args = git_subcommand_args(unwrapped)
     lowered = [value.lower() for value in args]
-    if lowered and lowered[0] == "reset" and "--hard" in lowered[1:]:
+    if subcommand == "reset" and "--hard" in lowered:
         return "git reset --hard をブロックしました。履歴を破壊しない方法を使ってください。"
-    if lowered and lowered[0] == "push":
+    if subcommand == "push":
         force = any(
             value == "--force"
             or value.startswith("--force=")
-            or value == "--force-with-lease"
-            or value.startswith("--force-with-lease=")
             or option_has_short_flag(value, "f")
-            for value in lowered[1:]
+            for value in lowered
         )
-        if force:
+        forced_refspec = any(value.startswith("+") for value in args)
+        if force or forced_refspec:
             return "git push の force オプションをブロックしました。通常の push を使ってください。"
-    if lowered and lowered[0] == "clean":
+    if subcommand == "clean":
         force = any(
             value == "--force" or option_has_short_flag(value, "f")
-            for value in lowered[1:]
+            for value in lowered
         )
         if force:
             return "git clean -f をブロックしました。対象を列挙して回収可能な方法を使ってください。"
-    if lowered and lowered[0] == "branch":
-        deletes = any(value in {"-d", "--delete"} for value in lowered[1:])
-        protected = any(value in {"main", "master"} for value in lowered[1:])
+    if subcommand == "branch":
+        deletes = any(value in {"-d", "--delete"} for value in lowered)
+        protected = any(value in {"main", "master"} for value in lowered)
         if deletes and protected:
             return "main/master ブランチの削除をブロックしました。"
     return None
 
 
-def sql_reason(tokens):
-    text = " ".join(value for value, _ in tokens)
-    if re.search(r"\bDROP\s+(?:TABLE|DATABASE)\b", text, flags=re.IGNORECASE):
-        return "DROP TABLE/DATABASE をブロックしました。破壊しない移行手順を使ってください。"
-    if re.search(r"\bTRUNCATE\s+TABLE\b", text, flags=re.IGNORECASE):
-        return "TRUNCATE TABLE をブロックしました。データを保持する手順を使ってください。"
+def git_warning_reason(segment):
+    unwrapped = command_tokens(segment)
+    if executable_name(unwrapped) != "git":
+        return None
+    subcommand, args = git_subcommand_args(unwrapped)
+    if subcommand != "push":
+        return None
+    lowered = [value.lower() for value in args]
+    if any(
+        value == "--force-with-lease" or value.startswith("--force-with-lease=")
+        for value in lowered
+    ):
+        return (
+            "GIT PUSH WARNING: --force-with-lease はリモート更新を検査しますが、"
+            "対象ブランチを取り違えると自分のコミットを失えます。push 先ブランチ名を確認してください。"
+        )
     return None
 
 
-def powershell_expression_reason(tokens):
-    text = " ".join(value for value, _ in tokens)
-    if re.search(r"\biex\s*\(", text, flags=re.IGNORECASE):
-        return "PowerShell iex(...) をブロックしました。取得内容を保存・確認してから実行してください。"
-    if re.search(r"\bInvoke-Expression\b", text, flags=re.IGNORECASE):
-        return "PowerShell Invoke-Expression をブロックしました。明示的なコマンドを使ってください。"
+def sql_warning_reason(segments):
+    for segment in segments:
+        unwrapped = command_tokens(segment)
+        if executable_name(unwrapped) not in SQL_CLIENTS:
+            continue
+        text = " ".join(value for value, _ in unwrapped[1:])
+        if re.search(
+            r"\b(?:DROP\s+(?:TABLE|DATABASE)|TRUNCATE\s+TABLE)\b",
+            text,
+            flags=re.IGNORECASE,
+        ):
+            return (
+                "SQL DESTRUCTIVE WARNING: このDDLは対象データを失う操作です。"
+                "接続先と対象を確認し、実行前にバックアップを取得してください。"
+            )
     return None
+
+
+def powershell_expression_warning_reason(segments):
+    for segment in segments:
+        unwrapped = command_tokens(segment)
+        if not unwrapped:
+            continue
+        executable = executable_name(unwrapped)
+        text = " ".join(value for value, _ in unwrapped)
+        is_powershell_command = executable in {"powershell", "pwsh"}
+        is_direct_expression = bool(
+            re.fullmatch(r"iex\s*\(.*", unwrapped[0][0], flags=re.IGNORECASE)
+            or executable == "invoke-expression"
+        )
+        if (is_powershell_command or is_direct_expression) and re.search(
+            r"\biex\s*\(|\bInvoke-Expression\b", text, flags=re.IGNORECASE
+        ):
+            return (
+                "POWERSHELL EVAL WARNING: 動的実行は入力を任意のコードとして実行します。"
+                "内容をファイルへ保存・確認し、明示的なコマンドとして実行してください。"
+            )
+    return None
+
+
+def pipeline_chains(tokens):
+    """Yield command-stage lists for each control-flow-delimited pipeline."""
+    stages = [[]]
+    for token in tokens:
+        operator = token[0]
+        if operator == "|":
+            if stages[-1]:
+                stages.append([])
+        elif operator in PIPELINE_BOUNDARIES:
+            completed = [stage for stage in stages if stage]
+            if completed:
+                yield completed
+            stages = [[]]
+        else:
+            stages[-1].append(token)
+    completed = [stage for stage in stages if stage]
+    if completed:
+        yield completed
 
 
 def pipeline_reason(tokens):
-    segments = []
-    operators = []
-    current = []
-    for token in tokens:
-        if token[0] in SHELL_OPERATORS:
-            if current:
-                segments.append(current)
-                current = []
-            operators.append(token[0])
-        else:
-            current.append(token)
-    if current:
-        segments.append(current)
-    segment_index = 0
-    for operator in operators:
-        if operator == "|" and segment_index + 1 < len(segments):
-            producer = executable_name(segments[segment_index])
-            consumer = executable_name(segments[segment_index + 1])
-            if producer in {"curl", "wget"} and consumer in {
-                "sh",
-                "bash",
-                "powershell",
-                "pwsh",
-            }:
-                return f"{producer} から {consumer} への直接パイプ実行をブロックしました。取得内容を先に確認してください。"
-        segment_index += 1
+    for stages in pipeline_chains(tokens):
+        executables = [executable_name(stage) for stage in stages]
+        for producer_index, producer in enumerate(executables):
+            if producer not in PIPELINE_PRODUCERS:
+                continue
+            for consumer in executables[producer_index + 1 :]:
+                if consumer in PIPELINE_CONSUMERS:
+                    return (
+                        f"{producer} から {consumer} へのパイプ実行をブロックしました。"
+                        "取得内容をファイルへ保存・確認してから実行してください。"
+                    )
     return None
 
 
@@ -408,11 +518,18 @@ def main():
             if reason:
                 deny(reason)
                 return 0
-    for check in (sql_reason, powershell_expression_reason, pipeline_reason):
-        reason = check(tokens)
+    reason = pipeline_reason(tokens)
+    if reason:
+        deny(reason)
+        return 0
+    for segment in segments:
+        reason = git_warning_reason(segment)
         if reason:
-            deny(reason)
-            return 0
+            print(reason, file=sys.stderr)
+    for check in (sql_warning_reason, powershell_expression_warning_reason):
+        reason = check(segments)
+        if reason:
+            print(reason, file=sys.stderr)
     if pip_warning_needed(segments, os.environ):
         print(
             "PIP INSTALL WARNING: global pip install can pollute the interpreter. "
