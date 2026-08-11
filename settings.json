@@ -123,7 +123,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$HOME/.claude/hooks/dispatch.js\" hook-health-check",
+            "command": "node \"$HOME/.claude/hooks/hook-health-check.mjs\"",
             "timeout": 10
           },
           {
