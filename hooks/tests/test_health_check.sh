@@ -20,16 +20,21 @@ if [[ "$configured" != 'node "$HOME/.claude/hooks/hook-health-check.mjs"' ]]; th
   exit 1
 fi
 
-output="$(node "$hooks_dir/hook-health-check.mjs" 2>&1)"
-status=$?
+healthy_output="$(node "$hooks_dir/hook-health-check.mjs" 2>&1)"
+healthy_status=$?
+broken_output="$(
+  CLAUDE_HOOK_MANIFEST="$hooks_dir/tests/manifest-empty.json" \
+    node "$hooks_dir/hook-health-check.mjs" 2>&1
+)"
+broken_status=$?
 
-if [[ $status -eq 0 && "$output" == *"[HOOK HEALTH]"* && \
-      "$output" != *"block-dangerous:unresolved"* && \
-      "$output" == *"guard-file-revert:unresolved"* && \
-      "$output" == *"record-file-snapshot:unresolved"* ]]; then
-  printf 'PASS: SessionStart health check exposes the remaining unresolved hooks\n'
+if [[ $healthy_status -eq 0 && -z "$healthy_output" && \
+      $broken_status -eq 0 && "$broken_output" == *"[HOOK HEALTH]"* && \
+      "$broken_output" == *"missing-manifest"* ]]; then
+  printf 'PASS: SessionStart is quiet when healthy and visible when broken\n'
   exit 0
 fi
 
-printf 'FAIL: SessionStart health check output=%s status=%s\n' "$output" "$status"
+printf 'FAIL: healthy=(%s/%s) broken=(%s/%s)\n' \
+  "$healthy_status" "$healthy_output" "$broken_status" "$broken_output"
 exit 1
