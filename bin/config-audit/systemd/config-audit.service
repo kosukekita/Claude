@@ -1,0 +1,9 @@
+[Unit]
+Description=Weekly deterministic audit of Claude configuration
+Documentation=file:///home/kita/.claude/bin/config-audit/config_audit.py
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/.claude
+ExecStart=/usr/bin/python3 %h/.claude/bin/config-audit/config_audit.py
+Nice=10

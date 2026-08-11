@@ -1,0 +1,11 @@
+[Unit]
+Description=Weekly trigger for Claude config-audit (Sunday 03:17 local)
+
+[Timer]
+OnCalendar=Sun *-*-* 03:17:00
+Persistent=true
+RandomizedDelaySec=300
+WakeSystem=false
+
+[Install]
+WantedBy=timers.target
