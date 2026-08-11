@@ -70,29 +70,101 @@ def _source_lines(path: Path) -> Iterable[tuple[int, str]]:
 
 
 def _resolve_reference(raw: str, source: Path, claude_dir: Path) -> Path:
-    if raw.startswith("~/.claude/"):
-        return claude_dir / raw.removeprefix("~/.claude/")
-    if raw == "~/.claude":
-        return claude_dir
+    home_dir = claude_dir.parent
+    if raw == "~" or raw == "$HOME":
+        return home_dir
+    if raw.startswith("~/"):
+        return home_dir / raw.removeprefix("~/")
+    if raw.startswith("$HOME/"):
+        return home_dir / raw.removeprefix("$HOME/")
+    if raw.startswith(("agents/", "bin/", "hooks/", "improvements/", "projects/")):
+        return claude_dir / raw
     candidate = Path(raw)
     if candidate.is_absolute():
         return candidate
-    return source.parent / raw.removeprefix("./")
+    local = source.parent / raw.removeprefix("./")
+    if local.exists() or "/skills/" not in str(source):
+        return local
+    cross_skill = [
+        path
+        for path in (claude_dir / "skills").glob(f"*/{raw}")
+        if path.exists()
+    ]
+    return cross_skill[0] if len(cross_skill) == 1 else local
 
 
-def find_dead_refs(sources: Iterable[Path], claude_dir: Path) -> list[Finding]:
+def _is_file_reference(raw: str, source: Path) -> bool:
+    if any(marker in raw for marker in ("...", "*", "%", "[", "]", "(", ")")):
+        return False
+    if raw.startswith(("--", "/api/", "/v1/", "/health", "/rpc")):
+        return False
+    if raw.startswith("./") and "/skills/" in str(source):
+        return False
+    if raw.startswith("/") and not raw.startswith("/home/"):
+        return Path(raw).suffix in {
+            ".cjs",
+            ".js",
+            ".json",
+            ".jsonl",
+            ".md",
+            ".mjs",
+            ".ps1",
+            ".py",
+            ".service",
+            ".sh",
+            ".timer",
+            ".toml",
+            ".yaml",
+            ".yml",
+        }
+    if raw.startswith(("~", "$HOME/", "/home/", "./", "../")):
+        return True
+    if source.name in {"CLAUDE.md", "settings.json"}:
+        return "/" in raw or bool(Path(raw).suffix)
+    allowed_skill_prefixes = (
+        "agents/",
+        "assets/",
+        "bin/",
+        "docs/",
+        "hooks/",
+        "reference/",
+        "references/",
+        "scripts/",
+        "templates/",
+    )
+    return raw.startswith(allowed_skill_prefixes)
+
+
+def find_dead_refs(
+    sources: Iterable[Path],
+    claude_dir: Path,
+    *,
+    platform_name: str | None = None,
+) -> list[Finding]:
     """Find nonexistent file references written inside Markdown code spans."""
 
+    platform_name = platform_name or sys.platform
     findings: list[Finding] = []
     path_pattern = re.compile(r"`([^`\n]+)`")
     for source in sources:
         for line_number, line in _source_lines(source):
+            if re.search(
+                r"生成される|無ければ|if you prefer|optional", line, re.IGNORECASE
+            ):
+                continue
             for raw in path_pattern.findall(line):
+                raw = raw.strip().strip('"\'')
+                if platform_name != "win32" and re.search(
+                    r"\bWindows\b|\bwin32\b", line, re.IGNORECASE
+                ):
+                    continue
+                if platform_name != "win32" and raw.lower().endswith((".exe", ".ps1")):
+                    continue
                 if (
                     "://" in raw
                     or any(char in raw for char in "*{}<>")
                     or " " in raw
-                    or not ("/" in raw or Path(raw).suffix)
+                    or not _is_file_reference(raw, source)
                 ):
                     continue
                 resolved = _resolve_reference(raw, source, claude_dir)
@@ -121,18 +193,23 @@ def find_dead_skill_refs(
     """Find emphasized skill names that do not resolve to an active skill."""
 
     findings: list[Finding] = []
-    patterns = (
-        re.compile(r"\*\*([A-Za-z0-9][A-Za-z0-9:_-]+)\*\*\s*スキル"),
-        re.compile(r"@([A-Za-z0-9][A-Za-z0-9:_-]+)"),
-        re.compile(r"Skill\((?:skill=)?[\"']?([A-Za-z0-9][A-Za-z0-9:_-]+)"),
+    emphasized_pattern = re.compile(
+        r"\*\*([A-Za-z][A-Za-z0-9:_-]*)\*\*\s*スキル"
     )
+    plain_pattern = re.compile(
+        r"(?<![A-Za-z0-9_&])([A-Za-z][A-Za-z0-9_]*[-:][A-Za-z0-9:_-]+)"
+        r"\s+スキル"
+    )
+    call_pattern = re.compile(r"Skill\(([^)]+)\)")
     for source in sources:
         for line_number, line in _source_lines(source):
-            referenced = {
-                match
-                for pattern in patterns
-                for match in pattern.findall(line)
-            }
+            referenced = set(emphasized_pattern.findall(line))
+            referenced.update(plain_pattern.findall(line))
+            for raw_call in call_pattern.findall(line):
+                cleaned = raw_call.removeprefix("skill=").strip().strip('"\'')
+                cleaned = cleaned.removesuffix(":*")
+                if re.fullmatch(r"[A-Za-z][A-Za-z0-9:_-]*", cleaned):
+                    referenced.add(cleaned)
             for skill_name in sorted(referenced - available_skills):
                 findings.append(
                     Finding(
@@ -365,11 +442,7 @@ def _skill_name(skill_file: Path) -> str:
 def find_unused_skills(skills_dir: Path, logs_dir: Path) -> list[Finding]:
     """Report skills with zero explicit Skill tool calls in available logs."""
 
-    skill_files = sorted(
-        path / "SKILL.md"
-        for path in skills_dir.iterdir()
-        if path.is_dir() and (path / "SKILL.md").is_file()
-    )
+    skill_files = _active_skill_files(skills_dir)
     log_files = sorted(logs_dir.rglob("*.jsonl"))
     used_skill_names: set[str] = set()
     for log_file in log_files:
@@ -408,7 +481,9 @@ def _journal_timestamp(entry: dict[str, Any]) -> str:
     return datetime.fromtimestamp(timestamp, tz=timezone.utc).isoformat()
 
 
-def find_hook_failures(entries: Iterable[dict[str, Any]]) -> list[Finding]:
+def find_systemd_user_unit_failures(
+    entries: Iterable[dict[str, Any]],
+) -> list[Finding]:
     """Find systemd user-unit failures while preserving the original journal line."""
 
     failure_pattern = re.compile(
@@ -416,11 +491,20 @@ def find_hook_failures(entries: Iterable[dict[str, Any]]) -> list[Finding]:
     )
     by_unit: dict[str, Finding] = {}
     for entry in entries:
+        if entry.get("_COMM") != "systemd" and entry.get("SYSLOG_IDENTIFIER") != "systemd":
+            continue
         unit = entry.get("_SYSTEMD_USER_UNIT")
         message = entry.get("MESSAGE")
         if not isinstance(unit, str) or not isinstance(message, str):
             continue
         if not failure_pattern.search(message):
+            continue
+        named_unit = re.search(
+            r"Failed to (?:start|stop) ([^\s]+\.(?:service|timer))", message
+        )
+        if named_unit:
+            unit = named_unit.group(1)
+        if not unit.endswith((".service", ".timer")):
             continue
         failure_time = _journal_timestamp(entry)
         by_unit[unit] = Finding(
@@ -761,7 +845,7 @@ def run_audit(
     ]
     if journal_entries is None:
         journal_entries = read_journal_entries()
-    findings.extend(find_hook_failures(journal_entries))
+    findings.extend(find_systemd_user_unit_failures(journal_entries))
 
     delta = compare_with_state(
         findings,

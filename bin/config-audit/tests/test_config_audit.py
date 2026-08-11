@@ -94,6 +94,44 @@ class ReferenceChecksTest(unittest.TestCase):
 
         self.assertEqual(findings, [])
 
+    def test_slash_commands_are_not_file_references(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "CLAUDE.md"
+            source.write_text("Run `/goal`, then `/compact`.\n", encoding="utf-8")
+
+            findings = config_audit.find_dead_refs([source], root)
+
+        self.assertEqual(findings, [])
+
+    def test_global_subdirectory_reference_resolves_from_claude_root(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            hooks = root / "hooks"
+            hooks.mkdir()
+            (hooks / "guard.py").write_text("pass\n", encoding="utf-8")
+            skill_dir = root / "skills" / "fixture"
+            skill_dir.mkdir(parents=True)
+            source = skill_dir / "SKILL.md"
+            source.write_text("See `hooks/guard.py`.\n", encoding="utf-8")
+
+            findings = config_audit.find_dead_refs([source], root)
+
+        self.assertEqual(findings, [])
+
+    def test_conditional_or_generated_path_is_not_reported_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "SKILL.md"
+            source.write_text(
+                "アプリ起動中に `~/.config/app/control.json` が生成される。\n",
+                encoding="utf-8",
+            )
+
+            findings = config_audit.find_dead_refs([source], root)
+
+        self.assertEqual(findings, [])
+
     def test_dead_skill_reference_reports_unresolved_name(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             source = Path(tmp) / "CLAUDE.md"
@@ -111,6 +149,51 @@ class ReferenceChecksTest(unittest.TestCase):
         self.assertEqual(finding.location, f"{source}:1")
         self.assertEqual(finding.evidence["resolved_name"], "missing-skill")
         self.assertIs(finding.evidence["exists"], False)
+
+    def test_skill_reference_ignores_email_npm_css_and_attribute_syntax(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "SKILL.md"
+            source.write_text(
+                "\n".join(
+                    [
+                        "mail user@example.com",
+                        "npm @higgsfield/cli",
+                        "CSS @media print",
+                        "selector @name=value",
+                        "Q&Aスキル for papers",
+                        "Trigger phrases include スキルを作成",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            findings = config_audit.find_dead_skill_refs([source], set())
+
+        self.assertEqual(findings, [])
+
+    def test_skill_relative_runtime_directory_is_not_resolved_from_skill_package(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            skill_dir = root / "skills" / "fixture"
+            skill_dir.mkdir(parents=True)
+            source = skill_dir / "SKILL.md"
+            source.write_text(
+                "Project memory lives in `./.claude-memory/`.\n", encoding="utf-8"
+            )
+
+            findings = config_audit.find_dead_refs([source], root)
+
+        self.assertEqual(findings, [])
+
+    def test_plain_skill_label_is_checked(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "SKILL.md"
+            source.write_text("Use missing-skill スキル.\n", encoding="utf-8")
+
+            findings = config_audit.find_dead_skill_refs([source], set())
+
+        self.assertEqual([finding.target for finding in findings], ["skill:missing-skill"])
 
     def test_dead_memory_link_reports_missing_markdown_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -279,7 +362,7 @@ class OperationalChecksTest(unittest.TestCase):
             }
         ]
 
-        findings = config_audit.find_hook_failures(entries)
+        findings = config_audit.find_systemd_user_unit_failures(entries)
 
         self.assertEqual(len(findings), 1)
         finding = findings[0]
@@ -300,7 +383,7 @@ class OperationalChecksTest(unittest.TestCase):
             }
         ]
 
-        self.assertEqual(config_audit.find_hook_failures(entries), [])
+        self.assertEqual(config_audit.find_systemd_user_unit_failures(entries), [])
 
     def test_systemd_failed_to_start_uses_named_service_not_init_scope(self) -> None:
         entries = [
@@ -312,7 +395,7 @@ class OperationalChecksTest(unittest.TestCase):
             }
         ]
 
-        findings = config_audit.find_hook_failures(entries)
+        findings = config_audit.find_systemd_user_unit_failures(entries)
 
         self.assertEqual([finding.target for finding in findings], ["actual-job.service"])
 
