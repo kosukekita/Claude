@@ -13,6 +13,7 @@ while IFS= read -r fixture; do
   command="$(jq -r '.command' <<<"$fixture")"
   expected="$(jq -r '.expected' <<<"$fixture")"
   expected_reason="$(jq -r '.expected_reason // empty' <<<"$fixture")"
+  expected_warning_contains="$(jq -r '.expected_warning_contains // empty' <<<"$fixture")"
   virtual_env="$(jq -r '.virtual_env // empty' <<<"$fixture")"
   stdout_file="$(mktemp)"
   stderr_file="$(mktemp)"
@@ -34,10 +35,11 @@ while IFS= read -r fixture; do
          ( -z "$expected_reason" || "$reason" == "$expected_reason" ) ]] && ok=1
       ;;
     warn)
-      [[ $status -eq 0 && "$decision" != "deny" && "$warning" == *"PIP INSTALL WARNING"* ]] && ok=1
+      [[ $status -eq 0 && -z "$decision" && -n "$warning" && \
+         ( -z "$expected_warning_contains" || "$warning" == *"$expected_warning_contains"* ) ]] && ok=1
       ;;
     allow)
-      [[ $status -eq 0 && "$decision" != "deny" && "$warning" != *"PIP INSTALL WARNING"* ]] && ok=1
+      [[ $status -eq 0 && -z "$decision" && -z "$warning" ]] && ok=1
       ;;
   esac
   if [[ $ok -eq 1 ]]; then
