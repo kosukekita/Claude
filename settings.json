@@ -100,6 +100,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "SessionStart": [
@@ -142,6 +152,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "Stop": [
@@ -174,6 +194,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -195,6 +225,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "SessionEnd": [
@@ -204,6 +244,16 @@
           {
             "type": "command",
             "command": "node \"$HOME/.claude/hooks/pixel-agents-shim.js\"",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
             "timeout": 5
           }
         ]
@@ -219,6 +269,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "Notification": [
@@ -228,6 +288,16 @@
           {
             "type": "command",
             "command": "node \"$HOME/.claude/hooks/pixel-agents-shim.js\"",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
             "timeout": 5
           }
         ]
@@ -243,6 +313,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "PostToolUseFailure": [
@@ -252,6 +332,16 @@
           {
             "type": "command",
             "command": "node \"$HOME/.claude/hooks/pixel-agents-shim.js\"",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
             "timeout": 5
           }
         ]
@@ -267,6 +357,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "SubagentStop": [
@@ -276,6 +376,16 @@
           {
             "type": "command",
             "command": "node \"$HOME/.claude/hooks/pixel-agents-shim.js\"",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
             "timeout": 5
           }
         ]
@@ -291,6 +401,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "TaskCreated": [
@@ -303,6 +423,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "TaskCompleted": [
@@ -312,6 +442,16 @@
           {
             "type": "command",
             "command": "node \"$HOME/.claude/hooks/pixel-agents-shim.js\"",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js\"",
             "timeout": 5
           }
         ]
