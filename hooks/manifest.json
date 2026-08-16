@@ -16,6 +16,11 @@
       "criticality": "required",
       "description": "Detect leaked raw tool-call markup before a response completes."
     },
+    "guard-charsheet-missing": {
+      "platform": "any",
+      "criticality": "required",
+      "description": "Block video generation when characters are present but character sheet reference is missing."
+    },
     "guard-destructive-and-resolution": {
       "platform": "any",
       "criticality": "required",

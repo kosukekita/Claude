@@ -92,6 +92,16 @@
         ]
       },
       {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$HOME/.claude/hooks/dispatch.js\" guard-charsheet-missing",
+            "timeout": 10
+          }
+        ]
+      },
+      {
         "matcher": "",
         "hooks": [
           {
