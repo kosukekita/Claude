@@ -5,6 +5,7 @@ metadata:
   node_type: memory
   type: reference
   originSessionId: 2d9b8ff1-3d69-49bb-bc7b-ba61669f3448
+  modified: 2026-08-16T10:38:18.531Z
 ---
 
 Grok Build CLI（`~/.grok/bin/grok`、X Premium/SuperGrokのOAuth認証）の**取得系ツール（X投稿取得・web検索）には実用上のレート制限がある**（2026-06-25に実証）。自動化でGrokに繰り返しデータ取得させる設計の前に必ず考慮する。
@@ -32,4 +33,26 @@ Grok Build CLI（`~/.grok/bin/grok`、X Premium/SuperGrokのOAuth認証）の**�
 - **Xの特定アカウント投稿取得だけはGrok固有**(Instagram APIも他人投稿不可、Web版はログイン壁)。ここだけGrok依存が残り、レート制限の影響を受ける
 - 共通ヘルパー実装例: MasukiResuma `platforms/_lib/ollama-summarize.mjs`(summarizeJa/selectTopJa/ollamaUp)
 
-関連: [[grok-prompt-keep-japanese]]（日本語プロンプト維持）, [[video-media-studio-skill]]（Grok画像/動画はサブスク枠で別挙動）
+## ★追記(2026-08-16): ログイン限定 X Article の原文取得は Grok CLI が唯一通る
+
+X の有料/ログイン限定 Article（`x.com/i/article/<id>`）の本文を取るとき、**他の8経路が全滅して
+Grok CLI だけが通った**。Grok は X ネイティブなので GraphQL で本文 JSON を取れる。
+
+全滅した経路: WebFetch(402) / curl直(SPAの殻) / **r.jina.ai(x.com がabuseブロック中)** /
+claude-in-chrome(拡張未接続) / headless Chrome 匿名(ログイン壁) /
+headless Chrome + ユーザーの Linux プロファイル(Xに未ログイン) / syndication API(ツイート本体は
+取れるが Article 本文は別エンティティでプレビューのみ) / Web検索での転載探索(転載なし)。
+
+**★呼び方の罠2つ（どちらも私が踏んだ）:**
+- `--prompt` という引数は**存在しない**。`--prompt-file <PATH>` かプロンプトを**位置引数**で渡す
+- **Bash の既定120秒タイムアウトで切ると「Grokが失敗した」と誤診する。** 実際は3〜5分かかる。
+  `nohup timeout 900 grok ... &` で背景実行し、出力ファイルを後から読む
+
+```bash
+grok --always-approve --output-format plain --prompt-file p.txt
+```
+
+上のレート制限の話（連打で0件化）は**連続呼び出しの話**であって、単発なら通る。
+「Grokの取得は使えない」と一般化しない。
+
+関連: [[grok-prompt-keep-japanese]]（日本語プロンプト維持）, [[video-media-studio-skill]]（Grok画像/動画はサブスク枠で別挙動）, [[web-original-fetch-playbook]]（原文取得の順序。ログイン限定Xはここで Grok を最終段に足す）
