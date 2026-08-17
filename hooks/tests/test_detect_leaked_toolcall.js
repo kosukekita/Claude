@@ -28,12 +28,12 @@ function run(name, fn) {
   }
 }
 
-function runHook(payload, env = {}) {
+function runHook(payload, nodeArgs = []) {
   const input = typeof payload === 'string' ? payload : JSON.stringify(payload);
-  const result = spawnSync(process.execPath, [hookPath], {
+  const result = spawnSync(process.execPath, [...nodeArgs, hookPath], {
     input,
     encoding: 'utf8',
-    env: { ...process.env, ...env },
+    env: process.env,
   });
   return result;
 }
@@ -246,6 +246,20 @@ run('Case #12: unclosed fence preceding bare leak in plain text yields exit 2', 
   assert.match(resultWithLang.stderr, /LEAKED TOOL CALL DETECTED/);
 });
 
+const injectErrorScript = path.join(tempDir, 'inject-error.mjs');
+fs.writeFileSync(
+  injectErrorScript,
+  `const origMatch = RegExp.prototype[Symbol.match];
+RegExp.prototype[Symbol.match] = function(str) {
+  if (this && this.source && this.source.includes('{3,}')) {
+    throw new Error('Simulated exception during markdown exclusion fence matching');
+  }
+  return origMatch.call(this, str);
+};
+`,
+  'utf8'
+);
+
 // #13: 除外処理の内部で例外が起きた場合
 run('Case #13: exception during markdown exclusion yields exit 0 (fail-open)', () => {
   const text = [
@@ -255,7 +269,7 @@ run('Case #13: exception during markdown exclusion yields exit 0 (fail-open)', (
   const transcriptPath = createTranscript(text);
   const result = runHook(
     { transcript_path: transcriptPath },
-    { __TEST_FORCE_STRIP_ERROR: '1' }
+    ['--import', injectErrorScript]
   );
   assert.strictEqual(result.status, 0);
   assert.strictEqual(result.stderr, '');

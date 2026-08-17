@@ -82,9 +82,6 @@ function stripCodeSpans(paragraph) {
 function stripMarkdownExclusions(text) {
   if (typeof text !== 'string') return '';
   try {
-    if (process.env.__TEST_FORCE_STRIP_ERROR === '1') {
-      throw new Error('Forced exception for testing');
-    }
     const lines = text.split(/\r?\n/);
     const resultLines = new Array(lines.length);
     let i = 0;
