@@ -38,6 +38,61 @@ function readStdin() {
   }
 }
 
+function stripMarkdownExclusions(text) {
+  if (typeof text !== 'string') return '';
+  try {
+    const lines = text.split(/\r?\n/);
+    const resultLines = [];
+    let inCodeBlock = false;
+    let fenceChar = '';
+    let fenceLength = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+
+      if (inCodeBlock) {
+        const match = line.match(/^ {0,3}(`{3,}|~{3,})\s*$/);
+        if (match && match[1][0] === fenceChar && match[1].length >= fenceLength) {
+          inCodeBlock = false;
+        }
+        resultLines.push('');
+        continue;
+      }
+
+      const fenceMatch = line.match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
+      if (fenceMatch) {
+        const chars = fenceMatch[1];
+        const rest = fenceMatch[2];
+        if (chars[0] === '`' && rest.includes('`')) {
+          // info string contains backtick - not a valid code block start in CommonMark
+        } else {
+          inCodeBlock = true;
+          fenceChar = chars[0];
+          fenceLength = chars.length;
+          resultLines.push('');
+          continue;
+        }
+      }
+
+      if (/^\s*>/.test(line)) {
+        resultLines.push('');
+        continue;
+      }
+
+      resultLines.push(line);
+    }
+
+    let cleaned = resultLines.join('\n');
+    cleaned = cleaned.replace(/(`+)([\s\S]*?)\1/g, (_match, _ticks, content) => {
+      return content.replace(/[^\r\n]/g, ' ');
+    });
+
+    return cleaned;
+  } catch {
+    return text;
+  }
+}
+
 function main() {
   const raw = readStdin();
   if (!raw || !raw.trim()) return 0;
@@ -101,13 +156,15 @@ function main() {
   if (!assistantText || !assistantText.trim()) return 0;
 
   // --- Detection -----------------------------------------------------------
+  const textToEvaluate = stripMarkdownExclusions(assistantText);
+
   // Signal A: literal tool-call markup present as text.
   const markupRegex = /<invoke\s+name=|<\/invoke>|<parameter\s+name=|<function_calls>|<\/antml:invoke>|<invoke\s+name=/;
   // Signal B: a degraded open-marker token alone on its own line, immediately
   // followed by a markup line. The exact observed shape.
   const degradeRegex = /(^|\n)\s*(court|count|call)\s*\r?\n\s*<(antml:)?(invoke|parameter|function_calls)/;
 
-  if (markupRegex.test(assistantText) || degradeRegex.test(assistantText)) {
+  if (markupRegex.test(textToEvaluate) || degradeRegex.test(textToEvaluate)) {
     const msg = [
       'LEAKED TOOL CALL DETECTED: the previous assistant turn emitted raw',
       'tool-call markup (e.g. <invoke name=...>) as plain TEXT instead of',
