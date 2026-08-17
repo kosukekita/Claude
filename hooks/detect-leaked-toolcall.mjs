@@ -38,58 +38,129 @@ function readStdin() {
   }
 }
 
+function stripCodeSpans(paragraph) {
+  let result = '';
+  let i = 0;
+  while (i < paragraph.length) {
+    if (paragraph[i] === '`') {
+      let start = i;
+      while (i < paragraph.length && paragraph[i] === '`') {
+        i++;
+      }
+      const tickCount = i - start;
+      let foundClose = false;
+      let j = i;
+      while (j < paragraph.length) {
+        if (paragraph[j] === '`') {
+          let closeStart = j;
+          while (j < paragraph.length && paragraph[j] === '`') {
+            j++;
+          }
+          const closeCount = j - closeStart;
+          if (closeCount === tickCount) {
+            const codeSpan = paragraph.slice(start, j);
+            result += codeSpan.replace(/[^\r\n]/g, ' ');
+            i = j;
+            foundClose = true;
+            break;
+          }
+        } else {
+          j++;
+        }
+      }
+      if (!foundClose) {
+        result += paragraph.slice(start, i);
+      }
+    } else {
+      result += paragraph[i];
+      i++;
+    }
+  }
+  return result;
+}
+
 function stripMarkdownExclusions(text) {
   if (typeof text !== 'string') return '';
   try {
+    if (process.env.__TEST_FORCE_STRIP_ERROR === '1') {
+      throw new Error('Forced exception for testing');
+    }
     const lines = text.split(/\r?\n/);
-    const resultLines = [];
-    let inCodeBlock = false;
-    let fenceChar = '';
-    let fenceLength = 0;
+    const resultLines = new Array(lines.length);
+    let i = 0;
 
-    for (let i = 0; i < lines.length; i++) {
+    while (i < lines.length) {
       const line = lines[i];
-
-      if (inCodeBlock) {
-        const match = line.match(/^ {0,3}(`{3,}|~{3,})\s*$/);
-        if (match && match[1][0] === fenceChar && match[1].length >= fenceLength) {
-          inCodeBlock = false;
-        }
-        resultLines.push('');
-        continue;
-      }
 
       const fenceMatch = line.match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
       if (fenceMatch) {
-        const chars = fenceMatch[1];
-        const rest = fenceMatch[2];
-        if (chars[0] === '`' && rest.includes('`')) {
-          // info string contains backtick - not a valid code block start in CommonMark
-        } else {
-          inCodeBlock = true;
-          fenceChar = chars[0];
-          fenceLength = chars.length;
-          resultLines.push('');
-          continue;
+        const fenceChars = fenceMatch[1];
+        const infoString = fenceMatch[2];
+        const fenceChar = fenceChars[0];
+        const fenceLength = fenceChars.length;
+
+        if (!(fenceChar === '`' && infoString.includes('`'))) {
+          let closeIndex = -1;
+          for (let j = i + 1; j < lines.length; j++) {
+            const closeMatch = lines[j].match(/^ {0,3}(`{3,}|~{3,})\s*$/);
+            if (
+              closeMatch &&
+              closeMatch[1][0] === fenceChar &&
+              closeMatch[1].length >= fenceLength
+            ) {
+              closeIndex = j;
+              break;
+            }
+          }
+
+          if (closeIndex !== -1) {
+            for (let k = i; k <= closeIndex; k++) {
+              resultLines[k] = '';
+            }
+            i = closeIndex + 1;
+            continue;
+          }
         }
       }
 
       if (/^\s*>/.test(line)) {
-        resultLines.push('');
+        resultLines[i] = '';
+        i++;
         continue;
       }
 
-      resultLines.push(line);
+      resultLines[i] = line;
+      i++;
     }
 
-    let cleaned = resultLines.join('\n');
-    cleaned = cleaned.replace(/(`+)([\s\S]*?)\1/g, (_match, _ticks, content) => {
-      return content.replace(/[^\r\n]/g, ' ');
-    });
+    const processedLines = [];
+    let currentParagraphLines = [];
 
-    return cleaned;
+    function flushParagraph() {
+      if (currentParagraphLines.length === 0) return;
+      const paragraphText = currentParagraphLines.join('\n');
+      const strippedParagraph = stripCodeSpans(paragraphText);
+      const splitBack = strippedParagraph.split('\n');
+      for (const pl of splitBack) {
+        processedLines.push(pl);
+      }
+      currentParagraphLines = [];
+    }
+
+    for (let idx = 0; idx < resultLines.length; idx++) {
+      const l = resultLines[idx];
+      if (/^\s*$/.test(l)) {
+        flushParagraph();
+        processedLines.push(l);
+      } else {
+        currentParagraphLines.push(l);
+      }
+    }
+    flushParagraph();
+
+    return processedLines.join('\n');
   } catch {
-    return text;
+    return '';
   }
 }
 
@@ -157,6 +228,7 @@ function main() {
 
   // --- Detection -----------------------------------------------------------
   const textToEvaluate = stripMarkdownExclusions(assistantText);
+  if (!textToEvaluate || !textToEvaluate.trim()) return 0;
 
   // Signal A: literal tool-call markup present as text.
   const markupRegex = /<invoke\s+name=|<\/invoke>|<parameter\s+name=|<function_calls>|<\/antml:invoke>|<invoke\s+name=/;

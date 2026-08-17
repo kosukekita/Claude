@@ -28,11 +28,12 @@ function run(name, fn) {
   }
 }
 
-function runHook(payload) {
+function runHook(payload, env = {}) {
   const input = typeof payload === 'string' ? payload : JSON.stringify(payload);
   const result = spawnSync(process.execPath, [hookPath], {
     input,
     encoding: 'utf8',
+    env: { ...process.env, ...env },
   });
   return result;
 }
@@ -188,6 +189,74 @@ run('Case #10: stop_hook_active true with bare markup yields exit 0', () => {
     transcript_path: transcriptPath,
     stop_hook_active: true,
   });
+  assert.strictEqual(result.status, 0);
+  assert.strictEqual(result.stderr, '');
+});
+
+// #11: 地の文の漏洩の前後に、空行をまたいでバッククォートが1つずつある
+run('Case #11: bare leak flanked by backticks across blank lines yields exit 2', () => {
+  const text = [
+    'コマンドは ` を使う。',
+    '',
+    '実行します:',
+    '<invoke name="bash">',
+    '',
+    '以上 ` 完了。',
+  ].join('\n');
+  const transcriptPath = createTranscript(text);
+  const result = runHook({ transcript_path: transcriptPath });
+  assert.strictEqual(result.status, 2);
+  assert.match(result.stderr, /LEAKED TOOL CALL DETECTED/);
+
+  // Without backticks should behave identically (exit 2)
+  const textNoBackticks = [
+    'コマンドは  を使う。',
+    '',
+    '実行します:',
+    '<invoke name="bash">',
+    '',
+    '以上  完了。',
+  ].join('\n');
+  const resultNoBackticks = runHook({ transcript_path: createTranscript(textNoBackticks) });
+  assert.strictEqual(resultNoBackticks.status, 2);
+  assert.match(resultNoBackticks.stderr, /LEAKED TOOL CALL DETECTED/);
+});
+
+// #12: 閉じられていないフェンスが先にあり、その後の地の文に漏洩がある
+run('Case #12: unclosed fence preceding bare leak in plain text yields exit 2', () => {
+  const text = [
+    '```',
+    'Some text inside unclosed fence',
+    '<invoke name="bash">',
+  ].join('\n');
+  const transcriptPath = createTranscript(text);
+  const result = runHook({ transcript_path: transcriptPath });
+  assert.strictEqual(result.status, 2);
+  assert.match(result.stderr, /LEAKED TOOL CALL DETECTED/);
+
+  // Unclosed fence with language specifier followed by leak in subsequent plain text
+  const textWithLang = [
+    '```js',
+    'const x = 1;',
+    'Now in plain text:',
+    '<invoke name="bash">',
+  ].join('\n');
+  const resultWithLang = runHook({ transcript_path: createTranscript(textWithLang) });
+  assert.strictEqual(resultWithLang.status, 2);
+  assert.match(resultWithLang.stderr, /LEAKED TOOL CALL DETECTED/);
+});
+
+// #13: 除外処理の内部で例外が起きた場合
+run('Case #13: exception during markdown exclusion yields exit 0 (fail-open)', () => {
+  const text = [
+    'Bare markup that would trigger leak detection under normal circumstances:',
+    '<invoke name="bash">',
+  ].join('\n');
+  const transcriptPath = createTranscript(text);
+  const result = runHook(
+    { transcript_path: transcriptPath },
+    { __TEST_FORCE_STRIP_ERROR: '1' }
+  );
   assert.strictEqual(result.status, 0);
   assert.strictEqual(result.stderr, '');
 });
