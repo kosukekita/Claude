@@ -50,6 +50,7 @@ Claude は設計者・検証者であって実装者ではない。**コード�
 - タスク開始時、該当スキルがあれば一言提案してから使う（黙って使わない）。プロセス系スキルを実装系より先に適用
 - スキルは記憶や過去会話でなく、**必ず現在の本文を Skill ツールで読み込んで**使う
 - 自走ループ・自動化・スケジュール実行の設計時は **loop-engineering**（自分の出力を自分で採点しそうなら **loop-evaluator**）を読み込み、4つの静かな負債（検証・理解・判断・トークン）への防御を標準実装する。人間チェックポイントを最低1つ残す
+- 成果物として残る日本語文書（記事・レポート・議事録・メール・企画書・note/ブログ）を書く・直すときは **natural-japanese** を使う。書く前の設計と文体憲法で AI 臭の発生を防ぎ、`lint.py` で機械検出してから直す。チャット応答・コミットメッセージには適用しない。学術論文は **academic-writing** が優先
 - Office 文書（.docx/.xlsx/.pptx）は md 非経由で **officecli** により直接作成・in-place 編集（現物が唯一の正）
 - 人が読む新規 .md には OKF frontmatter（必須は type のみ。記憶・SKILL.md・CLAUDE.md には付けない）[[okf-markdown-frontmatter]]
 - URL 付きで「参照して」と言われたら必ず原文を機械取得（WebFetch→curl→描画後DOM→r.jina.ai は公開・PIIなしのみ）。自作・記憶で代替しない [[web-original-fetch-playbook]]

@@ -1,5 +1,6 @@
 - [【再開用】遥nightlyパイプライン](haruka-nightly-resume.md) — 3分動画(日常60s/ホテル下着90s/POV騎乗位30s・不倫設定)を毎晩生成→pCloud URLを毎朝6時メール。実装完了・台帳6冊×100・QC/モザイク/失敗通知つき。★タイマーはdisabledのまま＝GPU開放後に手動1サイクル→実物確認→enable
 - [【再開用】無検閲LLM→z-image 2段CLI](uncensored-image-pipeline-resume.md) — HauhauCS(Qwen3.6-35B-A3B無検閲・Ollama登録済)→z-image-turbo。GPU争奪でペンディング(研究優先)。★確定欠陥=format:jsonで空{}を返す思考モデルなのでJSON廃止+プレーンテキスト方式へ、urlopen timeout欠落。GPU開放後にagy差し戻し+U1/U2/U6を一気に
+- [natural-japanese スキル導入](natural-japanese-skill-install.md) — 日本語文書のAI臭除去スキル(coji/natural-japanese v1.4.0・MIT)を導入。★スキル実体は必ず`~/.local/share/agents-sync-repo/skills/`に置きinstall.shでリンク(~/.claude/skills直下に実体を作ると自己参照symlinkが生える罠)。★自分の癖の実測=禁止語ではなく`low_burstiness`(文長が揃いすぎ)が24/35件
 - [状態別ツール封鎖のアイデア](state-scoped-tool-enforcement.md) — statewright不採用(FSL+クラウド依存)から抽出。フェーズファイル+PreToolUseフックでIron Lawを機械的強制する設計案。実装トリガー=次にIron Law違反が実際に起きたとき（先回りしない）
 - [バックグラウンド監視の設計](background-waiter-design.md) — ★1日3回の実事故(2026-08-10): pgrep/pkill -f のコマンド行マッチは自分と兄弟スクリプトに一致し自爆/デッドロックする(自己免疫[a]gy形式も兄弟には無効)。待つ=完了マーカーファイルgrep、殺す=PID特定後
 - [グローバル設定刷新2026-08-10](claude-config-overhaul-2026-08.md) — CLAUDE.md 29.5KB→8.7KB(★確定ルールは全保持・詳細は記憶ポインタ化)・スキル10本をskills-archive/へ退避(54→44)。★Windows使用実績は不可視なので誤退避は即復元可。AGENTS.mdはmemory-sync-codex.shの自動生成(手編集禁止・CLAUDE.mdか記憶を直す)＝反映確認済み
