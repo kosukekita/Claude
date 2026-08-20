@@ -19,6 +19,6 @@ MiniMax-H3 **Ref2VA bf16**（62GB・`minimax_h3_ref2va_bf16.safetensors`）を [
 
 **★正式入口（2026-08-04 Codex 実装・検証済み）**: `video-media-studio/scripts/gen_minimax_h3.py`（t2v/i2v(FL2VA)/r2v(Ref2VA) 自動判定・17k+5検証・seed自動乱数・サーバ再利用/systemd-run起動・--dry-run/--free）。**NSFW 動画の既定モデルも MiniMax-H3 に変更済み**（★ユーザー決定 2026-08-04・SKILL.md 既定表が正本・wan-2.7-spicy はクラウド代替）。旧 `/data/kita/mmh3-setup/ref2va_submit.mjs` は開発時の使い捨て版。
 
-**構成/実測**: FL2VA と同グラフで `MiniMaxH3ImageToVideo`→`MiniMaxH3ReferenceToVideo`（required に audio_vae 追加・出力は conditioning+latent で同じ）。768×1344/124f/20steps/CFGなし＝**21分**（FL2VA bf16 の20分とほぼ同じ・VRAM 44.5GB）。★**`ref_image_size` は既定の `match` ではなく `max` を使う**（ユーザー実測 2026-08-20 で訂正）。`match`（参照を生成画素面積へ縮小・速い）だと静止状態では似ていても**動き出した途端に顔が別人になる**ことがある。原因は入力段で顔の細部が落ちること。`max`（参照を高解像度のまま使う・遅い）に変えると元画像の顔の再現が明らかに強くなる。※2026-08-04 時点では「match で顔同一性は十分」と記録していたが、これは誤りだった。顔が崩れたときはプロンプトより先にここを疑う。
+**構成/実測**: FL2VA と同グラフで `MiniMaxH3ImageToVideo`→`MiniMaxH3ReferenceToVideo`（required に audio_vae 追加・出力は conditioning+latent で同じ）。768×1344/124f/20steps/CFGなし＝**21分**（FL2VA bf16 の20分とほぼ同じ・VRAM 44.5GB）。★**`ref_image_size` の既定は `max`**（2026-08-20 に `match` から変更済み・gen_minimax_h3.py）。`match`（参照を生成画素面積へ縮小・速い）だと静止状態では似ていても**動き出した途端に顔が別人になる**ことがある。原因は入力段で顔の細部が落ちること。`max`（参照を高解像度のまま使う・遅い）に変えると元画像の顔の再現が明らかに強くなる。※2026-08-04 時点では「match で顔同一性は十分」と記録していたが、これは誤りだった。顔が崩れたときはプロンプトより先にここを疑う。呼び出し側はどこも `--ref-image-size` をピン留めしていないので、毎晩の haruka-shower も max で動く（★ユーザー決定: 朝6時のメール遅延は許容）。速度優先の試し撮りだけ `match` を明示する。
 
 関連: [[minimax-h3-nsfw-and-int8-vs-bf16]]（bf16既定・NSFW無検閲）
