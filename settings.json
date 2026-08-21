@@ -484,7 +484,7 @@
     }
   },
   "alwaysThinkingEnabled": true,
-  "effortLevel": "xhigh",
+  "effortLevel": "medium",
   "ultracode": true,
   "autoUpdatesChannel": "latest",
   "tui": "fullscreen",
