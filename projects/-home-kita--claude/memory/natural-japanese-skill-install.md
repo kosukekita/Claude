@@ -33,3 +33,20 @@ metadata:
 過去の日本語文書107件（memory と `.agent-plan-*.md`）を lint にかけた結果、findings 35件。内訳は `low_burstiness`（文長が揃いすぎ）24件、`uniform_paragraph_structure`、`antithesis_repetition`（「〜ではなく」の反復）、`forbidden_phrase` 1件のみ。
 
 弱点は語彙ではなくリズムと構造の側にある。禁止語を避けるだけでは自分の AI 臭は消えないので、書く時点で長短を混ぜ、節ごとに厚みを変えるほうが効く。関連: [[claude-config-overhaul-2026-08]]
+
+## 姉妹スキル japanese-tech-writing（2026-08-21 追加）
+
+k16shikano 氏の公開 gist（`fd287c31...`・リビジョン `c7189cdc`）を vendoring した別スキル。
+natural-japanese と**併用する**。マージしなかった理由は、natural-japanese の description が
+整形領域を「対象外——それは別スキルの領域」と自ら宣言しているため。
+
+- **担当の違い**: あちら=整形（一文一行・脚注・ダッシュ/中黒の禁止・見出し）＋パラグラフ
+  ライティング＋論証の厳密さ＋演出の抑制。こちら=機械検出(lint)＋翻訳調＋文書タイプ別の型
+- **重複は正常**: natural-japanese の禁止語カタログ（正面から系・空虚な形容・空虚な動詞）は
+  もともとこの gist が出典。実測で未収録だったのは中黒禁止・パラグラフライティング・
+  反実仮想・イ形容詞＋「です」・前方参照の位置・例の作為性への弁明の6領域
+- ★**ライセンス表記が無い**ので私的利用に留める。vendoring 先 `kosukekita/agents` が
+  **private** であることを確認済み（公開側 `kosukekita/Claude` は skills を gitignore）。
+  agents を public にするなら扱いを見直すこと
+- ★**相性**: gist の「一文ごとに改行する」は lint と噛み合う。lint は改行でも文を切るので、
+  文の途中で折り返すと `low_burstiness` を誤検知する（実測25件中8件）。一文一行なら起きない
