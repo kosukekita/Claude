@@ -50,7 +50,11 @@ Claude は設計者・検証者であって実装者ではない。**コード�
 - タスク開始時、該当スキルがあれば一言提案してから使う（黙って使わない）。プロセス系スキルを実装系より先に適用
 - スキルは記憶や過去会話でなく、**必ず現在の本文を Skill ツールで読み込んで**使う
 - 自走ループ・自動化・スケジュール実行の設計時は **loop-engineering**（自分の出力を自分で採点しそうなら **loop-evaluator**）を読み込み、4つの静かな負債（検証・理解・判断・トークン）への防御を標準実装する。人間チェックポイントを最低1つ残す
-- 成果物として残る日本語文書（記事・レポート・議事録・メール・企画書・note/ブログ）を書く・直すときは **natural-japanese** を使う。書く前の設計と文体憲法で AI 臭の発生を防ぎ、`lint.py` で機械検出してから直す。チャット応答・コミットメッセージには適用しない。学術論文は **academic-writing** が優先
+- 🔴**成果物として残る日本語の文章を書く・直すときは、例外なく natural-japanese を使う**（ユーザー指示 2026-08-23）。「該当しそうなら」ではなく**既定でオン**。列挙は例示であって限定ではない：記事・レポート・議事録・メール・企画書・note/ブログ・**助成金/研究費の申請書・推薦書・志望理由書・信条書**・提案書・マニュアル・スライド本文・図表のキャプション・docx/pptx/xlsx に入る本文。**分量は問わない**（1段落でも適用する）。
+  - 手順は省略しない：①書く前に読者・主メッセージ・スケルトンを決める ②文体憲法12箇条の下で書く ③`uv run ~/.claude/skills/natural-japanese/scripts/lint.py --json <file>` を回す ④判断台帳で finding を「直す/残す（理由）」に仕分ける ⑤収束するまで③④を繰り返す。**lint を回さずに「自然に書いた」と言わない**
+  - .docx/.pptx に書き込む文章も対象。**現物へ流し込む前に、素の .md/.txt を作って lint を通す**（現物からテキストを抜いて lint してもよいが、通す工程自体は省かない）
+  - 適用しないのはチャットの応答文・コミットメッセージ・コード内コメントだけ。**学術論文（IMRAD・引用・投稿規定が絡むもの）は academic-writing が優先**、技術書・技術記事は **japanese-tech-writing** を併用
+  - スキルが `~/.claude/skills/` に無いPCでは、`AppData/Local/agents-sync-repo/skills/`（Windows）または `~/.local/share/agents-sync-repo/skills/`（Linux/mac）に実体があるので、ジャンクション/symlink を張って使えるようにしてから書く。「入っていないから使わなかった」は理由にならない
 - Office 文書（.docx/.xlsx/.pptx）は md 非経由で **officecli** により直接作成・in-place 編集（現物が唯一の正）
 - 人が読む新規 .md には OKF frontmatter（必須は type のみ。記憶・SKILL.md・CLAUDE.md には付けない）[[okf-markdown-frontmatter]]
 - URL 付きで「参照して」と言われたら必ず原文を機械取得（WebFetch→curl→描画後DOM→r.jina.ai は公開・PIIなしのみ）。自作・記憶で代替しない [[web-original-fetch-playbook]]
