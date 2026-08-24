@@ -470,7 +470,7 @@
       "effortLevel": "medium"
     }
   },
-  "ultracode": true,
+  "ultracode": false,
   "autoUpdatesChannel": "latest",
   "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
