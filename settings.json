@@ -47,7 +47,7 @@
     ],
     "defaultMode": "auto"
   },
-  "model": "opus[1m]",
+  "model": "sonnet",
   "fallbackModel": [
     "opus[1m]"
   ],
