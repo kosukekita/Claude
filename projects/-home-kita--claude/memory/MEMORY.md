@@ -89,3 +89,4 @@
 - [Claude Code非Claudeモデルゲートウェイ(akitaken)](claude-code-nonclaude-gateway-akitaken.md) — claude-gw で /model 切替（ローカル/AtlasCloud/サブスクブリッジ）。正本は ~/.config/litellm/README.md
 - [Antigravity CLI = agy](antigravity-cli-agy.md) — 「antigravity cliに委譲」の実体は ~/.local/bin/agy（v1.1.11）。which antigravityでは見つからない。実測起動形=agy --model gemini-3.6-flash-high --mode accept-edits。Codex不可時の委譲先候補（Gemini CLI headlessも代替）
 - [音イベント同定はスペクトログラム目視](audio-event-id-via-spectrogram.md) — ★2026-08-08指摘: LLM要約+タイムライン相関だけで音の種類を断定しない。声=倍音の櫛+音程変化/機械・接触音=倍音なしブロードバンド。silencedetectで時刻列挙→showspectrumpicをReadで目視→命名。agyが「発声なし」と要約した動画に-23dBの鳴きが実在した
+- [pCloud配下のnpmは --no-bin-links](pcloud-npm-no-bin-links.md) — ★2026-08-26指示。FUSEがsymlink未実装でENOSYS。ただし.binが空になり npm run が壊れる。ビルド常用ならリポジトリをpCloud外へ

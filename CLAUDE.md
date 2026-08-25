@@ -66,6 +66,7 @@ Claude は設計者・検証者であって実装者ではない。**コード�
 - Office 文書（.docx/.xlsx/.pptx）は md 非経由で **officecli** により直接作成・in-place 編集（現物が唯一の正）
 - 人が読む新規 .md には OKF frontmatter（必須は type のみ。記憶・SKILL.md・CLAUDE.md には付けない）[[okf-markdown-frontmatter]]
 - URL 付きで「参照して」と言われたら必ず原文を機械取得（WebFetch→curl→描画後DOM→r.jina.ai は公開・PIIなしのみ）。自作・記憶で代替しない [[web-original-fetch-playbook]]
+- **pCloud 配下で npm を使うときは `npm install --no-bin-links`**（ユーザー指示 2026-08-26）。FUSE が symlink 未実装で通常の install は ENOSYS で落ちる。ただし `.bin` が空になり `npm run <script>` が壊れるので、ビルドを常用するならリポジトリを pCloud の外へ移す [[pcloud-npm-no-bin-links]]
 
 ## LLM ルーティング（Claude 拒否・障害時の代替）
 
