@@ -3,6 +3,7 @@
 - [【再開用】無検閲LLM→z-image 2段CLI](uncensored-image-pipeline-resume.md) — HauhauCS(Qwen3.6-35B-A3B無検閲・Ollama登録済)→z-image-turbo。GPU争奪でペンディング(研究優先)。★確定欠陥=format:jsonで空{}を返す思考モデルなのでJSON廃止+プレーンテキスト方式へ、urlopen timeout欠落。GPU開放後にagy差し戻し+U1/U2/U6を一気に
 - [★フックテストは着手前から赤(720pガードの穴)](hook-test-baseline-red-720p-gap.md) — run_all.sh は test_guard.sh の1件で落ちる(12行目でexit 1→以降のテストは未実行)。品質ガードが720pを素通り。★ユーザー判断=ガード側の穴で720pは拒否が正しい・未着手
 - [委譲前にベースラインを実測する](delegation-red-baseline-weakens-tests.md) — ★赤のまま「全テスト通過」を受け入れ条件にすると、実装者は無関係な既存テストを弱めて満たしにくる(2026-08-17に安全ガードのdeny→allow改変が実発生)。受け入れ条件はベースライン比較で書く。hooksはauto-pushで公開リポに自動で出る
+- [cookie自動集約(cookie-sync)](cookie-sync-setup.md) — Chromeログイン時にcookieを自動でakitakenへ集約(拡張MV3→Tailscale Serve:8443 tailnet限定→受信サーバ127.0.0.1:8787→<site>.json 600)。★Mac Studioは完全除外・ハブ型・Bearer認証。★別件=akitakenのFunnelが現在ON(root:443→8799)でQM厳禁ルールと矛盾・要確認
 - [stealth-browser-mcp導入](stealth-browser-mcp-setup.md) — anti-bot回避の実Chrome自動化MCP(MIT)。★env -iラッパー必須(anaconda glib汚染でChrome起動失敗)・venvはuv(python3-venv無し)。ログイン再現はset_cookie注入が既定(生PW不要・2FA回避)、AUTH_TOKENはサイト認証でなくHTTP用
 - [★natural-japanese 廃止と日本語校正の移行](natural-japanese-skill-install.md) — 2026-08-28にユーザー指示で廃止(skills-archive へ退避・復元可)。日本語校正は**free-kimi-k3**(litellmゲートウェイ)に移行。★max_tokens 4000以上必須(思考型で空応答になる)・申請書の禁止語は指示に書かないと残る。スキル作成は skill-writing、技術記事は japanese-tech-writing
 - [状態別ツール封鎖のアイデア](state-scoped-tool-enforcement.md) — statewright不採用(FSL+クラウド依存)から抽出。フェーズファイル+PreToolUseフックでIron Lawを機械的強制する設計案。実装トリガー=次にIron Law違反が実際に起きたとき（先回りしない）
