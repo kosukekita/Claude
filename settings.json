@@ -465,14 +465,6 @@
   },
   "alwaysThinkingEnabled": true,
   "effortLevel": "medium",
-  "modelSettings": {
-    "claude-opus-5": {
-      "effortLevel": "medium"
-    },
-    "claude-fable-5": {
-      "effortLevel": "medium"
-    }
-  },
   "ultracode": false,
   "autoUpdatesChannel": "latest",
   "tui": "fullscreen",
@@ -480,5 +472,13 @@
   "skipWorkflowUsageWarning": true,
   "remoteControlAtStartup": true,
   "agentPushNotifEnabled": true,
-  "skipAutoPermissionPrompt": true
+  "skipAutoPermissionPrompt": true,
+  "modelSettings": {
+    "claude-opus-5": {
+      "effortLevel": "medium"
+    },
+    "claude-fable-5": {
+      "effortLevel": "medium"
+    }
+  }
 }
