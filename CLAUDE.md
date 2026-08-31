@@ -64,6 +64,7 @@ Claude は設計者・検証者であって実装者ではない。**コード�
   - 🔴**本文だけ直して図を見落とさない**。用語統一・表現修正は、**図の中のテキストと図の生成スクリプトが描画する文字列（`--prop text=`・`ax.text` 等）まで**必ず及ぼす。実際に本文だけ直して図に旧表現が残る事故が起きた。確認は `grep -rn "<語>" <申請フォルダ>` と、docx から抽出した本文の両方で行う
   - 詳細と実例は [[grant-no-conceptual-diagram-label]]
 - Office 文書（.docx/.xlsx/.pptx）は md 非経由で **officecli** により直接作成・in-place 編集（現物が唯一の正）
+- 🔴**日本語の文書は段落の書き出しを全角1文字下げる**（ユーザー指示 2026-08-31・恒久）。対象は申請書・報告書・論文・記事など人が読む本文段落すべて。見出し・箇条書き・図表キャプションは下げない。docx では `firstLineChars=100` と `firstLineIndent=<本文フォントサイズ>` の**両方**を設定する（Word は Chars を、LibreOffice 等は firstLineIndent を見るため、片方だけだと表示されない）
 - 人が読む新規 .md には OKF frontmatter（必須は type のみ。記憶・SKILL.md・CLAUDE.md には付けない）[[okf-markdown-frontmatter]]
 - URL 付きで「参照して」と言われたら必ず原文を機械取得（WebFetch→curl→描画後DOM→r.jina.ai は公開・PIIなしのみ）。自作・記憶で代替しない [[web-original-fetch-playbook]]
 - **pCloud 配下で npm を使うときは `npm install --no-bin-links`**（ユーザー指示 2026-08-26）。FUSE が symlink 未実装で通常の install は ENOSYS で落ちる。ただし `.bin` が空になり `npm run <script>` が壊れるので、ビルドを常用するならリポジトリを pCloud の外へ移す [[pcloud-npm-no-bin-links]]
