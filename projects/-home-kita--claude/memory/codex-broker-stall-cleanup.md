@@ -31,3 +31,13 @@ kill <PID>...; rm -rf /tmp/cxc-<残す以外>/
 **罠**: 温存対象を basename 比較で除外するとき、`grep -oE 'cxc-[A-Za-z0-9]+'` の結果に改行が入り比較が失敗して消してしまう（2026-09-01 に実際に発生）。`keep=$(... | tr -d '\n')` で正規化する。
 
 **予防**: ブローカが数日〜数十日稼働しているのを見たら、詰まる前に再起動する。20日稼働のものが実際に詰まった。関連: [[codex-token-invalidation-stale-daemons]]（こちらは認証側の類似問題）
+
+## 追記（2026-09-01）: ブローカ再起動後は read-only で立ち上がる
+
+掃除して新しいブローカになった直後、Codex が**ファイルシステム全体 read-only** で起動し
+「cp: Read-only file system」で何も書けなくなった。原因は `codex-companion.mjs` の
+`sandbox: request.write ? "workspace-write" : "read-only"`（488行）＝**`--write` 未指定**。
+
+**実装を委譲するときは必ず `--write` を付ける**（`--fresh`/`--resume`/`--background` と併記可）。
+調査・相談だけなら不要。掃除の直後に実装タスクが「何も変更していません」と返ってきたら、
+まずこのフラグを疑う。
