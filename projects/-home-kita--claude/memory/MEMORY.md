@@ -94,3 +94,4 @@
 - [pCloud配下のnpmは --no-bin-links](pcloud-npm-no-bin-links.md) — ★2026-08-26指示。FUSEがsymlink未実装でENOSYS。ただし.binが空になり npm run が壊れる。ビルド常用ならリポジトリをpCloud外へ
 - [Codex不可時はSonnet 5に実装委譲](codex-unavailable-sonnet5-fallback.md) — ユーザー指示2026-08-27。生成器/評価者分離は維持(Sonnetが書きFable5が検証)。★サブエージェントは伝聞をユーザー承認と認めない→承認済みプランファイルに決定記録を追記してReadさせる。切替前にCodex側の仕掛かり/goalを停止
 - [japanese-proofread-two-pass.md](japanese-proofread-two-pass.md) — 「日本語校正して」は診断パス→校正パスの2段。論理・構成・自己矛盾を洗う診断用プロンプト全文つき
+- [office-docx-is-the-source.md](office-docx-is-the-source.md) — docxをmdから生成し直さない。現物が正本／校正mdは使い捨ての写し／編集前に必ず現物を読む
