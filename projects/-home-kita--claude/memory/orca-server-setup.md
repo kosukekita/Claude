@@ -38,3 +38,18 @@ akitakenに**Remote Orca Server(ヘッドレス)**として2026-09-02導入。ak
   advertised専用)。アクセスは端末ペアリングトークンで一応ゲートされるが、ポート自体はLAN等に開く。
   tailnet限定にしたいならファイアウォール(6768をtailscale0/100.64.0.0/10のみ許可・要root)を別途。未実施
 - [[cookie-sync-setup]]で判明した通り akitakenのTailscale Funnelが現在ON=露出面に注意
+
+
+## モバイル(スマホ)アクセス(2026-09-02 追加)
+- サービスに **--mobile-pairing** を追加済み(ラッパー orca-serve.sh)。起動時に「Mobile pairing QR」
+  (ASCII QR 38行)+「Pairing URL: orca://pair?code=...」を journal に出す。★モバイル限定スコープ
+  (フルaccessの既定runtimeリンクより安全=スマホ紛失リスク対策)。★この変更でデスクトップ用runtimeリンクは
+  出なくなる(両方要るなら別途)
+- iOSアプリ: App Store「Orca IDE」 https://apps.apple.com/us/app/orca-ide/id6766130217
+  Android: APK https://github.com/stablyai/orca/releases (mobile-android-v0.0.47/app-release.apk)
+- ★スマホは **Tailscale必須**(同tailnetにサインイン)。akitakenを 100.65.90.52:6768 で掴む。リモート
+  (外出先)でもTailscaleが繋がっていれば可
+- ペアリング取得(秘密・チャットに出さない): akitakenで
+  `journalctl --user -u orca-serve | grep -A40 "Mobile pairing QR"` → QRをスキャン、または
+  「Pairing URL」(orca://pair?code=...)をスマホで開く。再起動で再ペアリングが要る場合あり
+- 残り=ユーザー: iOSアプリ導入・iPhoneにTailscale・orca account add(OAuth)
