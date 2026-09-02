@@ -53,3 +53,21 @@ akitakenに**Remote Orca Server(ヘッドレス)**として2026-09-02導入。ak
   `journalctl --user -u orca-serve | grep -A40 "Mobile pairing QR"` → QRをスキャン、または
   「Pairing URL」(orca://pair?code=...)をスマホで開く。再起動で再ペアリングが要る場合あり
 - 残り=ユーザー: iOSアプリ導入・iPhoneにTailscale・orca account add(OAuth)
+
+## 実機で確定した運用知見(2026-09-02)
+- **ペアリング成功**。iPhone(iphone172)→Orcaアプリ「Pair with desktop」→**Paste code instead**に
+  `orca://pair?code=...`を貼って接続。QRスキャンはakitakenにモニタが無いので不可
+  - ★コードの渡し方: journalから抽出→`tailscale file cp <file> iphone172:`(Taildrop)。ただし
+    **iOSの受信先はTailscaleアプリ内でなく「ファイル」アプリ**で分かりにくい。Notificationsが
+    Not Enabledだと通知も出ない。結局チャットに貼って解決した
+  - ★`tailscale status`のoffline表示は古いことがある(iphone172が"27d前"と出たが実際はオンライン)。
+    送信先を間違えないよう実機で確認する
+- **リポジトリ登録**: `orca repo add --path /home/kita/.claude`。未登録だとスマホは"No worktrees"
+- ★**Chat UI は Claude では動くが Codex では応答が描画されない**(2026-09-02実機)。Codexは
+  ターミナル表示なら正常。Chat UIは「supported agent terminals向けのオプション面」で、Claude向けに
+  作られている。**スマホでchatしたいならClaudeセッションを使う**(タブ列の「+」から追加)
+- 切替方法: セッションタブを**長押し**でそのタブだけ / **Settings → Chat UI**で端末既定
+- ★認証は`orca account add`不要だった。**ホストにログイン済みのClaude Code/Codexをそのまま使う**
+  (account addは複数アカウント切替・使用量表示用の任意機能)
+- 既定モデルは settings.json の `"model"` を `claude-fable-5-1` に変更済み(2026-09-02)。
+  Orcaが起動するClaudeエージェントもこれに従う。fallbackModelは opus[1m] のまま
