@@ -1,3 +1,4 @@
+- [資格情報は「切れる前に気づく仕掛け」とセット](credential-expiry-reminders.md) — ★ユーザー指示2026-09-03: 発行時に必ず失効前リマインド(期限あり)か定期の生存確認(期限なし=Gmailアプリパスワード等は予告なく死ぬ)を同時に作る。★通知経路は当の資格情報に依存させない(メール障害をメールで知らせる設計は無言死)。実害=8/31失効→B枠リマインド3通全滅→9/1の投稿枠を喪失・3日間未検知
 - [haruka-shower(毎晩稼働中)の構成と2罠](haruka-shower-pipeline.md) — ★実際に毎晩回ってるのはこっち(gen01:00→mail06:00→autofix06:25・30秒/768×1344/2ショット×362f)。2026-08-18修正: ①ArcFace顔照合は小顔・非正面演目で良品を落とす(0.1234)→正面大顔フレームだけ選び最大値判定・適合0枚はskip ②失敗時にmp4_pathを書かずメールが動画を見つけられない→QC前に記録+run_dirフォールバック
 - [【再開用】遥nightlyパイプライン](haruka-nightly-resume.md) — 3分動画(日常60s/ホテル下着90s/POV騎乗位30s・不倫設定)を毎晩生成→pCloud URLを毎朝6時メール。実装完了・台帳6冊×100・QC/モザイク/失敗通知つき。★タイマーはdisabledのまま＝GPU開放後に手動1サイクル→実物確認→enable
 - [【再開用】無検閲LLM→z-image 2段CLI](uncensored-image-pipeline-resume.md) — HauhauCS(Qwen3.6-35B-A3B無検閲・Ollama登録済)→z-image-turbo。GPU争奪でペンディング(研究優先)。★確定欠陥=format:jsonで空{}を返す思考モデルなのでJSON廃止+プレーンテキスト方式へ、urlopen timeout欠落。GPU開放後にagy差し戻し+U1/U2/U6を一気に
