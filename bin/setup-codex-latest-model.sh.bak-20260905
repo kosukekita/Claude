@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # 各PCで一度だけ実行するCodexセットアップ（べき等）。
-#   1) Codex CLI を最新化（gpt-6-astra は新しいCLIでないと 400 で弾かれる）
+#   1) Codex CLI を最新化（gpt-5.6-sol は新しいCLIでないと 400 で弾かれる）
 #   2) PATH上の「古いcodexの影」を退治（npm prefix 外の孤児インストールは
 #      `codex update` が届かないまま PATH 先頭に居座り、tmux/ログインシェルだけ
-#      旧版が起動して gpt-6-astra が 400 で落ちる。2026-07-17 実機で遭遇）
-#   3) ~/.codex/config.toml の既定モデルを gpt-6-astra にする（top-level `model`）
+#      旧版が起動して gpt-5.6-sol が 400 で落ちる。2026-07-17 実機で遭遇）
+#   3) ~/.codex/config.toml の既定モデルを gpt-5.6-sol にする（top-level `model`）
 #   4) /goal（自走実装）と goals 機能フラグを有効化
 # ~/.claude は全PCへGitHub同期されるので、このスクリプトも各PCに配られる。
 # 各PCで:  bash ~/.claude/bin/setup-codex-latest-model.sh
 # （Windowsは git-bash か WSL で実行。ネイティブなら下の手動手順を参照）
 set -eu
 
-MODEL="gpt-6-astra"
+MODEL="gpt-5.6-sol"
 CFG="$HOME/.codex/config.toml"
 
 echo "[1/6] Codex CLI を最新化..."
@@ -85,5 +85,5 @@ echo "      /goal は codex TUI で '/goal <目標>' と打つと 'Goal active' 
 # --- Windowsネイティブ（git-bash/WSLが無い場合）の手動手順 ---
 #   1) codex update
 #   2) %USERPROFILE%\.codex\config.toml の先頭付近に次の1行を追加:
-#        model = "gpt-6-astra"
+#        model = "gpt-5.6-sol"
 #   3) codex features enable goals
