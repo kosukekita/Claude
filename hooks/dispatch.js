@@ -5,6 +5,14 @@ const childProcess = require('child_process');
 
 const EXTENSIONS = ['.ps1', '.sh', '.py', '.mjs', '.js', '.cjs'];
 
+// Only paths inside our own ~/.claude/hooks/ tree count as self-registered hooks.
+// Third-party tools (Orca's ~/.orca/agent-hooks/claude-hook.sh, pixel-agents' raw
+// C:\Users\...\hooks\claude-hook.js) are not managed by hooks/manifest.json and
+// must never be picked up here, even though their paths contain the substring
+// "hooks/<name>.<ext>".
+const DIRECT_HOOK_PATTERN = /\.claude[\\/]hooks[\\/]([A-Za-z0-9._-]+)\.(?:mjs|cjs|js|sh|py|ps1)/;
+const DISPATCH_TARGET_PATTERN = /dispatch\.js["']?\s+([A-Za-z0-9._-]+)/;
+
 function platformName(nodePlatform = process.platform) {
   if (nodePlatform === 'win32') return 'windows';
   if (nodePlatform === 'linux') return 'linux';
@@ -21,6 +29,25 @@ function baseNameFor(target) {
     return path.basename(target, path.extname(target));
   }
   return target;
+}
+
+function registeredTargets(settings) {
+  const targets = new Set();
+  for (const groups of Object.values((settings && settings.hooks) || {})) {
+    for (const group of groups) {
+      for (const hook of group.hooks || []) {
+        const command = hook.command || '';
+        const throughDispatch = command.match(DISPATCH_TARGET_PATTERN);
+        if (throughDispatch) {
+          targets.add(baseNameFor(throughDispatch[1]));
+          continue;
+        }
+        const direct = command.match(DIRECT_HOOK_PATTERN);
+        if (direct) targets.add(direct[1]);
+      }
+    }
+  }
+  return targets;
 }
 
 function commandExists(command, spawn = childProcess.spawnSync, nodePlatform = process.platform) {
@@ -198,6 +225,7 @@ module.exports = {
   loadManifest,
   platformMatches,
   platformName,
+  registeredTargets,
   resolveRunner
 };
 

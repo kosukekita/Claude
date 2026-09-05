@@ -36,8 +36,11 @@ GIT_GLOBAL_OPTIONS_WITH_VALUE = {
     "--config-env",
 }
 SQL_CLIENTS = {"psql", "mysql"}
-# 2026-08-12 ユーザー承認: Higgsfield の Seedance 2.5 は 480p/720p のみ対応で 1080p を選べないため、本番解像度として 720p を許可する。
-APPROVED_RESOLUTIONS = {"480p", "720p", "1080p"}
+# 2026-08-12 ユーザー承認で 720p を本番解像度として許可したが、2026-08-17 に撤回。
+# 「720p 許可はガード側の穴であり、720p は拒否が正しい」という判断（記憶
+# hook-test-baseline-red-720p-gap）が後勝ちで有効。720p が必要な場合
+# （例: 720p までしか選べないモデル）は guard_override の 1 回限りトークン経路を使う。
+APPROVED_RESOLUTIONS = {"480p", "1080p"}
 APPROVED_QUALITIES = {"fast", "high"}
 # Refresh this list from the TYPE=image rows of: higgsfield model list --image
 IMAGE_JOB_TYPES = {

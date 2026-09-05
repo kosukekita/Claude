@@ -9,24 +9,7 @@ const dispatchPath = path.join(hooksDir, 'dispatch.js');
 const settingsPath = path.join(repoDir, 'settings.json');
 const manifestPath = path.join(hooksDir, 'manifest.json');
 const dispatcher = require(dispatchPath);
-
-function registeredTargets(settings) {
-  const targets = new Set();
-  for (const groups of Object.values(settings.hooks)) {
-    for (const group of groups) {
-      for (const hook of group.hooks) {
-        const dispatch = hook.command.match(/dispatch\.js\"?\s+([A-Za-z0-9._-]+)/);
-        if (dispatch) {
-          targets.add(dispatch[1].replace(/\.(?:ps1|sh|py|mjs|js|cjs)$/, ''));
-          continue;
-        }
-        const direct = hook.command.match(/hooks\/([A-Za-z0-9._-]+)\.(?:mjs|cjs|js|sh|py|ps1)/);
-        if (direct) targets.add(direct[1]);
-      }
-    }
-  }
-  return targets;
-}
+const registeredTargets = dispatcher.registeredTargets;
 
 function run(name, fn) {
   try {
@@ -163,6 +146,31 @@ run('log-commands is unregistered and archived', () => {
   assert(!registeredTargets(settings).has('log-commands'));
   assert(!fs.existsSync(path.join(hooksDir, 'log-commands.ps1')));
   assert(fs.existsSync(path.join(hooksDir, 'retired', 'log-commands.ps1')));
+});
+
+run('third-party hook paths are not detected as self-registered targets', () => {
+  const fixtureSettings = {
+    hooks: {
+      PreToolUse: [
+        {
+          hooks: [
+            { command: 'node "C:\\Users\\u8792\\.pixel-agents\\hooks\\claude-hook.js"' },
+            {
+              command:
+                'if [ -f "${HOME-}/.orca/agent-hooks/claude-hook.sh" ] && [ -r "${HOME-}/.orca/agent-hooks/claude-hook.sh" ]; then "${HOME-}/.orca/agent-hooks/claude-hook.sh"; fi'
+            },
+            { command: 'node "$HOME/.claude/hooks/pixel-agents-shim.js"' },
+            { command: 'node "$HOME/.claude/hooks/dispatch.js" warn-tu-encoding' }
+          ]
+        }
+      ]
+    }
+  };
+  const actual = registeredTargets(fixtureSettings);
+  assert(!actual.has('claude-hook'));
+  assert(actual.has('pixel-agents-shim'));
+  assert(actual.has('warn-tu-encoding'));
+  assert.strictEqual(actual.size, 2);
 });
 
 run('verification suite has no ambiguous 0-or-2 assertions', () => {

@@ -7,25 +7,7 @@ const repoDir = path.join(hooksDir, '..');
 const settingsPath = path.join(repoDir, 'settings.json');
 const manifestPath = path.join(hooksDir, 'manifest.json');
 const dispatch = require(path.join(hooksDir, 'dispatch.js'));
-
-function registeredTargets(settings) {
-  const targets = new Set();
-  for (const groups of Object.values(settings.hooks || {})) {
-    for (const group of groups) {
-      for (const hook of group.hooks || []) {
-        const command = hook.command || '';
-        const throughDispatch = command.match(/dispatch\.js\"?\s+([A-Za-z0-9._-]+)/);
-        if (throughDispatch) {
-          targets.add(dispatch.baseNameFor(throughDispatch[1]));
-          continue;
-        }
-        const direct = command.match(/hooks\/([A-Za-z0-9._-]+)\.(?:mjs|cjs|js|sh|py|ps1)/);
-        if (direct) targets.add(direct[1]);
-      }
-    }
-  }
-  return targets;
-}
+const registeredTargets = dispatch.registeredTargets;
 
 function sameMembers(left, right) {
   return left.size === right.size && [...left].every((item) => right.has(item));

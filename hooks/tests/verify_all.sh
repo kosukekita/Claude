@@ -19,20 +19,12 @@ else
   failed=$((failed + 1))
 fi
 
-mapfile -t targets < <(node - "$repo_dir/settings.json" "$manifest" <<'NODE'
+mapfile -t targets < <(node - "$repo_dir/settings.json" "$manifest" "$hooks_dir/dispatch.js" <<'NODE'
 const fs = require('fs');
 const settings = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 const manifest = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
-const targets = new Set();
-for (const groups of Object.values(settings.hooks || {})) {
-  for (const group of groups) for (const hook of group.hooks || []) {
-    const command = hook.command || '';
-    const dispatch = command.match(/dispatch\.js\"?\s+([A-Za-z0-9._-]+)/);
-    const direct = command.match(/hooks\/([A-Za-z0-9._-]+)\.(?:mjs|cjs|js|sh|py|ps1)/);
-    if (dispatch) targets.add(dispatch[1].replace(/\.(?:ps1|sh|py|mjs|js|cjs)$/, ''));
-    else if (direct) targets.add(direct[1]);
-  }
-}
+const dispatch = require(process.argv[4]);
+const targets = dispatch.registeredTargets(settings);
 for (const target of [...targets].sort()) {
   const metadata = manifest.targets[target];
   console.log(`${target}\t${metadata ? metadata.platform : 'missing'}\t${metadata?.implementation_status || 'active'}`);
