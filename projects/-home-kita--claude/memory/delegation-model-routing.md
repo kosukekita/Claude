@@ -30,3 +30,24 @@ metadata:
 - Codex はジョブ登録に失敗することがある（タスクIDを返すのに `codex-companion.mjs status` に現れない）。
   その場合も切り替える
 - 関連: [[codex-unavailable-sonnet5-fallback]]、[[codex-broker-stall-cleanup]]、[[plan-fable-implement-codex-goal]]
+
+## 追記（2026-09-05）: Astra には CLI 0.154.0-alpha 以降が要る
+
+`gpt-6-astra` を安定版 CLI（0.153.4 = npm の `latest`）で呼ぶと
+`The 'gpt-6-astra' model requires a newer version of Codex` で 400 になる。
+**npm の `latest` にはまだ来ていない**ので、alpha タグから入れる:
+
+```bash
+npm view @openai/codex dist-tags          # alpha-linux-x64 を確認
+npm_config_prefix=/tmp/codex-alpha-test npm install -g @openai/codex@0.154.0-alpha.3
+```
+
+グローバルを alpha で上書きすると他セッションの Codex ジョブを巻き込むので、
+**隔離 prefix に入れて先に検証する**。alpha では上記400は消え、モデル自体は通った。
+
+`codex exec` の罠2つ:
+- 引数でプロンプトを渡しても `Reading additional input from stdin...` で待つ → `< /dev/null` を付ける
+- リポジトリ外だと `Not inside a trusted directory` → `--skip-git-repo-check` か、対象リポジトリで実行
+
+なお 2026-09-05 時点では alpha でも**アカウント側が利用上限**（9月8日 10:22 まで）。
+「バージョン不足」と「利用上限」は**別々に**出るので、片方を直しても他方が残ることがある。
