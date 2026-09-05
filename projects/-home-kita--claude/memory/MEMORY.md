@@ -100,4 +100,4 @@
 - [japanese-proofread-two-pass.md](japanese-proofread-two-pass.md) — 「日本語校正して」は診断パス→校正パスの2段。論理・構成・自己矛盾を洗う診断用プロンプト全文つき
 - [office-docx-is-the-source.md](office-docx-is-the-source.md) — docxをmdから生成し直さない。現物が正本／校正mdは使い捨ての写し／編集前に必ず現物を読む
 - [Codexジョブが無音で固まる=ブローカ残留](codex-broker-stall-cleanup.md) — 「Starting/Resuming thread」で止まるのは認証でなくapp-server-brokerの長期稼働(20日で実際に詰まった)。同時刻に別WSも固まるのが決定的証拠。掃除手順と温存対象の文字列比較の罠つき
-- [委譲先のモデル使い分け](delegation-model-routing.md) — ★ユーザー指示2026-09-05: **診断・分析=Fable 5.1**／実装=Codex(不可ならSonnet 5)。Codexはタスク登録失敗があるのでstatusに出なければ切替
+- [委譲先のモデル使い分け](delegation-model-routing.md) — ★ユーザー指示2026-09-05: **プラン・診断=最新モデル(GPT-6 Astra / Fable 5.1)**／**実装=GPT-6 Astra、不可ならSonnet 5**。★Codexの既定modelは`gpt-6-astra`(config.toml)・モデル名は`gpt-6-astra`のみ有効。利用上限/登録失敗時は切替
