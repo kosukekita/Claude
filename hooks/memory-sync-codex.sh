@@ -22,6 +22,26 @@ if [[ -f "$rules_file" ]]; then
   global_rules="$(cat "$rules_file" 2>/dev/null || true)"
 fi
 
+# Rewrite Claude-vs-Codex marker blocks for the Codex-facing copy:
+# - <!-- claude-only --> ... <!-- /claude-only --> is dropped entirely
+#   (markers and content), since it is Claude-harness-specific.
+# - <!-- codex-only ... --> keeps only its inner content (markers removed),
+#   since Claude ignores it as an HTML comment but Codex should see it.
+# Unclosed/malformed markers just stop emitting from that point on; the
+# script still completes and writes AGENTS.md normally (fail-open).
+if [[ -n "$global_rules" ]]; then
+  global_rules="$(
+    printf '%s\n' "$global_rules" | awk '
+      /^<!-- claude-only -->$/ { skip_claude = 1; next }
+      /^<!-- \/claude-only -->$/ { skip_claude = 0; next }
+      skip_claude { next }
+      /^<!-- codex-only$/ { in_codex_only = 1; next }
+      in_codex_only && /^-->$/ { in_codex_only = 0; next }
+      { print }
+    '
+  )"
+fi
+
 for store in "$projects_dir"/*--claude; do
   memory_dir="$store/memory"
   index_file="$memory_dir/MEMORY.md"

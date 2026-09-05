@@ -11,6 +11,7 @@ python3 "$tests_dir/test_guard_policy.py" || exit 1
 python3 "$tests_dir/test_hook_observability.py" || exit 1
 python3 "$tests_dir/test_guard_override.py" || exit 1
 bash "$tests_dir/test_guard.sh" || exit 1
+bash "$tests_dir/test_memory_sync_codex.sh" || exit 1
 python3 "$tests_dir/test_phase3.py" || exit 1
 bash "$tests_dir/verify_all.sh" || exit 1
 
