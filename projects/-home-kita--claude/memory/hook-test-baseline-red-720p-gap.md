@@ -38,3 +38,5 @@ auto-push のステージ対象で、リモートは**公開**リポジトリ `k
 ターン終了時に自動で公開される寸前だった。基準点のハッシュと突き合わせて復元済み。
 
 教訓の一般形は [[delegation-red-baseline-weakens-tests]] に分離した。
+
+**2026-09-05 追記:** run_all.sh は今は test_phase1.js（settings.json の pixel-agents/Orca 由来 `claude-hook` が hooks/manifest.json 未宣言）でも落ちる。順序上 test_phase1 が先に exit 1 するので test_guard の720p件まで到達しない。両方とも未着手。委譲前ベースラインは `${PIPESTATUS[0]}` で取ること（パイプ越し `$?` で緑と誤記録した実例あり）[[claude-md-refactor-2026-09-markers]]

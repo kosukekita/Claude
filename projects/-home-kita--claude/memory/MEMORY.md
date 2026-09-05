@@ -1,4 +1,5 @@
 - [検証はhashで・印象で報告しない](verify-with-hashes-not-impressions.md) — ★2026-09-03に1日2回やらかした: ①pytest前のlsを「実行後は無変更」と誤報告(実際はテストが本番stateを上書き) ②「復元した」がバイト不一致。両方Codexのhash監査で発覚。触る前後でsha256を取り両方示す。「復元」はhash一致で初めて成立
+- [CLAUDE.md刷新2026-09とclaude-only/codex-onlyマーカー](claude-md-refactor-2026-09-markers.md) — ★削る基準=ハーネス既定と重複/MEMORY.mdと二重/skill正本の手順。Claude固有節は<!-- claude-only -->で包みCodex向けは<!-- codex-only -->で展開(memory-sync-codex.shが解釈)。★罠=`cmd | tail; echo $?`はtailの終了コード(PIPESTATUS[0]を使う)
 - [資格情報は「切れる前に気づく仕掛け」とセット](credential-expiry-reminders.md) — ★ユーザー指示2026-09-03: 発行時に必ず失効前リマインド(期限あり)か定期の生存確認(期限なし=Gmailアプリパスワード等は予告なく死ぬ)を同時に作る。★通知経路は当の資格情報に依存させない(メール障害をメールで知らせる設計は無言死)。実害=8/31失効→B枠リマインド3通全滅→9/1の投稿枠を喪失・3日間未検知
 - [haruka-shower(毎晩稼働中)の構成と2罠](haruka-shower-pipeline.md) — ★実際に毎晩回ってるのはこっち(gen01:00→mail06:00→autofix06:25・30秒/768×1344/2ショット×362f)。2026-08-18修正: ①ArcFace顔照合は小顔・非正面演目で良品を落とす(0.1234)→正面大顔フレームだけ選び最大値判定・適合0枚はskip ②失敗時にmp4_pathを書かずメールが動画を見つけられない→QC前に記録+run_dirフォールバック
 - [【再開用】遥nightlyパイプライン](haruka-nightly-resume.md) — 3分動画(日常60s/ホテル下着90s/POV騎乗位30s・不倫設定)を毎晩生成→pCloud URLを毎朝6時メール。実装完了・台帳6冊×100・QC/モザイク/失敗通知つき。★タイマーはdisabledのまま＝GPU開放後に手動1サイクル→実物確認→enable
