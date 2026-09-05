@@ -18,3 +18,25 @@ metadata:
 **Why**: Nano Banana 2（OpenRouter `google/gemini-3.1-flash-image` / AtlasCloud `google/nano-banana-2`）で素のプロンプト（「実写調」の一文だけ）を投げたら、CG・3Dレンダー臭のツルツル肌になった（2026-07-09 実機）。リアル化3行を足したら肌の毛穴・自然光が出て実写らしくなった。同じシートでも Codex 版の方が元々実写寄りだが、Nano Banana 系は特にリアル化が要る。
 
 **How to apply**: 実写人物/シート画像を作るとき、ユーザーがスタイルを言っていなければ黙ってスターター3個を仕上げ層に足す（確認不要）。ただし**内容（6要素=衣装/シーン/光/構図/枚数、動画のシーン・動作）は従来どおり勝手に足さず確認**する＝「内容＝ユーザーの領域／品質(リアル化)＝既定で底上げ」の切り分け。関連: [[person-image-6elements-confirm-before-fill]] [[optimal-gen-models-table-and-new-model-eval]] [[openrouter-image-gen-quirks]]
+
+## ★このルールが守られなかった実例と、機械的な再発防止（2026-09-05）
+
+**記憶にもCLAUDE.mdにもスキルにも書いてあったのに、丸ごと適用されていなかった。**
+haruka-shower（毎晩の自走パイプライン）は作成時からリアル化指示が**一度も入っておらず**、
+`visible pores` / `unretouched` / `photoreal` / `no CG` が**全て0件**のまま毎晩生成していた。
+ユーザーの「AIっぽい」という指摘で発覚。しかも Fable は先に「原因は動きの緩慢さ」と報告した際、
+**リアル化の有無を確認していなかった**（ユーザーの再質問で初めて調べた）。
+
+**なぜ守られなかったか（原因の分類: 実行ガード欠如＋検証欠如）**
+自走パイプラインは **自前の `prompt_builder.py` でプロンプトを組み立てるため、
+video-media-studio スキルの生成フローを通らない**。スキル/CLAUDE.md/記憶にルールがあっても、
+その経路には機械的に適用される場所が無い。**文書だけのルールは、その文書を読まない経路では守られない。**
+
+**恒久対策（実装済み）**
+`tests/test_pipeline_dry_run.py` に必須ガードを追加し、リアル化が抜けたら**テストが落ちる**ようにした:
+`visible pores` / `unretouched` / `real footage` の存在 ＋ `CG` `3D render` `airbrushed` `plastic` の否定を assert。
+★ガードが実際に落ちることを実測確認済み（リアル化を除去→1 failed、戻す→41 passed）。
+
+**★横展開の宿題**: 同じ穴が **haruka-nightly**（リアル化ファイル0件・現在タイマー停止中）にもある。
+再開する前に同じガードを入れること。プロンプトを自前生成する新しいパイプラインを作るときは、
+**リアル化の適用とそのテストをセットで作る**（[[haruka-shower-pipeline]] の罠5として記録）。
