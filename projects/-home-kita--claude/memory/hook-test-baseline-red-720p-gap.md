@@ -1,6 +1,6 @@
 ---
 name: hook-test-baseline-red-720p-gap
-description: ~/.claude のフックテストは着手前から赤（720p が品質ガードを素通り）。ユーザー判断=ガード側の穴なので直すべき・未着手
+description: ★2026-09-05 解決済み。フックテストは 2026-08-17〜09-05 赤だった（720p 素通り＋Orca 外部フックの誤検出）。ガード側を直しテスト期待値は不変。委譲時のベースライン計測の罠つき
 metadata: 
   node_type: memory
   type: project
@@ -40,3 +40,7 @@ auto-push のステージ対象で、リモートは**公開**リポジトリ `k
 教訓の一般形は [[delegation-red-baseline-weakens-tests]] に分離した。
 
 **2026-09-05 追記:** run_all.sh は今は test_phase1.js（settings.json の pixel-agents/Orca 由来 `claude-hook` が hooks/manifest.json 未宣言）でも落ちる。順序上 test_phase1 が先に exit 1 するので test_guard の720p件まで到達しない。両方とも未着手。委譲前ベースラインは `${PIPESTATUS[0]}` で取ること（パイプ越し `$?` で緑と誤記録した実例あり）[[claude-md-refactor-2026-09-markers]]
+
+## ★2026-09-05 解決
+
+Sonnet 5 委譲（Codex 上限中）で両方修正し全 PASS・exit 0。①`APPROVED_RESOLUTIONS` から 720p を除去（08-12 の許可コメントは 08-17 判断で撤回と明記。Seedance 2.5 等の 720p 専用モデルは guard_override の1回限りトークンで通す）②ターゲット検出を dispatch.js の `registeredTargets()` に一本化し `.claude/hooks/` 配下だけを自前と見なす（Orca の `~/.orca/agent-hooks/claude-hook.sh` と pixel-agents の `C:\Users\...\claude-hook.js` は manifest 対象外）。test_guard.sh の期待値は sha256 一致で無変更を確認。
